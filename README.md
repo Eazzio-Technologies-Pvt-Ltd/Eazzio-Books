@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo.png" alt="Eazzio-Books Logo" width="160"/>
+</p>
+
 # 📘 Eazzio-Books
 
 ### A modern accounting and business finance management system for growing organizations.
