@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo.png" alt="Eazzio-Books Logo" width="160"/>
+  <img src="./logo.png" alt="Eazzio-Books Logo" width="320"/>
 </p>
 
 # Eazzio-Books
