@@ -23,6 +23,16 @@ Whether you are managing a small business, training center, service company, ret
 
 ---
 
+## Documentation
+
+- [Project Documentation](documents/PROJECT_DOCUMENTATION.md)
+- [Installation Guide](documents/INSTALLATION_GUIDE.md)
+- [API Documentation](documents/API_DOCUMENTATION.md)
+- [Database Schema](documents/DATABASE_SCHEMA.md)
+- [Deployment Guide](documents/DEPLOYMENT_GUIDE.md)
+- [User Manual](documents/USER_MANUAL.md)
+
+
 ## ✨ Key Features
 
 ### 📊 Modern Dashboard
