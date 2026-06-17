@@ -68,7 +68,10 @@ const app = express();
 
 // ✅ MIDDLEWARE
 app.use(cors({
-  origin: ["http://localhost:3000"],
+  origin: [
+    "http://localhost:3000",
+    process.env.FRONTEND_URL // Allow dynamic production frontend URL
+  ].filter(Boolean),
   credentials: true
 }));
 
