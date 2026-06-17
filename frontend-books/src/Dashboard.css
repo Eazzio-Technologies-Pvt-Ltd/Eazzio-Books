@@ -1,0 +1,343 @@
+/* Dashboard.css - Premium UI Overhaul */
+
+.dashboard-container {
+  padding: 15px 30px;
+  max-width: 1500px;
+  margin: 0 auto;
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-global);
+  min-height: 100vh;
+}
+
+/* Welcome Header */
+.dash-welcome {
+  margin-bottom: 15px;
+}
+
+.dash-welcome-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.dash-welcome-title { 
+  font-size: 20px; 
+  font-weight: 700; 
+  margin: 0 0 4px 0; 
+  color: var(--text-primary); 
+  letter-spacing: -0.5px;
+}
+
+.dash-welcome-sub { 
+  color: var(--text-muted); 
+  margin: 0; 
+  font-size: 13px; 
+}
+
+.dash-filter-select {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  outline: none;
+  background: var(--bg-input);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-left: 10px;
+}
+.dash-filter-select:focus, .dash-filter-select:hover {
+  border-color: var(--border-color-hover);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Stats Grid (Top Summary) */
+.dash-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.dash-stat-card {
+  background: var(--bg-card); 
+  padding: 18px; 
+  border-radius: 14px; 
+  border: 1px solid var(--border-color);
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+}
+
+.dash-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.15);
+  border-color: #cbd5e1;
+}
+
+.dash-stat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dash-stat-icon {
+  width: 44px; height: 44px; 
+  border-radius: 10px; 
+  display: flex;
+  align-items: center; justify-content: center; 
+}
+.dash-stat-icon.receivables { background: #fef3c7; color: #d97706; }
+.dash-stat-icon.payables { background: #fee2e2; color: #dc2626; }
+.dash-stat-icon.income { background: #dcfce7; color: #16a34a; }
+.dash-stat-icon.expenses { background: #f3e8ff; color: #7e22ce; }
+
+.dash-stat-header p { margin: 0; color: var(--text-muted); font-size: 13px; font-weight: 600; letter-spacing: 0.3px; }
+.dash-stat-content h3 { margin: 0; font-size: 20px; color: var(--text-primary); font-weight: 700; letter-spacing: -0.5px; }
+.dash-stat-content { display: flex; flex-direction: column; gap: 4px; }
+.dash-stat-trend { font-size: 12px; font-weight: 600; }
+.trend-up { color: #10b981; }
+.trend-down { color: #ef4444; }
+
+/* Section Titles */
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 10px 0;
+}
+
+.dash-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+/* Monthly Overview Section */
+.dash-monthly-overview {
+  margin-bottom: 20px;
+}
+
+.monthly-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.mo-card {
+  background: var(--bg-card);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.mo-label {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.mo-amount {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.income-color { color: #16a34a; }
+.expense-color { color: #dc2626; }
+.cash-color { color: #2563eb; }
+
+/* Projections Grid */
+.dash-projections-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.proj-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.proj-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.proj-amount {
+  font-size: 20px;
+  margin: 0 0 10px 0;
+  font-weight: 700;
+}
+.proj-list-item {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding: 6px 0;
+  font-size: 13px;
+}
+.proj-list-item:last-child {
+  border-bottom: none;
+}
+.proj-list-title { margin: 0; font-weight: 600; color: var(--text-secondary); }
+.proj-list-amount { font-weight: 700; color: var(--text-primary); }
+
+.badge-surplus {
+  background: #dcfce7;
+  color: #16a34a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.badge-shortage {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+/* Dashboard Layout Grid (70/30 split) */
+.zoho-dashboard-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.main-charts-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.side-widgets-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Premium Zoho-style Card Aesthetics */
+.dash-widget-card {
+  background: var(--bg-card);
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.widget-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 0;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.view-link {
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 600;
+  text-decoration: none;
+}
+.view-link:hover { text-decoration: underline; }
+
+.chart-container {
+  width: 100%;
+  height: 300px;
+  margin-top: 10px;
+  overflow: hidden;
+  min-width: 0;
+}
+.chart-container.small {
+  height: 250px;
+}
+
+/* Empty States */
+.dash-loading { text-align: center; padding: 50px; color: var(--text-muted); font-weight: 500; }
+.widget-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+.widget-empty svg { margin-bottom: 12px; color: #cbd5e1; }
+
+/* Quick Shortcuts Links */
+.dash-shortcuts-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.shortcut-chip {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+.shortcut-chip:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+/* Responsive Styles */
+@media (max-width: 1200px) {
+  .dash-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .monthly-overview-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 1024px) {
+  .zoho-dashboard-layout { grid-template-columns: 1fr; }
+  .dash-projections-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-welcome-content { flex-direction: column; align-items: flex-start; gap: 15px; }
+  .dash-filter-select { margin-left: 0; margin-right: 10px; }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container { padding: 20px 15px; overflow-x: hidden; }
+  .dash-stats-grid { grid-template-columns: 1fr; }
+  .dash-projections-grid { grid-template-columns: 1fr; }
+  .monthly-overview-grid { grid-template-columns: 1fr; }
+  .dash-section-header { flex-direction: column; align-items: flex-start; }
+  .dash-welcome-filters { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+}
