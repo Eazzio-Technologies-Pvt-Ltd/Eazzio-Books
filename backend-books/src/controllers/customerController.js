@@ -1,0 +1,524 @@
+/**
+ * customerController.js – Full CRUD with addresses & contact persons
+ * Dependencies: pool
+ */
+const pool = require("../config/db");
+
+// ================= GET ALL CUSTOMERS (with optional status filter) =================
+const getCustomers = async (req, res) => {
+  try {
+    const { status } = req.query;
+    
+    // Dynamic Query Builder
+    let query = `SELECT * FROM customers WHERE 1=1`;
+    const values = [];
+    let paramIndex = 1;
+
+    // SaaS ISOLATION: Filter by organization if it's an Org Admin/Staff
+    if (req.tenantId) {
+      query += ` AND organization_id = $${paramIndex++}`;
+      values.push(req.tenantId);
+    }
+
+    if (status === "active") {
+      query += ` AND is_active = true`;
+    } else if (status === "inactive") {
+      query += ` AND is_active = false`;
+    }
+
+    query += " ORDER BY created_at DESC";
+    const result = await pool.query(query, values);
+    res.json({ customers: result.rows });
+  } catch (err) {
+    console.error("GET CUSTOMERS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ================= GET SINGLE CUSTOMER (with addresses & contacts) =================
+const getCustomerById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    let query = `SELECT * FROM customers WHERE id = $1`;
+    const values = [id];
+    let paramIndex = 2;
+
+    if (req.tenantId) {
+      query += ` AND organization_id = $${paramIndex++}`;
+      values.push(req.tenantId);
+    }
+
+    const customer = await pool.query(query, values);
+    if (customer.rows.length === 0) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const addresses = await pool.query(
+      `SELECT * FROM customer_addresses WHERE customer_id = $1`,
+      [id],
+    );
+    const contacts = await pool.query(
+      `SELECT * FROM customer_contacts WHERE customer_id = $1`,
+      [id],
+    );
+
+    res.json({
+      customer: customer.rows[0],
+      addresses: addresses.rows,
+      contacts: contacts.rows,
+    });
+  } catch (err) {
+    console.error("GET CUSTOMER ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ================= CREATE CUSTOMER =================
+const createCustomer = async (req, res) => {
+  const {
+    customer_type,
+    customer_sub_type,
+    salutation,
+    first_name,
+    last_name,
+    company_name,
+    display_name,
+    email,
+    phone,
+    work_phone,
+    mobile,
+    language,
+    contact_persons,
+    custom_fields,
+    reporting_tags,
+    remarks,
+    pan,
+    currency,
+    opening_balance,
+    payment_terms,
+    enable_portal,
+    portal_language,
+    documents,
+    customer_owner_id,
+    addresses,
+    contacts,
+  } = req.body;
+
+  const contactPersonsArray = contacts || contact_persons || [];
+  const { addActivityLog } = require("./activityController");
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const customerResult = await client.query(
+      `INSERT INTO customers
+        (user_id, customer_type, customer_sub_type, salutation, first_name, last_name,
+         company_name, display_name, email, phone, work_phone, mobile, language,
+         contact_persons, custom_fields, reporting_tags, remarks, pan,
+         currency, opening_balance, payment_terms, enable_portal, portal_language,
+         documents, customer_owner_id, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
+       RETURNING *`,
+      [
+        req.user.id,
+        customer_type || "Business",
+        customer_sub_type || null,
+        salutation || null,
+        first_name || null,
+        last_name || null,
+        company_name || null,
+        display_name || null,
+        email || null,
+        phone || null,
+        work_phone || null,
+        mobile || null,
+        language || null,
+        "[]",
+        custom_fields ? JSON.stringify(custom_fields) : "{}",
+        reporting_tags || null,
+        remarks || null,
+        pan || null,
+        currency || "INR",
+        opening_balance || 0,
+        payment_terms || null,
+        enable_portal || false,
+        portal_language || "en",
+        documents ? JSON.stringify(documents) : "[]",
+        customer_owner_id || null,
+        req.tenantId || null
+      ]
+    );
+    const customerId = customerResult.rows[0].id;
+
+    if (Array.isArray(addresses)) {
+      for (const addr of addresses) {
+        await client.query(
+          `INSERT INTO customer_addresses
+           (customer_id, type, attention, country, address_line1, address_line2,
+            city, state, pin_code, phone, fax)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          [
+            customerId,
+            addr.type || "billing",
+            addr.attention || null,
+            addr.country || null,
+            addr.address_line1 || null,
+            addr.address_line2 || null,
+            addr.city || null,
+            addr.state || null,
+            addr.pin_code || null,
+            addr.phone || null,
+            addr.fax || null,
+          ],
+        );
+      }
+    }
+
+    if (Array.isArray(contactPersonsArray)) {
+      for (const person of contactPersonsArray) {
+        await client.query(
+          `INSERT INTO customer_contacts
+           (customer_id, salutation, first_name, last_name, email, work_phone, mobile)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [
+            customerId,
+            person.salutation || null,
+            person.first_name || null,
+            person.last_name || null,
+            person.email || null,
+            person.work_phone || null,
+            person.mobile || null,
+          ],
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    await logActivity(customerResult.rows[0].id, req.user.id, "created", "Contact created");
+    await addActivityLog(
+      customerId,
+      req.user.id,
+      req.user.email,
+      "created",
+      "Contact created",
+    );
+
+    res.json({ message: "Customer created", customer: customerResult.rows[0] });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("CREATE CUSTOMER ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
+  }
+};
+
+// ================== ACTIVITY LOGGING FUNCTION (can be used across controllers) =================
+const logActivity = async (customerId, userId, actionType, description) => {
+  try {
+    await pool.query(
+      `INSERT INTO customer_activity_log (customer_id, user_id, action_type, description)
+       VALUES ($1, $2, $3, $4)`,
+      [customerId, userId, actionType, description]
+    );
+  } catch (err) {
+    console.error("LOG ACTIVITY ERROR:", err);
+  }
+};
+
+// ================= UPDATE CUSTOMER =================
+
+const updateCustomer = async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body; // all fields sent by the frontend
+  const { addActivityLog } = require("./activityController");
+
+  // Remove fields that should never be mass-updated directly (if any)
+  delete updates.id;
+  delete updates.user_id;
+  delete updates.created_at;
+  delete updates.updated_at;
+
+  // Separate addresses / contacts / contact_persons if present
+  const { addresses, contacts, contact_persons, ...customerFields } = updates;
+  const contactPersonsArray = contacts || contact_persons || null;
+
+  // Build SET clause dynamically from the provided customer fields
+  const setColumns = [];
+  const values = [];
+  let paramIndex = 1;
+
+  for (const [key, value] of Object.entries(customerFields)) {
+    // Convert camelCase (frontend) to snake_case (DB column) if needed
+    // All your frontend keys already match the column names (e.g., is_active, first_name)
+    if (value !== undefined) {
+      setColumns.push(`${key} = $${paramIndex}`);
+      values.push(value);
+      paramIndex++;
+    }
+  }
+
+  if (setColumns.length === 0 && !addresses && !contactPersonsArray) {
+    return res.status(400).json({ message: "No fields to update" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // --- Update customer record (only if we have column updates) ---
+    let customerResult;
+    if (setColumns.length > 0) {
+      // Add updated_at automatically
+      setColumns.push(`updated_at = CURRENT_TIMESTAMP`);
+
+      let query = `
+        UPDATE customers
+        SET ${setColumns.join(", ")}
+        WHERE id = $${paramIndex}
+      `;
+      values.push(id);
+      paramIndex++;
+
+      if (req.tenantId) {
+        query += ` AND organization_id = $${paramIndex++}`;
+        values.push(req.tenantId);
+      }
+      query += ` RETURNING *`;
+
+      customerResult = await client.query(query, values);
+      if (customerResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ message: "Customer not found" });
+      }
+    } else {
+      // No fields to update in customers table, just fetch current data
+      let query = `SELECT * FROM customers WHERE id = $1`;
+      let vals = [id];
+      if (req.tenantId) {
+        query += ` AND organization_id = $2`;
+        vals.push(req.tenantId);
+      }
+      customerResult = await client.query(query, vals);
+      if (customerResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ message: "Customer not found" });
+      }
+    }
+
+    // --- Update addresses (replace all if provided) ---
+    if (addresses !== undefined) {
+      await client.query(
+        `DELETE FROM customer_addresses WHERE customer_id = $1`,
+        [id],
+      );
+      if (Array.isArray(addresses)) {
+        for (const addr of addresses) {
+          await client.query(
+            `INSERT INTO customer_addresses
+             (customer_id, type, attention, country, address_line1, address_line2,
+              city, state, pin_code, phone, fax)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+            [
+              id,
+              addr.type || "billing",
+              addr.attention || null,
+              addr.country || null,
+              addr.address_line1 || null,
+              addr.address_line2 || null,
+              addr.city || null,
+              addr.state || null,
+              addr.pin_code || null,
+              addr.phone || null,
+              addr.fax || null,
+            ],
+          );
+        }
+      }
+    }
+
+    // --- Update contacts (replace all if provided) ---
+    if (contactPersonsArray !== undefined) {
+      await client.query(
+        `DELETE FROM customer_contacts WHERE customer_id = $1`,
+        [id],
+      );
+      if (Array.isArray(contactPersonsArray)) {
+        for (const person of contactPersonsArray) {
+          await client.query(
+            `INSERT INTO customer_contacts
+             (customer_id, salutation, first_name, last_name, email, work_phone, mobile)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+            [
+              id,
+              person.salutation || null,
+              person.first_name || null,
+              person.last_name || null,
+              person.email || null,
+              person.work_phone || null,
+              person.mobile || null,
+            ],
+          );
+        }
+      }
+    }
+
+    await client.query("COMMIT");
+    if (customerFields.hasOwnProperty("is_active")) {
+  await logActivity(
+    customerResult.rows[0].id,
+    req.user.id,
+    "status_changed",
+    `Marked as ${customerFields.is_active ? "active" : "inactive"}`
+  );
+} else {
+  await logActivity(
+    customerResult.rows[0].id,
+    req.user.id,
+    "updated",
+    "Contact updated"
+  );
+}
+    if (is_active !== undefined) {
+      const statusText = is_active ? "Marked as active" : "Marked as inactive";
+      await addActivityLog(
+        id,
+        req.user.id,
+        req.user.email,
+        "status_changed",
+        statusText,
+      );
+    } else {
+      await addActivityLog(
+        id,
+        req.user.id,
+        req.user.email,
+        "updated",
+        "Contact updated",
+      );
+    }
+    res.json({ message: "Customer updated", customer: customerResult.rows[0] });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("UPDATE CUSTOMER ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
+  }
+};
+
+// ================= DELETE CUSTOMER =================
+const deleteCustomer = async (req, res) => {
+  const { id } = req.params;
+  try {
+    let query = `DELETE FROM customers WHERE id = $1`;
+    let values = [id];
+    let paramIndex = 2;
+    if (req.tenantId) {
+      query += ` AND organization_id = $${paramIndex++}`;
+      values.push(req.tenantId);
+    }
+    query += ` RETURNING *`;
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+    res.json({ message: "Customer deleted" });
+  } catch (err) {
+    console.error("DELETE CUSTOMER ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getActivityLog = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT cal.*, u.email as user_email
+       FROM customer_activity_log cal
+       LEFT JOIN users u ON cal.user_id = u.id
+       WHERE cal.customer_id = $1
+       ORDER BY cal.created_at DESC
+       LIMIT 20`,
+      [id]
+    );
+    res.json({ activities: result.rows });
+  } catch (err) {
+    console.error("GET ACTIVITY ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getCustomerStatement = async (req, res) => {
+  const { id } = req.params;
+  const { start_date, end_date } = req.query;
+  try {
+    let query = `SELECT * FROM customers WHERE id = $1`;
+    let values = [id];
+    let paramIndex = 2;
+    if (req.tenantId) {
+      query += ` AND organization_id = $${paramIndex++}`;
+      values.push(req.tenantId);
+    }
+    const custRes = await pool.query(query, values);
+    if (custRes.rows.length === 0) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+    const customer = custRes.rows[0];
+
+    let invoiceQuery = `SELECT * FROM invoices WHERE customer_id = $1`;
+    const params = [id];
+    let invParamIndex = 2;
+    
+    // Safety check: only add organization_id to invoices filter if the column exists
+    // But assuming Phase 4 extends to invoices eventually, we'll use user_id fallback for now
+    // until invoices are migrated. Let's just use user_id for invoices for backward compatibility.
+    // Wait, the user specifically wants Customers locked down.
+    invoiceQuery += ` AND user_id = $${invParamIndex++}`;
+    params.push(req.user.id);
+
+    if (start_date && end_date) {
+      invoiceQuery += ` AND invoice_date BETWEEN $${invParamIndex++} AND $${invParamIndex++}`;
+      params.push(start_date, end_date);
+    }
+    invoiceQuery += ` ORDER BY invoice_date ASC`;
+    const invRes = await pool.query(invoiceQuery, params);
+    const invoices = invRes.rows;
+
+    const opening_balance = parseFloat(customer.opening_balance) || 0;
+    let running_balance = opening_balance;
+    const transactions = invoices.map(inv => {
+      const amt = parseFloat(inv.total_amount) || 0;
+      running_balance += amt;
+      return {
+        date: inv.invoice_date,
+        type: "Invoice",
+        reference: inv.invoice_number,
+        debit: amt,
+        credit: 0,
+        balance: running_balance
+      };
+    });
+
+    res.json({
+      customer,
+      opening_balance,
+      closing_balance: running_balance,
+      transactions
+    });
+  } catch (err) {
+    console.error("GET CUSTOMER STATEMENT ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {
+  getCustomers,
+  getCustomerById,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+  getActivityLog,
+  getCustomerStatement,
+};
