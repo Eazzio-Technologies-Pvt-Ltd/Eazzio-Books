@@ -26,6 +26,7 @@ function CustomerAgingReport() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredData = data.filter(c => c.customer_name.toLowerCase().includes(search.toLowerCase()));

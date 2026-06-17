@@ -11,14 +11,7 @@ import { useAuth } from "./AuthContext";
 import { canAccess, MODULES, ACTIONS } from "./utils/permissions";
 
 
-const BLUE = '#4a90e2';
-const BORDER_COLOR = '#e2e8f0';
-const TEXT_PRIMARY = '#1e293b';
-const TEXT_SECONDARY = '#64748b';
-const BG_PAGE = '#f8fafc';
-const BG_CARD = '#ffffff';
-const RADIUS = '8px';
-const SHADOW = '0 1px 4px rgba(0,0,0,0.06)';
+
 
 // Minimal inline styles replacements for table
 const thStyle = {
@@ -57,21 +50,7 @@ function Customers() {
   const searchParamsUrl = new URLSearchParams(location.search);
   const searchQuery = searchParamsUrl.get("search") || "";
 
-  const timeAgo = (dateString) => {
-    if (!dateString) return "";
-    const now = new Date();
-    const past = new Date(dateString);
-    const diffMs = now - past;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHr = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHr / 24);
-    if (diffDay > 30) return `${Math.floor(diffDay / 30)} month(s) ago`;
-    if (diffDay > 0) return `${diffDay} day(s) ago`;
-    if (diffHr > 0) return `${diffHr} hour(s) ago`;
-    if (diffMin > 0) return `${diffMin} minute(s) ago`;
-    return "just now";
-  };
+
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -140,20 +119,7 @@ function Customers() {
   // PDF download loading state
   const [pdfLoading, setPdfLoading] = useState(false);
 
-  const StatusBadge = ({ isActive }) => (
-    <span style={{
-      display: 'inline-block',
-      padding: '3px 10px',
-      borderRadius: '12px',
-      fontSize: '12px',
-      fontWeight: '600',
-      background: isActive ? '#d1fae5' : '#f3f4f6',
-      color: isActive ? '#065f46' : '#6b7280',
-      border: `1px solid ${isActive ? '#6ee7b7' : '#e5e7eb'}`,
-    }}>
-      {isActive ? 'Active' : 'Inactive'}
-    </span>
-  );
+
 
   const handleSingleDelete = async (id) => {
     if (!window.confirm('Delete this customer?')) return;
@@ -688,26 +654,7 @@ function Customers() {
   const incomeChartData = buildIncomeChartData();
   const chartMax = Math.max(...incomeChartData.map((d) => d.amount), 1);
 
-  const tabStyle = (name) => ({
-    padding: "10px 20px",
-    cursor: "pointer",
-    borderBottom: activeTab === name ? "3px solid #4a90e2" : "3px solid transparent",
-    fontWeight: activeTab === name ? "bold" : "normal",
-    color: activeTab === name ? "#4a90e2" : "#333",
-    background: "none",
-    borderTop: "none",
-    borderLeft: "none",
-    borderRight: "none",
-    borderBottom: activeTab === name ? "3px solid #4a90e2" : "3px solid transparent",
-  });
 
-  const cardStyle = {
-    background: "#fff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    padding: "15px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-  };
 
   const renderCell = (colKey, content) => {
     if (!visibleColumns[colKey]) return null;
@@ -1818,31 +1765,7 @@ const StatBox = ({ label, value, highlight }) => (
 
 
 
-const labelStyle = {
-  display: "block",
-  fontSize: "11px",
-  fontWeight: "600",
-  color: "#667085",
-  marginBottom: "4px",
-  textTransform: "uppercase",
-};
 
-const inputStyle = {
-  padding: "6px 8px",
-  borderRadius: "6px",
-  border: "1px solid #d0d5dd",
-  fontSize: "13px",
-  outline: "none",
-};
-
-const inputStyleLarge = {
-  width: "100%",
-  padding: "8px 12px",
-  borderRadius: "6px",
-  border: "1px solid #d0d5dd",
-  fontSize: "13px",
-  boxSizing: "border-box",
-};
 
 const menuItem = {
   display: "block",

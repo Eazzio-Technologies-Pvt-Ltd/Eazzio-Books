@@ -28,6 +28,7 @@ function CustomerStatement({ customerId }) {
 
   useEffect(() => {
     fetchStatement();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
   const handleDownloadPDF = () => {

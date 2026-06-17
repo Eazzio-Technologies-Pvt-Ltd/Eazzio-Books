@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { apiRequest } from "./api";
-import { useAuth } from "./AuthContext";
+// import { useAuth } from "./AuthContext";
 import toast from "react-hot-toast";
 import ItemSidePanel from "./ItemSidePanel";
 
@@ -76,7 +76,7 @@ const COLUMNS_DEFAULT = [
 ];
 
 function Items() {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [items, setItems] = useState([]);

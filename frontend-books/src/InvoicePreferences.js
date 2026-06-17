@@ -21,6 +21,7 @@ function InvoicePreferences() {
         if (res?.preferences) setPrefs({ ...prefs, ...res.preferences });
       } catch (err) { /* ignore */ }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     fetchPrefs();
   }, []);
 
