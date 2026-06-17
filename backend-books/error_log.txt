@@ -1,8 +1,0 @@
-AggregateError [ETIMEDOUT]: 
-    at D:\Eazzio-Books\backend-books\node_modules\pg-pool\index.js:45:11
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async login (D:\Eazzio-Books\backend-books\src\controllers\authController.js:77:20)
-AggregateError [ETIMEDOUT]: 
-    at D:\Eazzio-Books\backend-books\node_modules\pg-pool\index.js:45:11
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async login (D:\Eazzio-Books\backend-books\src\controllers\authController.js:77:20)
