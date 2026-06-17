@@ -32,7 +32,10 @@ function RecurringInvoiceDetail() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleStatusChange = async (action) => {
     try {

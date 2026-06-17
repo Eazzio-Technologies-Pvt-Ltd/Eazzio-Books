@@ -20,7 +20,6 @@ function Topbar() {
   const currentSearch = searchParams.get("search") || "";
   
   const [globalResults, setGlobalResults] = useState(null);
-  const [isSearching, setIsSearching] = useState(false);
   const searchTimeout = useRef(null);
   const searchRef = useRef(null);
 
@@ -50,7 +49,6 @@ function Topbar() {
       return;
     }
     
-    setIsSearching(true);
     searchTimeout.current = setTimeout(async () => {
       try {
         const res = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(val)}`, { credentials: 'include' });
@@ -60,8 +58,6 @@ function Topbar() {
         }
       } catch(e) {
         console.error(e);
-      } finally {
-        setIsSearching(false);
       }
     }, 300);
   };

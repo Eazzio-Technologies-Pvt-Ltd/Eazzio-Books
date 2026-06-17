@@ -6,8 +6,6 @@ import toast from "react-hot-toast";
 
 function Expenses() {
   const [expenses, setExpenses] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
@@ -22,19 +20,7 @@ function Expenses() {
 
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
 
-  useEffect(() => {
-    const fetchVendorsAndProjects = async () => {
-      try {
-        const [venRes, projRes] = await Promise.all([
-          apiRequest("/vendors"),
-          apiRequest("/projects")
-        ]);
-        setVendors(venRes?.vendors || []);
-        setProjects(projRes?.projects || []);
-      } catch (err) { /* ignore */ }
-    };
-    fetchVendorsAndProjects();
-  }, []);
+
 
 
   const handleDelete = async (id) => {
@@ -89,9 +75,7 @@ function Expenses() {
 
 const thStyle = { padding: "10px", borderBottom: "2px solid #cbd5e1", whiteSpace: "nowrap" };
 const tdStyle = { padding: "10px" };
-const inputStyle = { padding: "8px", borderRadius: "5px", border: "1px solid #ccc" };
 const primaryBtn = { padding: "10px 20px", background: "#4a90e2", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "500" };
-const cancelBtnStyle = { padding: "10px 20px", background: "#ccc", color: "#333", border: "none", borderRadius: "5px", cursor: "pointer" };
 const deleteBtnStyle = { padding: "5px 10px", background: "red", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer" };
 
 export default Expenses;
