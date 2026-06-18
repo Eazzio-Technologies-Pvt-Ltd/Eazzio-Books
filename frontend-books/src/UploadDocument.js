@@ -42,7 +42,8 @@ function UploadDocument() {
       if (formData.related_record_id) uploadData.append('related_record_id', formData.related_record_id);
       uploadData.append('notes', formData.notes);
 
-      const res = await fetch('http://localhost:5000/api/documents', {
+      const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+      const res = await fetch(`${BASE_URL}/documents`, {
         method: 'POST',
         credentials: 'include',
         body: uploadData
