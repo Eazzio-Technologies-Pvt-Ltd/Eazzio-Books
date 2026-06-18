@@ -5,7 +5,7 @@ require('dotenv').config();
 // This bypasses the Windows IPv6 blackhole bug causing the connection timeouts.
 const dns = require('dns');
 const originalLookup = dns.lookup;
-dns.lookup = function(domain, options, callback) {
+dns.lookup = function (domain, options, callback) {
   if (typeof options === 'function') {
     callback = options;
     options = { family: 4 };
@@ -32,7 +32,7 @@ const authRoutes = require('./routes/authRoutes');
 const dataRoutes = require('./routes/dataRoutes');
 const tasksRoutes = require('./routes/tasks');                    // ← ADD
 const authMiddleware = require('./middleware/authMiddleware');     // ← ADD
-const itemRoutes = require("./routes/itemRoutes");  
+const itemRoutes = require("./routes/itemRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const usersRoutes = require("./routes/usersRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
@@ -65,11 +65,13 @@ const { initCronJobs } = require("./utils/cronJobs");
 
 // ✅ INIT APP
 const app = express();
+app.set('trust proxy', 1);
 
 // ✅ MIDDLEWARE
 app.use(cors({
   origin: [
     "http://localhost:3000",
+    "https://books.eazzio.com",
     process.env.FRONTEND_URL // Allow dynamic production frontend URL
   ].filter(Boolean),
   credentials: true
@@ -98,10 +100,10 @@ app.use('/api', authRoutes);
 app.use('/api', dataRoutes);
 app.use('/api', contactRoutes);
 app.use('/api', commentRoutes);
-app.use('/api/tasks', authMiddleware, tasksRoutes); 
-app.use("/api", itemRoutes);   
-app.use("/api", customerRoutes);     
-app.use("/api", usersRoutes);                 
+app.use('/api/tasks', authMiddleware, tasksRoutes);
+app.use("/api", itemRoutes);
+app.use("/api", customerRoutes);
+app.use("/api", usersRoutes);
 app.use("/api", invoiceRoutes);
 app.use("/api", activityRoutes);
 app.use("/api", quoteRoutes);
