@@ -18,7 +18,8 @@ function OrganizationSettings() {
     phone: "",
     organization_email: "",
     financial_year_start: "April",
-    default_currency: "INR"
+    default_currency: "INR",
+    logo_url: ""
   });
 
   useEffect(() => {
@@ -36,6 +37,21 @@ function OrganizationSettings() {
       toast.error("Failed to load organization settings");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 1048576) { // 1MB limit
+        toast.error("Logo file size must be less than 1MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettings({ ...settings, logo_url: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -68,6 +84,26 @@ function OrganizationSettings() {
         <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           
           <h4 style={{ margin: "0 0 10px 0", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>General Information</h4>
+          
+          <div style={{ marginBottom: "20px" }}>
+            <label style={labelStyle}>Organization Logo</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "15px", marginTop: "10px" }}>
+              {settings.logo_url ? (
+                <img src={settings.logo_url} alt="Logo Preview" style={{ width: "100px", height: "100px", objectFit: "contain", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc" }} />
+              ) : (
+                <div style={{ width: "100px", height: "100px", background: "#f1f5f9", border: "1px dashed #cbd5e1", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "12px" }}>
+                  No Logo
+                </div>
+              )}
+              <div>
+                <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: "none" }} id="logo-upload" />
+                <label htmlFor="logo-upload" style={{ cursor: "pointer", background: "#f1f5f9", padding: "8px 16px", borderRadius: "6px", fontSize: "14px", border: "1px solid #cbd5e1", display: "inline-block" }}>
+                  Upload Image
+                </label>
+                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "8px" }}>Preferred Size: 240px x 240px @ 72 DPI. Maximum size of 1MB.</div>
+              </div>
+            </div>
+          </div>
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div>

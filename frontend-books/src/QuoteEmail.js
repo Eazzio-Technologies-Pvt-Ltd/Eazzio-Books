@@ -7,8 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiRequest } from "./api";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Tinplate Computer Training Center";
-const ORG_EMAIL = process.env.FROM_EMAIL;
+// Org info fetched dynamically
 
 function QuoteEmail() {
   const { id } = useParams();
@@ -22,7 +21,9 @@ function QuoteEmail() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  // 1) Fetch quote and customer
+  const [orgInfo, setOrgInfo] = useState({ name: "", email: "" });
+
+  // 1) Fetch quote and customer and org info
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -44,6 +45,14 @@ function QuoteEmail() {
             setCustomer(null);
           }
         }
+
+        const orgRes = await apiRequest("/organization-settings");
+        if (orgRes?.settings) {
+          setOrgInfo({
+            name: orgRes.settings.organization_name || "",
+            email: orgRes.settings.organization_email || ""
+          });
+        }
       } catch (err) {
         toast.error("Failed to load quote data");
         navigate("/quotes");
@@ -61,15 +70,15 @@ function QuoteEmail() {
       setSubject(`Quote ${quote.quote_number} - awaiting your approval`);
       setBody(
         `Dear ${customerName},\n\n` +
-        `Thank you for considering ${ORG_NAME}. We have prepared a quote for you.\n\n` +
+        `Thank you for considering ${orgInfo.name}. We have prepared a quote for you.\n\n` +
         `Quote Number: ${quote.quote_number}\n` +
         `Date: ${new Date(quote.quote_date).toLocaleDateString()}\n` +
         `Total: ₹${parseFloat(quote.total_amount).toFixed(2)}\n\n` +
         `Please review the attached quote and let us know if you have any questions.\n\n` +
-        `Best regards,\n${ORG_NAME}`
+        `Best regards,\n${orgInfo.name}`
       );
     }
-  }, [quote, customer]);   // ✅ now both dependencies are listed
+  }, [quote, customer, orgInfo]);   // ✅ now both dependencies are listed
 
   const handleSend = async () => {
     if (!to) {
@@ -165,7 +174,7 @@ function QuoteEmail() {
 
       <div style={{ margin: "25px 0", color: "#555" }}>
         <p style={{ margin: 0 }}>Regards,</p>
-        <p style={{ margin: "2px 0", fontWeight: "500" }}>{ORG_EMAIL}</p>
+        <p style={{ margin: "2px 0", fontWeight: "500" }}>{orgInfo.email}</p>
       </div>
 
       <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>

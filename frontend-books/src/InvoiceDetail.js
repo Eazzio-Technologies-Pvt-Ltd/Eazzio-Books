@@ -7,10 +7,7 @@ import { apiRequest } from "./api";
 import { DetailSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Thesis International College";
-const ORG_ADDRESS = "Jharkhand, India";
-const ORG_PHONE = "91-9065329152";
-const ORG_EMAIL = "pritishakumari555@gmail.com";
+// Organization info is fetched dynamically
 
 const STATUS_COLORS = {
   draft:          { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
@@ -31,6 +28,7 @@ function InvoiceDetail() {
   const [items, setItems] = useState([]);
   const [customer, setCustomer] = useState(null);
   const [fetching, setFetching] = useState(true);
+  const [orgInfo, setOrgInfo] = useState({ name: "", address: "", email: "", phone: "", country: "", logo: "" });
 
   // Master list state
   const [invoicesList, setInvoicesList] = useState([]);
@@ -97,6 +95,18 @@ function InvoiceDetail() {
           const custRes = await apiRequest(`/customers/${res.invoice.customer_id}`);
           if (custRes?.customer) setCustomer(custRes.customer);
         }
+
+        const orgRes = await apiRequest("/organization-settings");
+        if (orgRes?.settings) {
+          setOrgInfo({
+            name: orgRes.settings.organization_name || "",
+            address: orgRes.settings.address || "",
+            email: orgRes.settings.organization_email || "",
+            phone: orgRes.settings.organization_phone || "",
+            country: orgRes.settings.country || "",
+            logo: orgRes.settings.logo_url || ""
+          });
+        }
       } catch (err) {
         toast.error("Failed to load Invoice details");
       } finally {
@@ -141,9 +151,9 @@ function InvoiceDetail() {
 
   const openEmailModal = () => {
     setEmailTo(customer?.email || "");
-    setEmailSubject(`Invoice ${invoice.invoice_number || ""} from ${ORG_NAME}`);
+    setEmailSubject(`Invoice ${invoice.invoice_number || ""} from ${orgInfo.name}`);
     setEmailBody(
-      `Dear ${customer?.display_name || "Customer"},\n\nPlease find your invoice attached.\n\nInvoice Number: ${invoice.invoice_number}\nTotal: ₹${parseFloat(invoice.total_amount).toFixed(2)}\n\nThank you for your business.\n\nRegards,\n${ORG_NAME}`
+      `Dear ${customer?.display_name || "Customer"},\n\nPlease find your invoice attached.\n\nInvoice Number: ${invoice.invoice_number}\nTotal: ₹${parseFloat(invoice.total_amount).toFixed(2)}\n\nThank you for your business.\n\nRegards,\n${orgInfo.name}`
     );
     setShowEmailModal(true);
   };
@@ -487,10 +497,11 @@ function InvoiceDetail() {
                 {/* Document Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
                   <div style={{ fontSize: "12px", lineHeight: "1.5", color: "#344054" }}>
-                    <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#1d2939", fontWeight: "700" }}>{ORG_NAME}</h3>
-                    <div>{ORG_ADDRESS}</div>
-                    <div>{ORG_PHONE}</div>
-                    <div>{ORG_EMAIL}</div>
+                    {orgInfo.logo && <img src={orgInfo.logo} alt="Logo" style={{ maxHeight: "60px", marginBottom: "10px", objectFit: "contain" }} />}
+                    <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#1d2939", fontWeight: "700" }}>{orgInfo.name}</h3>
+                    <div style={{ whiteSpace: "pre-wrap" }}>{orgInfo.address}</div>
+                    {orgInfo.phone && <div>{orgInfo.phone}</div>}
+                    <div>{orgInfo.email}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontSize: "28px", fontWeight: "400", color: "#475569", letterSpacing: "1px", textTransform: "uppercase", marginTop: "16px" }}>

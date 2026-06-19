@@ -8,7 +8,7 @@ import { apiRequest } from "./api";
 import { TableSkeleton, DetailSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Tinplate Computer Training Center";
+import { useAuth } from "./AuthContext";
 
 const STATUS_COLORS = {
   Draft:     { bg: "#e2e3e5", color: "#383d41" },
@@ -19,6 +19,7 @@ const STATUS_COLORS = {
 function DeliveryChallans() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const [challans, setChallans] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -129,8 +130,9 @@ function DeliveryChallans() {
 
   const openEmailModal = (dc) => {
     const cust = getCustomerById(dc.customer_id);
-    setEmailSubject(`Delivery Challan ${dc.delivery_challan_number} from ${ORG_NAME}`);
-    setEmailBody(`Dear ${cust.display_name || cust.company_name || "Customer"},\n\nPlease find the attached Delivery Challan for your recent order.\n\nChallan Number: ${dc.delivery_challan_number}\n\nThank you.\n\nRegards,\n${ORG_NAME}`);
+    const orgName = user?.organization_name || "My Organization";
+    setEmailSubject(`Delivery Challan ${dc.delivery_challan_number} from ${orgName}`);
+    setEmailBody(`Dear ${cust.display_name || cust.company_name || "Customer"},\n\nPlease find the attached Delivery Challan for your recent order.\n\nChallan Number: ${dc.delivery_challan_number}\n\nThank you.\n\nRegards,\n${orgName}`);
     setShowEmailModal(true);
   };
 
