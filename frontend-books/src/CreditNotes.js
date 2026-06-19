@@ -7,9 +7,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { apiRequest } from "./api";
 import { TableSkeleton, DetailSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
-
-const ORG_NAME = "Tinplate Computer Training Center";
-
+import { useAuth } from "./AuthContext";
 const STATUS_COLORS = {
   Draft:     { bg: "#e2e3e5", color: "#383d41" },
   Open:      { bg: "#cce5ff", color: "#004085" },
@@ -20,6 +18,7 @@ const STATUS_COLORS = {
 function CreditNotes() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const [creditNotes, setCreditNotes] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -111,8 +110,9 @@ function CreditNotes() {
 
   const openEmailModal = (cn) => {
     const cust = getCustomerById(cn.customer_id);
-    setEmailSubject(`Credit Note ${cn.credit_note_number} from ${ORG_NAME}`);
-    setEmailBody(`Dear ${cust.display_name || cust.company_name || "Customer"},\n\nPlease find the attached Credit Note for your account.\n\nCredit Note Number: ${cn.credit_note_number}\nAmount: ₹${parseFloat(cn.total).toFixed(2)}\n\nThank you.\n\nRegards,\n${ORG_NAME}`);
+    const orgName = user?.organization_name || "My Organization";
+    setEmailSubject(`Credit Note ${cn.credit_note_number} from ${orgName}`);
+    setEmailBody(`Dear ${cust.display_name || cust.company_name || "Customer"},\n\nPlease find the attached Credit Note for your account.\n\nCredit Note Number: ${cn.credit_note_number}\nAmount: ₹${parseFloat(cn.total).toFixed(2)}\n\nThank you.\n\nRegards,\n${orgName}`);
     setShowEmailModal(true);
   };
 

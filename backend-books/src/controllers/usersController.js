@@ -17,7 +17,8 @@ const ensureUserColumns = async () => {
       "financial_year_start VARCHAR(20) DEFAULT 'April'",
       "default_currency VARCHAR(10) DEFAULT 'INR'",
       "role VARCHAR(50) DEFAULT 'admin'",
-      "status VARCHAR(30) DEFAULT 'active'"
+      "status VARCHAR(30) DEFAULT 'active'",
+      "logo_url TEXT"
     ];
     for (const col of columns) {
       const colName = col.split(' ')[0];
@@ -53,10 +54,10 @@ const getUsers = async (req, res) => {
 const getOrganizationSettings = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency FROM users WHERE id = $1",
-      [req.user.id]
+      "SELECT name AS organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url FROM organizations WHERE id = $1",
+      [req.tenantId]
     );
-    if (result.rows.length === 0) return res.status(404).json({ message: "User not found" });
+    if (result.rows.length === 0) return res.status(404).json({ message: "Organization not found" });
     res.json({ settings: result.rows[0] });
   } catch (err) {
     console.error("GET ORG SETTINGS ERROR:", err);
@@ -65,14 +66,14 @@ const getOrganizationSettings = async (req, res) => {
 };
 
 const updateOrganizationSettings = async (req, res) => {
-  const { organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency } = req.body;
+  const { organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url } = req.body;
   try {
     const result = await pool.query(
-      `UPDATE users SET 
-        organization_name = $1, business_type = $2, gstin = $3, pan = $4, address = $5, city = $6, 
-        state = $7, country = $8, phone = $9, organization_email = $10, financial_year_start = $11, default_currency = $12
-       WHERE id = $13 RETURNING organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency`,
-      [organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, req.user.id]
+      `UPDATE organizations SET 
+        name = $1, business_type = $2, gstin = $3, pan = $4, address = $5, city = $6, 
+        state = $7, country = $8, phone = $9, organization_email = $10, financial_year_start = $11, default_currency = $12, logo_url = $13
+       WHERE id = $14 RETURNING name AS organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url`,
+      [organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url, req.tenantId]
     );
     res.json({ message: "Settings updated", settings: result.rows[0] });
   } catch (err) {

@@ -3,131 +3,70 @@ import { useNavigate } from "react-router-dom";
 import RuppLogo from "./RuppLogo";
 import "./LandingPage.css";
 
-const advancedPlans = [
+const pricingPlans = [
   {
-    name: "STANDARD",
+    id: "free",
+    name: "FREE PLAN",
+    price: "0",
+    description: "Basic features to get started",
+    button: "Get started for free",
+    featuresTitle: "Includes:",
+    features: [
+      { text: "Basic invoice" },
+      { text: "Tracking payments" },
+      { text: "1 user access" }
+    ],
+    support: "Community Support",
+    users: "1 User"
+  },
+  {
+    id: "premium",
+    name: "STANDARD PREMIUM",
     price: "749",
-    originalPrice: "899",
-    description: "Efficiently organize your transactions, accounts, reports, and books",
-    button: "Start my free trial",
-    featuresTitle: "Everything in Free +",
+    isPaid: true,
+    description: "Advanced features for growing businesses",
+    button: "Start 14 Days Trial",
+    featuresTitle: "Includes:",
     features: [
-      { text: "Manage e-invoices and payments" },
-      { text: "Progress invoicing", isNew: true },
-      { text: "Track expenses and bills" },
-      { text: "Receipt autoscans", isNew: true },
-      { text: "Automate payment reminders" },
-      { text: "Enable self-service customer portal" },
-      { text: "Track inventory" },
-      { text: "Track sales and purchase orders" },
-      { text: "Enable transaction period locking" },
-      { text: "Banking & reconciliation" },
-      { text: "Invoice Management System", isNew: true },
-      { text: "GST reports and filing" },
-      { text: "P&L, Balance Sheet & 50+ Reports" }
+      { text: "Automated payment reminders" },
+      { text: "Complete inventory" },
+      { text: "GST tracking reporting" }
     ],
-    support: "Email Support",
-    users: "3 Users"
+    support: "Priority Support",
+    users: "Unlimited Users"
   },
   {
+    id: "professional",
     name: "PROFESSIONAL",
-    price: "1,499",
-    originalPrice: "1,799",
-    description: "Confidently take on projects, track your inventory, and handle purchases",
-    button: "Start my free trial",
-    featuresTitle: "Everything In Standard +",
+    price: "1499",
+    isPaid: true,
+    description: "Comprehensive features for established businesses",
+    button: "Start 14 Days Trial",
+    featuresTitle: "Includes everything in Standard, plus:",
     features: [
-      { text: "Bill timesheets" },
-      { text: "Project profitability" },
-      { text: "Manage retainers" },
-      { text: "Create price lists" },
-      { text: "Setup sales and purchase approvals" },
-      { text: "Record multi-currency transactions" },
-      { text: "Customize business workflows" },
-      { text: "Collaborate with users (chat, voice, video and screen sharing)" },
-      { text: "Create custom user roles" }
+      { text: "Advanced workflow automation" },
+      { text: "Multi-currency support" },
+      { text: "Custom roles & permissions" }
     ],
-    support: "Email and voice Support",
-    users: "5 Users"
+    support: "24/7 Priority Support",
+    users: "Unlimited Users"
   },
   {
-    name: "PREMIUM",
-    price: "2,999",
-    originalPrice: "3,599",
-    description: "Enhanced customization and automation to streamline business processes",
-    button: "Start my free trial",
-    featuresTitle: "Everything in Professional +",
+    id: "enterprise",
+    name: "ENTERPRISE",
+    price: "1999",
+    isPaid: true,
+    description: "Ultimate power and control for large organizations",
+    button: "Start 14 Days Trial",
+    featuresTitle: "Includes everything in Professional, plus:",
     features: [
-      { text: "Fixed asset management", isNew: true },
-      { text: "Manage payroll" },
-      { text: "Profit Margin", isNew: true },
-      { text: "Prepare and review budgets" },
-      { text: "Cashflow forecasting" },
-      { text: "Enable self-service vendor portal" },
-      { text: "Set up custom domain" },
-      { text: "Create business-specific custom modules" },
-      { text: "Add custom button" },
-      { text: "Create custom field validation rules" },
-      { text: "Embed contextual web pages/apps" },
-      { text: "Manage custom functions" }
+      { text: "Dedicated account manager" },
+      { text: "Custom integrations & API" },
+      { text: "Advanced analytics & reporting" }
     ],
-    support: "Email, Voice, and Chat Support",
-    users: "10 Users"
-  },
-  {
-    name: "ELITE",
-    price: "4,999",
-    originalPrice: "5,999",
-    description: "Advanced accounting bundled with full-fledged inventory management",
-    button: "Start my free trial",
-    featuresTitle: "Everything in Premium +",
-    features: [
-      { text: "Dashboard customization" },
-      { text: "Advanced Inventory Control", isHeader: true },
-      { text: "Manage warehouses" },
-      { text: "Composite items" },
-      { text: "Track serial numbers" },
-      { text: "Batch tracking" },
-      { text: "Print shipping label" },
-      { text: "Track shipments" },
-      { text: "Connect online sales channels (Etsy, Amazon)" },
-      { text: "Integrate Shopify stores (Up to 2)" },
-      { text: "Track bin locations" }
-    ],
-    support: "Email, Voice, and Chat Support",
-    users: "15 Users"
+    support: "Dedicated Support",
+    users: "Unlimited Users"
   }
-];
-
-const freeFeaturesLeft = [
-  { text: "Create invoices, quotes, bills, expenses & journals" },
-  { text: "Receipt autoscans", isNew: true },
-  { text: "Accept online payments" },
-  { text: "Automate payment reminders" },
-  { text: "Enable self-service customer portal" },
-  { text: "Manage credits and refunds" },
-  { text: "Bank reconciliation" }
-];
-
-const freeFeaturesRight = [
-  { text: "Track sales and purchase orders" },
-  { text: "Track inventory" },
-  { text: "GST reports and filing" },
-  { text: "P&L, Balance Sheet & 50+ Reports" },
-  { text: "Invoice Management System", isNew: true },
-  { text: "1 User + 1 Accountant" },
-  { text: "Email Support" }
-];
-
-const addOns = [
-  { title: "Users", price: "150", unit: "/user/month", billed: "Billed annually", icon: "👤", desc: "" },
-  { title: "Employees", price: "60", unit: "/employee/month", billed: "Billed annually", icon: "👥", desc: "(From Premium Plan)" },
-  { title: "Locations", price: "600", unit: "/location/month", billed: "Billed annually", icon: "📍", desc: "(includes 1 GSTIN + 10K Invoices)" },
-  { title: "Document autoscans", price: "419", unit: "/50 scans/month", billed: "Billed annually", icon: "📄", desc: "" },
-  { title: "SMS", price: "75", unit: "/credit", billed: "*You must buy a minimum of 5 credits.", icon: "💬", desc: "" },
-  { title: "Orders and Shipping Labels", price: "360", unit: "/month", billed: "Billed annually", icon: "📦", desc: "(50 orders + 50 shipping labels)" },
-  { title: "Expense claim", price: "149", unit: "/user/month", billed: "Billed annually", icon: "🧾", desc: "" },
-  { title: "BillPay", price: "2999", unit: "/month", billed: "Billed annually", icon: "💳", desc: "" }
 ];
 
 const LandingPage = () => {
@@ -149,217 +88,10 @@ const LandingPage = () => {
           <RuppLogo height={40} />
         </div>
         <div className="nav-links">
-          <div className="nav-item has-dropdown">
-            <a href="#features" className="nav-link">Features <span className="chevron">⌃</span></a>
-            <div className="landing-mega-menu features-menu">
-              <div className="mega-menu-content">
-                <div className="mega-menu-left features-left">
-                  <div className="features-grid">
-                    <div className="mega-column">
-                      <h4>Core Features</h4>
-                      <ul>
-                        <li><span className="m-icon">📄</span> Quotes</li>
-                        <li><span className="m-icon">📝</span> Invoicing</li>
-                        <li><span className="m-icon">🛒</span> Sales orders</li>
-                        <li><span className="m-icon">🧾</span> Bills</li>
-                        <li><span className="m-icon">🛍️</span> Purchase orders</li>
-                        <li><span className="m-icon">⏳</span> Projects</li>
-                        <li><span className="m-icon">🏦</span> Banking</li>
-                        <li><span className="m-icon">📦</span> Inventory</li>
-                        <li><span className="m-icon">💳</span> Expenses</li>
-                        <li><span className="m-icon">📁</span> Documents</li>
-                        <li><span className="m-icon">📊</span> Reporting</li>
-                        <li><span className="m-icon">💸</span> Online Payments</li>
-                      </ul>
-                    </div>
-                    <div className="mega-column">
-                      <h4>Compliance</h4>
-                      <ul>
-                        <li><span className="m-icon">🏛️</span> GST Filing</li>
-                        <li><span className="m-icon">🧾</span> E-Invoicing</li>
-                        <li><span className="m-icon">🔍</span> Audit Trail</li>
-                        <li><span className="m-icon">📂</span> Document management</li>
-                      </ul>
-                      <h4 className="mt-4">Effortless Accounting</h4>
-                      <ul>
-                        <li><span className="m-icon">📱</span> Mobile accounting</li>
-                        <li><span className="m-icon">🔗</span> RUP Ecosystem</li>
-                        <li><span className="m-icon">🤝</span> Collaboration & Portal</li>
-                        <li><span className="m-icon">⚡</span> Smart automations</li>
-                      </ul>
-                    </div>
-                  </div>
-                  <button className="see-all-btn">See all features <span>→</span></button>
-                </div>
-                <div className="mega-menu-right">
-                  <div className="mega-promo-card">
-                    <div className="promo-image">
-                      <div className="promo-mockup"></div>
-                    </div>
-                    <h4>Accounting Across Devices</h4>
-                    <p>Do your accounting from our mobile or desktop app. Take control of your finances anywhere, anytime!</p>
-                    <div className="app-badges">
-                      <div className="badge ms">Windows</div>
-                      <div className="badge apple">Apple</div>
-                      <div className="badge play">Android</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <a href="#features" className="nav-link">Features</a>
           <a href="#pricing" className="nav-link">Pricing</a>
-          <div className="nav-item has-dropdown">
-            <a href="#solutions" className="nav-link">Solutions <span className="chevron">⌃</span></a>
-            <div className="landing-mega-menu solutions-menu">
-              <div className="mega-menu-content">
-                <div className="mega-menu-left solutions-left">
-                  <div className="solutions-grid">
-                    <div className="solutions-col">
-                      <h4>By Size</h4>
-                      <div className="solution-item">
-                        <span className="s-icon">🏢</span>
-                        <div className="s-text">
-                          <h5>Startups</h5>
-                          <p>Smart and agile accounting solution to support success</p>
-                        </div>
-                      </div>
-                      <div className="solution-item">
-                        <span className="s-icon">🏬</span>
-                        <div className="s-text">
-                          <h5>Small Businesses</h5>
-                          <p>Stay on top of cash flow and tax compliance</p>
-                        </div>
-                      </div>
-                      <div className="solution-item">
-                        <span className="s-icon">🏙️</span>
-                        <div className="s-text">
-                          <h5>Medium Sized</h5>
-                          <p>Accounting with advanced automation and analytics</p>
-                        </div>
-                      </div>
-                      <div className="solution-item">
-                        <span className="s-icon">🤝</span>
-                        <div className="s-text">
-                          <h5>Non Profit</h5>
-                          <p>Categorically manage funds and donations</p>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="solutions-col">
-                      <h4>By Role</h4>
-                      <div className="solution-item">
-                        <span className="s-icon">💼</span>
-                        <div className="s-text">
-                          <h5>Business Owner</h5>
-                          <p>Organize your business, clients, and finances in one place</p>
-                        </div>
-                      </div>
-                      <div className="solution-item">
-                        <span className="s-icon">📊</span>
-                        <div className="s-text">
-                          <h5>Accounting Firms</h5>
-                          <p>Benefit from helping business manage their finances</p>
-                        </div>
-                      </div>
-                      <div className="solution-item">
-                        <span className="s-icon">🎓</span>
-                        <div className="s-text">
-                          <h5>Students</h5>
-                          <p>Learn modern cloud accounting with RUP Books Student Edition</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="solutions-bottom-row">
-                    <h4>By Device</h4>
-                    <div className="solutions-grid">
-                      <div className="solution-item">
-                        <span className="s-icon">📱</span>
-                        <div className="s-text">
-                          <h5>Mobile</h5>
-                          <p>Take your accounting wherever you go</p>
-                        </div>
-                      </div>
-                      <div className="solution-item">
-                        <span className="s-icon">💻</span>
-                        <div className="s-text">
-                          <h5>Windows</h5>
-                          <p>Experience cloud accounting from your familiar desktop device</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mega-menu-right practice-promo">
-                  <div className="practice-image"></div>
-                  <div className="practice-logo">
-                    <span className="p-icon">⚗️</span> RUP Practice
-                  </div>
-                  <h4>Introducing RUP Practice</h4>
-                  <p>The ultimate practice management software for modern accounting and bookkeeping firms.</p>
-                  <a href="#learn-more" className="learn-more-link">Learn More <span>&gt;</span></a>
-                </div>
-              </div>
-            </div>
-          </div>
-          <a href="#customers" className="nav-link">Customers</a>
-          <a href="#partner" className="nav-link">Partner with us</a>
-          <div className="nav-item has-dropdown">
-            <a href="#resources" className="nav-link">Resources <span className="chevron">⌃</span></a>
-            <div className="landing-mega-menu resources-menu">
-              <div className="mega-menu-content">
-                <div className="mega-menu-left resources-left">
-                  <h4>Help and Support</h4>
-                  <div className="resources-grid">
-                    <ul className="resources-col">
-                      <li><span className="m-icon">❓</span> Help Document</li>
-                      <li><span className="m-icon">💬</span> FAQ</li>
-                      <li><span className="m-icon">🧩</span> Extensions</li>
-                      <li><span className="m-icon">▶️</span> Product Videos</li>
-                      <li><span className="m-icon">📄</span> Migration Doc</li>
-                      <li><span className="m-icon">👩💻</span> API Documentation</li>
-                      <li><span className="m-icon">👥</span> Forum</li>
-                      <li><span className="m-icon">📝</span> Product Blogs</li>
-                      <li><span className="m-icon">✨</span> What's new</li>
-                      <li><span className="m-icon">📅</span> Upcoming Webinar</li>
-                      <li><span className="m-icon">🎧</span> Request a demo</li>
-                    </ul>
-                    <ul className="resources-col">
-                      <li><span className="m-icon">📞</span> Contact us</li>
-                      <li><span className="m-icon">🏅</span> Training and Certification</li>
-                      <li><span className="m-icon">🤝</span> Partners / Accountant</li>
-                      <li><span className="m-icon">📱</span> Mobile Apps</li>
-                      <li><span className="m-icon">💻</span> Desktop App</li>
-                    </ul>
-                  </div>
-                  <button className="see-all-btn">See all Resources <span>→</span></button>
-                </div>
-
-                <div className="mega-menu-right resources-right">
-                  <div className="r-section">
-                    <div className="r-subtitle">BOOKS ACADEMY</div>
-                    <div className="academy-banner">
-                      <span className="academy-text">ACADEMY</span>
-                      <span className="academy-subtext">BY RUP BOOKS</span>
-                    </div>
-                    <a href="#explore" className="learn-more-link">Explore now <span>&gt;</span></a>
-                  </div>
-
-                  <div className="r-section mt-4">
-                    <div className="r-subtitle">FEATURED ARTICLE</div>
-                    <div className="featured-article-image"></div>
-                    <h5 className="article-title">Latest GST reforms</h5>
-                    <p className="article-desc">Check out the updated GST rates for Goods and services.</p>
-                    <a href="#learn-more" className="learn-more-link">Learn More <span>&gt;</span></a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <a href="#resources" className="nav-link">Resources</a>
         </div>
         <div className="nav-actions">
           <button className="nav-signin" onClick={() => navigate("/login")}>Sign In</button>
@@ -420,94 +152,79 @@ const LandingPage = () => {
         </div>
 
         {/* Hero Image / Dashboard Mockup */}
-        <div className={`hero-dashboard-mockup ${isVisible ? "zoom-in-up" : ""}`}>
-          <div className="mockup-header-dark">
-            <div className="mockup-brand">
-              <span className="mockup-brand-icon">📚</span>
-              <span>Books</span>
+        <div className={`hero-dashboard-mockup ${isVisible ? "zoom-in-up" : ""}`} style={{ background: "#f8fafc", padding: "24px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 20px 40px rgba(0,0,0,0.1)", textAlign: "left", maxWidth: "1000px", margin: "0 auto" }}>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+            <div>
+              <h3 style={{ margin: "0 0 5px 0", fontSize: "20px", color: "#1e293b", fontWeight: "600" }}>Welcome back, Eazzio</h3>
+              <p style={{ margin: 0, fontSize: "14px", color: "#64748b" }}>Here is your financial overview.</p>
             </div>
-            <div className="mockup-search-dark">
-              <span className="search-icon">🔍</span> Search
-            </div>
-            <div className="mockup-actions">
-              <span className="action-icon">+</span>
-              <span className="action-icon">🔔</span>
-              <div className="mockup-avatar"></div>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#0ba5ec", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "14px" }}>EA</div>
             </div>
           </div>
-          <div className="mockup-body">
-            <div className="mockup-sidebar">
-              <div className="mock-menu-item active"><span className="icon">🏠</span> Home</div>
-              <div className="mock-menu-item"><span className="icon">📦</span> Items</div>
-              <div className="mock-menu-item"><span className="icon">🏦</span> Banking</div>
-              <div className="mock-menu-item"><span className="icon">💼</span> Sales</div>
-              <div className="mock-submenu">
-                <div className="mock-submenu-item">Customers</div>
-                <div className="mock-submenu-item">Estimates</div>
-                <div className="mock-submenu-item">Retainer Invoices</div>
-                <div className="mock-submenu-item">Sales Orders</div>
-                <div className="mock-submenu-item">Invoices</div>
-                <div className="mock-submenu-item">Credit Notes</div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
+            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#f0fdf4", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>₹</div>
+                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Receivables</div>
               </div>
-              <div className="mock-menu-item"><span className="icon">🛒</span> Purchases</div>
-              <div className="mock-menu-item"><span className="icon">⏱</span> Time Tracking</div>
-              <div className="mock-menu-item"><span className="icon">👨💼</span> Accountant</div>
-              <div className="mock-menu-item"><span className="icon">📊</span> Reports</div>
-              <div className="mock-menu-item"><span className="icon">📄</span> Documents</div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹1,24,500.00</div>
+              <div style={{ fontSize: "12px", color: "#d92d20", fontWeight: "500" }}>Unpaid Invoices</div>
             </div>
-            <div className="mockup-main">
-              <div className="mockup-stats">
-                <div className="stat-card">
-                  <div className="stat-title">TOTAL RECEIVABLES</div>
-                  <div className="stat-subtitle">Total Unpaid Invoices ₹3,84,500.00</div>
-                  <div className="stat-bar-container"><div className="stat-bar blue-yellow"></div></div>
-                  <div className="stat-values">
-                    <div><span className="label blue">Current</span><strong>₹3,42,250.00</strong></div>
-                    <div><span className="label yellow">Overdue</span><strong>₹42,250.00</strong></div>
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-title">TOTAL PAYABLES</div>
-                  <div className="stat-subtitle">Total Unpaid Bills ₹22,54,500.00</div>
-                  <div className="stat-bar-container"><div className="stat-bar blue-yellow"></div></div>
-                  <div className="stat-values">
-                    <div><span className="label blue">Current</span><strong>₹2,42,250.00</strong></div>
-                    <div><span className="label yellow">Overdue</span><strong>₹12,250.00</strong></div>
-                  </div>
-                </div>
+            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#fef2f2", color: "#b91c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>💳</div>
+                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Payables</div>
               </div>
-              <div className="mockup-chart-card">
-                <div className="stat-title">CASH FLOW</div>
-                <div className="chart-layout">
-                  <div className="chart-graph">
-                    {/* SVG path to mock a line graph */}
-                    <svg viewBox="0 0 400 150" className="chart-svg">
-                      <path d="M0,120 L50,120 L80,70 L150,70 L220,40 L300,20 L400,10" fill="none" stroke="#2563eb" strokeWidth="2" />
-                      <path d="M0,120 L50,120 L80,70 L150,70 L220,40 L300,20 L400,10 L400,150 L0,150 Z" fill="rgba(37,99,235,0.1)" />
-                    </svg>
-                  </div>
-                  <div className="chart-legend">
-                    <div className="legend-item">
-                      <span className="label">Cash as on 01-04-23</span>
-                      <strong>₹42,250.11</strong>
-                    </div>
-                    <div className="legend-item">
-                      <span className="label">Incoming</span>
-                      <strong>₹11,153,838.29 <span className="green">+</span></strong>
-                    </div>
-                    <div className="legend-item">
-                      <span className="label">Outgoing</span>
-                      <strong>₹12,359,118.12 <span className="red">-</span></strong>
-                    </div>
-                    <div className="legend-item total">
-                      <span className="label">Cash as on 31-03-24</span>
-                      <strong>₹1,541,933.67 <span className="gray">=</span></strong>
-                    </div>
-                  </div>
-                </div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹45,200.00</div>
+              <div style={{ fontSize: "12px", color: "#d92d20", fontWeight: "500" }}>Unpaid Bills</div>
+            </div>
+            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#eff6ff", color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>📈</div>
+                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Income</div>
               </div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹8,50,000.00</div>
+              <div style={{ fontSize: "12px", color: "#039855", fontWeight: "500" }}>All Time</div>
+            </div>
+            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#f8fafc", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>📉</div>
+                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Expenses</div>
+              </div>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹3,20,000.00</div>
+              <div style={{ fontSize: "12px", color: "#475569", fontWeight: "500" }}>All Time</div>
             </div>
           </div>
+
+          <div style={{ background: "#fff", padding: "20px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
+             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+               <h4 style={{ margin: "0", fontSize: "15px", color: "#1d2939", fontWeight: "600" }}>Monthly Overview</h4>
+               <div style={{ padding: "4px 12px", background: "#f1f5f9", borderRadius: "4px", fontSize: "13px", color: "#475569", border: "1px solid #e2e8f0" }}>June 2026</div>
+             </div>
+             
+             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+                <div style={{ borderRight: "1px solid #f1f5f9" }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>INCOME</div>
+                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#039855" }}>₹1,50,000.00</div>
+                </div>
+                <div style={{ borderRight: "1px solid #f1f5f9" }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>EXPENSES</div>
+                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#d92d20" }}>₹45,000.00</div>
+                </div>
+                <div style={{ borderRight: "1px solid #f1f5f9" }}>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>PROFIT</div>
+                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#039855" }}>₹1,05,000.00</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>NET CASH</div>
+                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#0ba5ec" }}>₹1,05,000.00</div>
+                </div>
+             </div>
+          </div>
+
         </div>
       </section>
 
@@ -525,151 +242,56 @@ const LandingPage = () => {
             <span className="benefit-item"><span className="check-icon-white">✓</span> Reliable online support</span>
           </div>
 
-          <div className="pricing-main-tabs">
-            <button
-              className={`main-tab ${pricingTab === 'started' ? 'active' : ''}`}
-              onClick={() => setPricingTab('started')}
-            >
-              Plans to get you started
-            </button>
-            <button
-              className={`main-tab ${pricingTab === 'advanced' ? 'active' : ''}`}
-              onClick={() => setPricingTab('advanced')}
-            >
-              Plans that go beyond the basic
-            </button>
+          <div className="advanced-cards-container" style={{ justifyContent: 'center', marginTop: '40px' }}>
+            {pricingPlans.map((plan, index) => (
+              <div className="advanced-card" key={index} style={{ maxWidth: '400px' }}>
+                <div className="ac-header">
+                  <h4>{plan.name}</h4>
+                  <p className="ac-desc">{plan.description}</p>
+                  <div className="ac-price-box">
+                    <div className="ac-price">
+                      <span className="ac-currency">₹</span>
+                      <span className="ac-amount animate-up">
+                        {plan.price}
+                      </span>
+                    </div>
+                    {plan.price !== "0" && <p className="ac-billed">Price/Org/Month</p>}
+                  </div>
+                  {plan.isPaid ? (
+                    <button
+                      className="p-btn advanced-btn"
+                      onClick={() => navigate('/register', { state: { planId: 'premium', price: plan.price } })}
+                    >
+                      {plan.button}
+                    </button>
+                  ) : (
+                    <button
+                      className="p-btn advanced-btn"
+                      onClick={() => navigate('/register')}
+                    >
+                      {plan.button}
+                    </button>
+                  )}
+                </div>
+                <div className="ac-features">
+                  <div className="ac-f-title">{plan.featuresTitle}</div>
+                  <ul>
+                    {plan.features.map((f, i) => (
+                      <li key={i}>
+                        <span className="check-icon-black">✓</span>
+                        <span className="f-text">{f.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="ac-footer">
+                  <div className="ac-users">{plan.users}</div>
+                  <div className="ac-support">{plan.support}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
 
-        <div className="pricing-content-wrapper">
-          <div className="pricing-toggle-right">
-            <span className={`t-label ${!isAnnual ? 'active' : ''}`}>Monthly</span>
-            <div className={`t-switch ${isAnnual ? 'annual' : 'monthly'}`} onClick={() => setIsAnnual(!isAnnual)}>
-              <div className="t-knob"></div>
-            </div>
-            <span className={`t-label ${isAnnual ? 'active' : ''}`}>Yearly</span>
-          </div>
-
-          {pricingTab === 'started' && (
-            <div className="free-plan-container">
-              <div className="free-plan-card">
-                <div className="free-plan-header">
-                  <h3>Free Plan</h3>
-                  <p>Get started with free accounting software for solopreneurs and micro businesses</p>
-                </div>
-                <div className="free-plan-content">
-                  <div className="free-plan-image">
-                    <div className="free-box-illustration">
-                      <span className="box-b-icon">B</span>
-                    </div>
-                  </div>
-                  <div className="free-plan-lists">
-                    <ul className="free-list-col">
-                      {freeFeaturesLeft.map((f, i) => (
-                        <li key={i}>
-                          <span className="check-icon-black">✓</span>
-                          <span className="f-text">{f.text}</span>
-                          {f.isNew && <span className="new-badge">NEW</span>}
-                        </li>
-                      ))}
-                    </ul>
-                    <ul className="free-list-col">
-                      {freeFeaturesRight.map((f, i) => (
-                        <li key={i}>
-                          <span className="check-icon-black">✓</span>
-                          <span className="f-text">{f.text}</span>
-                          {f.isNew && <span className="new-badge">NEW</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                <div className="free-plan-action">
-                  <button className="p-btn free-btn">Get started for free</button>
-                </div>
-              </div>
-              <button className="compare-all-btn">Compare All Plans in Detail</button>
-            </div>
-          )}
-
-          {pricingTab === 'advanced' && (
-            <>
-              <div className="advanced-cards-container">
-                {advancedPlans.map((plan, index) => (
-                  <div className="advanced-card" key={index}>
-                    <div className="ac-header">
-                      <h4>{plan.name}</h4>
-                      <p className="ac-desc">{plan.description}</p>
-                      <div className="ac-price-box">
-                        {isAnnual && <span className="ac-strikethrough" key={`strike-${index}-${isAnnual}`}>₹{plan.originalPrice}</span>}
-                        {!isAnnual && <span className="ac-spacer"></span>}
-                        <div className="ac-price">
-                          <span className="ac-currency">₹</span>
-                          <span
-                            className={`ac-amount ${isAnnual ? 'animate-up' : 'animate-down'}`}
-                            key={`price-${index}-${isAnnual}`}
-                          >
-                            {isAnnual ? plan.price : plan.originalPrice}
-                          </span>
-                        </div>
-                        <p className="ac-billed">Price/Org/Month{isAnnual ? ' Billed Annually' : ''}</p>
-                      </div>
-                      <button className="p-btn advanced-btn">{plan.button}</button>
-                      <button className="add-compare-btn">+ Add to compare</button>
-                    </div>
-                    <div className="ac-features">
-                      <div className="ac-f-title">{plan.featuresTitle}</div>
-                      <ul>
-                        {plan.features.map((f, i) => (
-                          <li key={i}>
-                            {f.isHeader ? (
-                              <div className="ac-f-header">{f.text}</div>
-                            ) : (
-                              <>
-                                <span className="check-icon-black">✓</span>
-                                <span className="f-text">{f.text}</span>
-                                {f.isNew && <span className="new-badge">NEW</span>}
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="ac-footer">
-                      <div className="ac-users">{plan.users}</div>
-                      <div className="ac-support">{plan.support}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="tax-disclaimer">*Prices are exclusive of local taxes.</p>
-
-              {/* Add-On Repository */}
-              <div className="addons-section">
-                <h3>Our Add-On Repository</h3>
-                <div className="addons-grid">
-                  {addOns.map((addon, idx) => (
-                    <div className="addon-card" key={idx}>
-                      <div className="addon-header">
-                        <span className="addon-icon">{addon.icon}</span>
-                        <span className="addon-title">{addon.title}</span>
-                      </div>
-                      <div className="addon-price">
-                        <span className="addon-currency">₹</span>
-                        <span className="addon-amount">{addon.price}</span>
-                      </div>
-                      <div className="addon-unit">{addon.unit}</div>
-                      <div className="addon-billed">
-                        {addon.billed}
-                        {addon.desc && <><br />{addon.desc}</>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="addon-disclaimer">*Add-ons are not supported in the FREE plan, except for Document autoscans.</p>
-              </div>
-            </>
-          )}
         </div>
       </section>
 
@@ -678,8 +300,8 @@ const LandingPage = () => {
         <div className="banner-content">
           <div className="banner-icon">🚀</div>
           <div className="banner-text">
-            <strong>Migrate to RUP Books.</strong>
-            <p>Now you can easily move from other accounting solutions to RUP Books!</p>
+            <strong>Migrate to Eazzio Books.</strong>
+            <p>Now you can easily move from other accounting solutions to Eazzio Books!</p>
           </div>
           <button className="banner-btn">Contact us →</button>
         </div>
@@ -709,7 +331,7 @@ const LandingPage = () => {
           </div>
           <div className="testimonial-highlight">
             <h1>"</h1>
-            <h2>I TRUST RUP BOOKS FOR BUSINESS</h2>
+            <h2>I TRUST EAZZIO BOOKS FOR BUSINESS</h2>
           </div>
         </div>
       </section>
@@ -717,9 +339,9 @@ const LandingPage = () => {
       {/* Privacy Section */}
       <section className="privacy-section">
         <div className="privacy-icon">🔒</div>
-        <h2>Choose privacy.<br />Choose RUP.</h2>
+        <h2>Choose privacy.<br />Choose Eazzio.</h2>
         <p>
-          At RUP, we take pride in our perpetual efforts to surpass all expectations in providing security and privacy to our customers in this increasingly connected world.
+          At Eazzio, we take pride in our perpetual efforts to surpass all expectations in providing security and privacy to our customers in this increasingly connected world.
         </p>
         <div className="security-badges">
           <div className="sec-badge bsi-iso">
@@ -770,7 +392,7 @@ const LandingPage = () => {
           <div className="pf-col">
             <div className="pf-icon">💻</div>
             <h4>Demo organization</h4>
-            <p>Explore RUP Books features without using your real business data.</p>
+            <p>Explore Eazzio Books features without using your real business data.</p>
             <button className="pf-btn">Explore Demo Account</button>
           </div>
           <div className="pf-col">
@@ -782,7 +404,7 @@ const LandingPage = () => {
           <div className="pf-col">
             <div className="pf-icon">🖥️</div>
             <h4>Webinar</h4>
-            <p>Join us online for a live webinar to make the best out of RUP Books.</p>
+            <p>Join us online for a live webinar to make the best out of Eazzio Books.</p>
             <button className="pf-btn">Show All Webinars</button>
           </div>
         </div>
@@ -803,7 +425,7 @@ const LandingPage = () => {
               <span className="c-icon">✉️</span>
               <div>
                 <div className="c-title">Mail Us</div>
-                <div className="c-desc">support.india@rupbooks.com</div>
+                <div className="c-desc">support.india@eazzio.com</div>
               </div>
             </div>
 
@@ -820,7 +442,7 @@ const LandingPage = () => {
             <div className="featured-app-card">
               <span className="f-icon">🛍️</span>
               <div>
-                <div className="f-title">RUP Commerce</div>
+                <div className="f-title">Eazzio Commerce</div>
                 <a href="#learn" className="f-link">LEARN MORE</a>
               </div>
             </div>
@@ -839,9 +461,9 @@ const LandingPage = () => {
             <div className="mf-section-title border-bottom-title">PRODUCT HELP & RESOURCES</div>
             <div className="mf-mid-grid">
               <div className="mf-links-group">
-                <div className="mf-group-title">ABOUT RUP BOOKS</div>
+                <div className="mf-group-title">ABOUT EAZZIO BOOKS</div>
                 <ul>
-                  <li><a href="#what">What is RUP Books?</a></li>
+                  <li><a href="#what">What is Eazzio Books?</a></li>
                   <li><a href="#features">All Features</a></li>
                   <li><a href="#gst">GST Accounting</a></li>
                   <li><a href="#pricing">Pricing</a></li>
@@ -911,14 +533,14 @@ const LandingPage = () => {
 
         {/* App Ecosystem Banner */}
         <div className="ecosystem-banner">
-          <p>Other RUP Finance & Operations Apps</p>
+          <p>Other Eazzio Finance & Operations Apps</p>
           <div className="ecosystem-logos">
-            <span>⚙️ RUP ERP</span>
-            <span>💸 RUP Expense</span>
-            <span>💳 RUP Billing</span>
-            <span>📦 RUP Inventory</span>
-            <span>💰 RUP Payroll</span>
-            <span>⚗️ RUP Practice</span>
+            <span>⚙️ Eazzio ERP</span>
+            <span>💸 Eazzio Expense</span>
+            <span>💳 Eazzio Billing</span>
+            <span>📦 Eazzio Inventory</span>
+            <span>💰 Eazzio Payroll</span>
+            <span>⚗️ Eazzio Practice</span>
             <span>🛍️ RUP Commerce</span>
           </div>
         </div>
@@ -938,7 +560,7 @@ const LandingPage = () => {
             <a href="#gdpr">GDPR Compliance</a>
             <a href="#abuse">Abuse Policy</a>
           </div>
-          <p className="copyright">&copy; {new Date().getFullYear()}, RUP Corporation Pvt. Ltd. All Rights Reserved.</p>
+          <p className="copyright">&copy; {new Date().getFullYear()}, Eazzio Corporation Pvt. Ltd. All Rights Reserved.</p>
         </div>
       </footer>
     </div>

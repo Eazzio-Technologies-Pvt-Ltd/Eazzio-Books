@@ -7,10 +7,7 @@ import { apiRequest } from "./api";
 import { FormSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Tinplate Computer Training Center";
-const ORG_ADDRESS = "2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001";
-const ORG_EMAIL = process.env.FROM_EMAIL;
-const ORG_COUNTRY = "India";
+// Organization info is fetched dynamically
 
 const STATUS_COLORS = {
   Draft:     { bg: "#e2e3e5", color: "#383d41" },
@@ -26,6 +23,7 @@ function PurchaseOrderDetail() {
   const [items, setItems] = useState([]);
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [orgInfo, setOrgInfo] = useState({ name: "", address: "", email: "", country: "", logo: "" });
 
   // Email modal
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -45,6 +43,17 @@ function PurchaseOrderDetail() {
           if (poRes.purchase_order.vendor_id) {
             const vendRes = await apiRequest(`/vendors/${poRes.purchase_order.vendor_id}`);
             if (vendRes?.vendor) setVendor(vendRes.vendor);
+          }
+
+          const orgRes = await apiRequest("/organization-settings");
+          if (orgRes?.settings) {
+            setOrgInfo({
+              name: orgRes.settings.organization_name || "",
+              address: orgRes.settings.address || "",
+              email: orgRes.settings.organization_email || "",
+              country: orgRes.settings.country || "",
+              logo: orgRes.settings.logo_url || ""
+            });
           }
         }
       } catch (err) {
@@ -88,8 +97,8 @@ function PurchaseOrderDetail() {
 
   const openEmailModal = () => {
     setEmailTo(vendor?.email || "");
-    setEmailSubject(`Purchase Order ${po.purchase_order_number} from ${ORG_NAME}`);
-    setEmailBody(`Dear ${vendor?.display_name || vendor?.company_name || "Vendor"},\n\nPlease find our Purchase Order attached.\n\nPurchase Order Number: ${po.purchase_order_number}\nTotal: ₹${parseFloat(po.total_amount).toFixed(2)}\n\nThank you.\n\nRegards,\n${ORG_NAME}`);
+    setEmailSubject(`Purchase Order ${po.purchase_order_number} from ${orgInfo.name}`);
+    setEmailBody(`Dear ${vendor?.display_name || vendor?.company_name || "Vendor"},\n\nPlease find our Purchase Order attached.\n\nPurchase Order Number: ${po.purchase_order_number}\nTotal: ₹${parseFloat(po.total_amount).toFixed(2)}\n\nThank you.\n\nRegards,\n${orgInfo.name}`);
     setShowEmailModal(true);
   };
 
@@ -189,10 +198,11 @@ function PurchaseOrderDetail() {
             </div>
           </div>
           <div style={{ textAlign: "right", fontSize: "14px", color: "#555" }}>
-            <h2 style={{ margin: "0 0 5px 0", color: "#333", fontSize: "18px" }}>{ORG_NAME}</h2>
-            <div>{ORG_ADDRESS}</div>
-            <div>{ORG_COUNTRY}</div>
-            <div>{ORG_EMAIL}</div>
+            {orgInfo.logo && <img src={orgInfo.logo} alt="Logo" style={{ maxHeight: "60px", marginBottom: "10px", objectFit: "contain" }} />}
+            <h2 style={{ margin: "0 0 5px 0", color: "#333", fontSize: "18px" }}>{orgInfo.name}</h2>
+            <div style={{ whiteSpace: "pre-wrap" }}>{orgInfo.address}</div>
+            <div>{orgInfo.country}</div>
+            <div>{orgInfo.email}</div>
           </div>
         </div>
 

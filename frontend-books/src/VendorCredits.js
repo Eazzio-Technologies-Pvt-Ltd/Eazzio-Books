@@ -8,7 +8,7 @@ import { apiRequest } from "./api";
 import { TableSkeleton, DetailSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Tinplate Computer Training Center";
+import { useAuth } from "./AuthContext";
 
 const STATUS_COLORS = {
   Draft:     { bg: "#e2e3e5", color: "#383d41" },
@@ -20,6 +20,7 @@ const STATUS_COLORS = {
 function VendorCredits() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const [vendorCredits, setVendorCredits] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -111,8 +112,9 @@ function VendorCredits() {
 
   const openEmailModal = (vc) => {
     const vendor = getVendorById(vc.vendor_id);
-    setEmailSubject(`Vendor Credit ${vc.vendor_credit_number} from ${ORG_NAME}`);
-    setEmailBody(`Dear ${vendor.display_name || vendor.company_name || "Vendor"},\n\nPlease find the attached Vendor Credit for your records.\n\nVendor Credit Number: ${vc.vendor_credit_number}\nAmount: ₹${parseFloat(vc.total).toFixed(2)}\n\nThank you.\n\nRegards,\n${ORG_NAME}`);
+    const orgName = user?.organization_name || "My Organization";
+    setEmailSubject(`Vendor Credit ${vc.vendor_credit_number} from ${orgName}`);
+    setEmailBody(`Dear ${vendor.display_name || vendor.company_name || "Vendor"},\n\nPlease find the attached Vendor Credit for your records.\n\nVendor Credit Number: ${vc.vendor_credit_number}\nAmount: ₹${parseFloat(vc.total).toFixed(2)}\n\nThank you.\n\nRegards,\n${orgName}`);
     setShowEmailModal(true);
   };
 
