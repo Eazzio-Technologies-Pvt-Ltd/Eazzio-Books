@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import RuppLogo from "./RuppLogo";
 import "./LandingPage.css";
@@ -69,8 +69,136 @@ const pricingPlans = [
   }
 ];
 
+const AnimatedDashboard = () => {
+  const [step, setStep] = useState(0);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && step === 0) {
+          setTimeout(() => setStep(1), 400);
+          setTimeout(() => setStep(2), 1200);
+          setTimeout(() => setStep(3), 2000);
+          setTimeout(() => setStep(4), 2800);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    return () => observer.disconnect();
+  }, [step]);
+
+  // Amounts
+  const inc = step >= 1 ? 12450000 : 0; // ₹1.24 Cr
+  const exp = step >= 2 ? 3950000 : 0;  // ₹39.5 L
+  const prof = step >= 3 ? (inc - exp) : 0; 
+  const cash = step >= 4 ? prof + 250000 : 0; 
+
+  const formatCurrency = (val) => {
+    return '₹' + val.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  };
+
+  return (
+    <div className="hero-dashboard-mockup zoom-in-up" ref={containerRef}>
+      <div className="mockup-sidebar">
+        <div className="mockup-brand">
+          <img src="/logo.png" alt="Eazzio Books" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
+        </div>
+        <div className="mock-menu">
+          <div className="mock-menu-item active">Dashboard</div>
+          <div className="mock-menu-item">Invoices</div>
+          <div className="mock-menu-item">Expenses</div>
+          <div className="mock-menu-item">Banking</div>
+          <div className="mock-menu-item">Reports</div>
+        </div>
+      </div>
+      
+      <div className="mockup-main-area">
+        <div className="mockup-header">
+          <div className="mockup-search-dark">Search transactions...</div>
+          <div className="mockup-actions">
+            <div className="mockup-avatar">EA</div>
+          </div>
+        </div>
+
+        <div className="mockup-content">
+          <div className="mockup-stats-grid">
+            <div className="mockup-stat-card">
+              <div className="stat-label">
+                <span className="icon inc-icon">📈</span> Total Income
+              </div>
+              <div className={`stat-value font-mono ${step >= 1 ? 'slide-up' : 'hidden'}`}>
+                {formatCurrency(inc)}
+              </div>
+              <div className="stat-sub">This Year</div>
+            </div>
+
+            <div className="mockup-stat-card">
+              <div className="stat-label">
+                <span className="icon exp-icon">📉</span> Total Expenses
+              </div>
+              <div className={`stat-value font-mono ${step >= 2 ? 'slide-up' : 'hidden'}`}>
+                {formatCurrency(exp)}
+              </div>
+              <div className="stat-sub">This Year</div>
+            </div>
+
+            <div className="mockup-stat-card">
+              <div className="stat-label">
+                <span className="icon prof-icon">₹</span> Net Profit
+              </div>
+              <div className={`stat-value font-mono ${step >= 3 ? 'slide-up' : 'hidden'}`}>
+                {formatCurrency(prof)}
+              </div>
+              <div className="stat-sub">This Year</div>
+            </div>
+            
+            <div className="mockup-stat-card">
+              <div className="stat-label">
+                <span className="icon cash-icon">💳</span> Net Cash
+              </div>
+              <div className={`stat-value font-mono ${step >= 4 ? 'slide-up' : 'hidden'}`}>
+                {formatCurrency(cash)}
+              </div>
+              <div className="stat-sub">Available balance</div>
+            </div>
+          </div>
+
+          <div className="mockup-chart-section">
+            <div className="chart-header">
+              <h4>Monthly Overview</h4>
+              <div className="chart-legend-dots">
+                <span className="dot blue"></span> Income
+                <span className="dot yellow"></span> Expense
+              </div>
+            </div>
+            <div className="chart-bars-mockup">
+              <div className="chart-bar-group"><div className="bar b-inc h-60"></div><div className="bar b-exp h-30"></div></div>
+              <div className="chart-bar-group"><div className="bar b-inc h-80"></div><div className="bar b-exp h-40"></div></div>
+              <div className="chart-bar-group"><div className="bar b-inc h-40"></div><div className="bar b-exp h-20"></div></div>
+              <div className="chart-bar-group"><div className="bar b-inc h-90"></div><div className="bar b-exp h-50"></div></div>
+              <div className="chart-bar-group"><div className="bar b-inc h-70"></div><div className="bar b-exp h-60"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {step >= 4 && (
+        <div className="al-badge pop-in" style={{ bottom: '30px', right: '30px', position: 'absolute' }}>
+          <span className="check-icon">✓</span> Matched with bank
+        </div>
+      )}
+    </div>
+  );
+};
+
 const LandingPage = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pricingTab, setPricingTab] = useState('started');
   const [isAnnual, setIsAnnual] = useState(true);
   const navigate = useNavigate();
@@ -85,146 +213,101 @@ const LandingPage = () => {
       {/* Top Navbar */}
       <nav className={`landing-navbar ${isVisible ? "slide-down" : ""}`}>
         <div className="nav-logo" style={{ display: 'flex', alignItems: 'center' }}>
-          <RuppLogo height={40} />
+          <img src="/logo.png" alt="Eazzio Books" style={{ height: '35px' }} />
         </div>
-        <div className="nav-links">
-          <a href="#features" className="nav-link">Features</a>
-          <a href="#pricing" className="nav-link">Pricing</a>
 
-          <a href="#resources" className="nav-link">Resources</a>
+        {/* Mobile Menu Toggle */}
+        <div className="mobile-menu-toggle" style={{ display: 'none' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          ☰
         </div>
-        <div className="nav-actions">
-          <button className="nav-signin" onClick={() => navigate("/login")}>Sign In</button>
-          <button className="nav-signup" onClick={() => navigate("/register")}>Start for free</button>
+
+        <div className={`nav-right-group ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+          <div className="nav-links">
+            <a href="#features" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
+            <a href="#pricing" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
+            <a href="#resources" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Resources</a>
+          </div>
+          <div className="nav-actions">
+            <button className="nav-signin" onClick={() => navigate("/login")}>Sign In</button>
+            <button className="nav-signup" onClick={() => navigate("/register")}>Start for free</button>
+          </div>
         </div>
       </nav>
 
       {/* Hero Section */}
       <section className="hero-section">
-        {/* Floating Background Cards for Animation */}
-        <div className="floating-cards-container">
-          <div className={`floating-card detailed-card card-left-1 ${isVisible ? "animate-float-1" : ""}`}>
-            <div className="detailed-card-header">
-              <div className="paint-can-icon"></div>
-            </div>
-            <div className="detailed-card-body">
-              <div className="d-title">Zylker paint</div>
-              <div className="d-price">₹200.00 <span className="d-tag">12312</span></div>
-              <div className="d-list">
-                <div className="d-row"><span>Opening stock</span> <strong>210.00</strong></div>
-                <div className="d-row"><span>Stock in Hand</span> <strong>150.00</strong></div>
-                <div className="d-row"><span>Committed Stock</span> <strong>100.00</strong></div>
-                <div className="d-row"><span>Available for Sale</span> <strong>50.00</strong></div>
+        <div className={`hero-content-two-column ${isVisible ? "fade-in-up" : ""}`}>
+          <div className="hero-text-col" style={{ position: 'relative' }}>
+            <div style={{
+              position: 'absolute',
+              top: '-10%', left: '-10%', right: '-10%', bottom: '-10%',
+              backgroundImage: "url('/eazzio-books-hero-illustration.svg')",
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              opacity: 0.25,
+              zIndex: 0
+            }}></div>
+            <div style={{ position: 'relative', zIndex: 10 }}>
+              <div className="hero-eyebrow font-mono">Built for Indian businesses</div>
+              <h1 className="hero-title font-fraunces">
+                Bookkeeping that reconciles itself.
+              </h1>
+              <p className="hero-subtitle">
+                Invoices, expenses, and bank feeds matched automatically in real-time.
+              </p>
+
+              <div className="hero-buttons">
+                <button className="btn-primary" onClick={() => navigate("/register")}>Start free trial</button>
+                <button className="btn-secondary" onClick={() => document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' })}>See pricing</button>
+              </div>
+
+              <div className="hero-stats">
+                <div className="stat-chip font-mono">
+                  <strong>2.4 Cr+</strong> reconciled monthly
+                </div>
+                <div className="stat-chip font-mono">
+                  <strong>1,200+</strong> invoices generated
+                </div>
+                <div className="stat-chip font-mono">
+                  <strong>100%</strong> GST ready
+                </div>
               </div>
             </div>
           </div>
-
-          <div className={`floating-card detailed-card card-right-1 ${isVisible ? "animate-float-3" : ""}`}>
-            <div className="detailed-card-title">P & L Report</div>
-            <div className="d-list">
-              <div className="d-section-title">INCOME</div>
-              <div className="d-row"><span>Sales</span> <span>₹200,000</span></div>
-              <div className="d-row"><span>Services</span> <span>₹200,000</span></div>
-              <div className="d-row"><span>Others</span> <span>₹200,000</span></div>
-              <div className="d-section-title mt-2">EXPENSES</div>
-              <div className="d-row"><span>Accounting</span> <span>₹200,000</span></div>
-              <div className="d-row"><span>Marketing</span> <span>₹200,000</span></div>
-              <div className="d-row"><span>Employees</span> <span>₹200,000</span></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Hero Content */}
-        <div className={`hero-content ${isVisible ? "fade-in-up" : ""}`}>
-          <h1 className="hero-title">
-            Comprehensive accounting platform<br />
-            for growing businesses
-          </h1>
-
-          <p className="hero-subtitle">
-            Manage end-to-end accounting — from invoicing to inventory & payroll with the best accounting software in India.
-          </p>
-
-          <div className="hero-buttons">
-            <button className="btn-primary" onClick={() => navigate("/register")}>Start my free trial</button>
-            <button className="btn-secondary" onClick={() => navigate("/login")}>Request a demo</button>
-          </div>
-        </div>
-
-        {/* Hero Image / Dashboard Mockup */}
-        <div className={`hero-dashboard-mockup ${isVisible ? "zoom-in-up" : ""}`} style={{ background: "#f8fafc", padding: "24px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 20px 40px rgba(0,0,0,0.1)", textAlign: "left", maxWidth: "1000px", margin: "0 auto" }}>
           
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-            <div>
-              <h3 style={{ margin: "0 0 5px 0", fontSize: "20px", color: "#1e293b", fontWeight: "600" }}>Welcome back, Eazzio</h3>
-              <p style={{ margin: 0, fontSize: "14px", color: "#64748b" }}>Here is your financial overview.</p>
+          <div className="hero-visual-col" style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px', minHeight: '550px' }}>
+            <AnimatedDashboard />
+          </div>
+        </div>
+      </section>
+
+      {/* How it works Section / Features */}
+      <section id="features" className="how-it-works-section">
+        <div className="hiw-container">
+          <h2 className="hiw-title font-fraunces">Monthly Workflow</h2>
+          <div className="hiw-grid">
+            <div className="hiw-step">
+              <div className="hiw-number font-mono">01</div>
+              <h4 className="font-fraunces">Record transactions</h4>
+              <p>Create invoices and log expenses as they happen with minimal data entry.</p>
             </div>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#0ba5ec", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "14px" }}>EA</div>
+            <div className="hiw-step">
+              <div className="hiw-number font-mono">02</div>
+              <h4 className="font-fraunces">Reconcile with your bank</h4>
+              <p>Connect your bank feeds to match transactions automatically.</p>
+            </div>
+            <div className="hiw-step">
+              <div className="hiw-number font-mono">03</div>
+              <h4 className="font-fraunces">Review your reports</h4>
+              <p>Generate P&L, Balance Sheet, and tax summaries in one click.</p>
+            </div>
+            <div className="hiw-step">
+              <div className="hiw-number font-mono">04</div>
+              <h4 className="font-fraunces">Close the books</h4>
+              <p>Lock your financial periods securely with full audit trails.</p>
             </div>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
-            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#f0fdf4", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>₹</div>
-                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Receivables</div>
-              </div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹1,24,500.00</div>
-              <div style={{ fontSize: "12px", color: "#d92d20", fontWeight: "500" }}>Unpaid Invoices</div>
-            </div>
-            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#fef2f2", color: "#b91c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>💳</div>
-                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Payables</div>
-              </div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹45,200.00</div>
-              <div style={{ fontSize: "12px", color: "#d92d20", fontWeight: "500" }}>Unpaid Bills</div>
-            </div>
-            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#eff6ff", color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>📈</div>
-                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Income</div>
-              </div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹8,50,000.00</div>
-              <div style={{ fontSize: "12px", color: "#039855", fontWeight: "500" }}>All Time</div>
-            </div>
-            <div style={{ background: "#fff", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                <div style={{ width: "28px", height: "28px", borderRadius: "6px", background: "#f8fafc", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>📉</div>
-                <div style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>Total Expenses</div>
-              </div>
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "#1d2939", marginBottom: "4px" }}>₹3,20,000.00</div>
-              <div style={{ fontSize: "12px", color: "#475569", fontWeight: "500" }}>All Time</div>
-            </div>
-          </div>
-
-          <div style={{ background: "#fff", padding: "20px", borderRadius: "8px", border: "1px solid #e2e8f0", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-               <h4 style={{ margin: "0", fontSize: "15px", color: "#1d2939", fontWeight: "600" }}>Monthly Overview</h4>
-               <div style={{ padding: "4px 12px", background: "#f1f5f9", borderRadius: "4px", fontSize: "13px", color: "#475569", border: "1px solid #e2e8f0" }}>June 2026</div>
-             </div>
-             
-             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                <div style={{ borderRight: "1px solid #f1f5f9" }}>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>INCOME</div>
-                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#039855" }}>₹1,50,000.00</div>
-                </div>
-                <div style={{ borderRight: "1px solid #f1f5f9" }}>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>EXPENSES</div>
-                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#d92d20" }}>₹45,000.00</div>
-                </div>
-                <div style={{ borderRight: "1px solid #f1f5f9" }}>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>PROFIT</div>
-                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#039855" }}>₹1,05,000.00</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px", fontWeight: "600", letterSpacing: "0.5px" }}>NET CASH</div>
-                  <div style={{ fontSize: "18px", fontWeight: "700", color: "#0ba5ec" }}>₹1,05,000.00</div>
-                </div>
-             </div>
-          </div>
-
         </div>
       </section>
 
@@ -378,8 +461,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer Section */}
-      <footer className="landing-footer-complex">
+      {/* Footer Section / Resources */}
+      <footer id="resources" className="landing-footer-complex">
 
         {/* Pre-footer Grid */}
         <div className="pre-footer-grid">
