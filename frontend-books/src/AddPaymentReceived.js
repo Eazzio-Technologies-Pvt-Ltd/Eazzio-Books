@@ -342,8 +342,8 @@ function AddPaymentReceived() {
 
       </div>
 
-      {/* Fixed Footer */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#f8fafc", borderTop: "1px solid #eaecf0", padding: "16px 32px", display: "flex", gap: "12px", zIndex: 100 }}>
+      {/* Action Footer */}
+      <div style={{ background: "#f8fafc", borderTop: "1px solid #eaecf0", padding: "16px 32px", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
         <button onClick={() => handleSave("draft")} disabled={loading} style={{ background: "#ffffff", color: "#344054", border: "1px solid #d0d5dd", borderRadius: "4px", padding: "8px 16px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>Save as Draft</button>
         <button onClick={() => handleSave("paid")} disabled={loading} style={{ background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "4px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
           {loading ? "Saving..." : "Save as Paid"}
