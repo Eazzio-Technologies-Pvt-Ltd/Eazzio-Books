@@ -35,10 +35,7 @@ const tdStyle = {
   verticalAlign: "middle",
 };
 
-const ORG_NAME = "Tinplate Computer Training Center";
-const ORG_ADDRESS = "2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001";
-const ORG_EMAIL = "kumarrahulraj468@gmail.com";
-const ORG_COUNTRY = "India";
+// Organization info will be fetched dynamically from /organization-settings
 
 const ALL_COLUMNS = [
   { key: "checkbox", label: "☐" },
@@ -130,11 +127,31 @@ function Customers() {
   const [generatedStatement, setGeneratedStatement] = useState(null);
   const [statementLoading, setStatementLoading] = useState(false);
   const [orgInfo, setOrgInfo] = useState({
-    name: ORG_NAME,
-    address: ORG_ADDRESS,
-    email: ORG_EMAIL,
-    country: ORG_COUNTRY,
+    name: "",
+    address: "",
+    email: "",
+    country: "",
   });
+
+  useEffect(() => {
+    const fetchOrgSettings = async () => {
+      try {
+        const res = await apiRequest("/organization-settings");
+        if (res?.settings) {
+          setOrgInfo({
+            name: res.settings.organization_name || "",
+            address: res.settings.address || "",
+            email: res.settings.organization_email || "",
+            country: res.settings.country || "",
+          });
+        }
+      } catch(e) {
+        console.error("Failed to fetch org settings", e);
+      }
+    };
+    fetchOrgSettings();
+  }, []);
+
   const [statementRange, setStatementRange] = useState({
     from: new Date().toISOString().slice(0, 10),
     to: new Date().toISOString().slice(0, 10),
@@ -569,7 +586,7 @@ function Customers() {
     const range = getStatementDates();
     setEmailTo(expandedCustomer.email || '');
     setEmailSubject(`Statement of Accounts – ${getCustomerName(expandedCustomer)} (${range.from} to ${range.to})`);
-    setEmailBody(`Dear ${getCustomerName(expandedCustomer)},\n\nPlease find your Statement of Accounts attached for the period ${range.from} to ${range.to}.\n\nKindly review and let us know if you have any queries.\n\nRegards,\nTinplate Computer Training Center`);
+    setEmailBody(`Dear ${getCustomerName(expandedCustomer)},\n\nPlease find your Statement of Accounts attached for the period ${range.from} to ${range.to}.\n\nKindly review and let us know if you have any queries.\n\nRegards,\n${orgInfo.name}`);
     setEmailModalOpen(true);
   };
 

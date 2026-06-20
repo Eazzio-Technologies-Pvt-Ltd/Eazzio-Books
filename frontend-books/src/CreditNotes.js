@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { apiRequest } from "./api";
 import { TableSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
-
+import { useAuth } from "./AuthContext";
 const STATUS_COLORS = {
   draft:     { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
   open:      { bg: "#eff6ff", color: "#1d4ed8", label: "OPEN" },
@@ -30,6 +30,7 @@ const ALL_COLUMNS = [
 function CreditNotes() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const [creditNotes, setCreditNotes] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -167,9 +168,29 @@ function CreditNotes() {
       toast.success("Deleted successfully");
       setSelectedIds([]);
       fetchData();
-    } catch (err) {
-      toast.error("Delete failed");
-    }
+    } catch (err) { toast.error(err.message || "Delete failed"); }
+  };
+
+  const openEmailModal = (cn) => {
+    const cust = getCustomerById(cn.customer_id);
+    const orgName = user?.organization_name || "My Organization";
+    setEmailSubject(`Credit Note ${cn.credit_note_number} from ${orgName}`);
+    setEmailBody(`Dear ${cust.display_name || cust.company_name || "Customer"},\n\nPlease find the attached Credit Note for your account.\n\nCredit Note Number: ${cn.credit_note_number}\nAmount: ₹${parseFloat(cn.total).toFixed(2)}\n\nThank you.\n\nRegards,\n${orgName}`);
+    setShowEmailModal(true);
+  };
+
+  const sendEmail = async () => {
+    const cn = expandedCN;
+    if (!cn) return;
+    try {
+      await apiRequest(`/credit-notes/${cn.id}/send`, {
+        method: "POST",
+        body: JSON.stringify({ to: getCustomerById(cn.customer_id).email || "", subject: emailSubject, body: emailBody }),
+      });
+      toast.success("Email sent!");
+      setShowEmailModal(false);
+      if (cn.status === "Draft") markOpen(cn.id);
+    } catch (err) { toast.error("Failed to send email"); }
   };
 
   const statusBadge = (status) => {

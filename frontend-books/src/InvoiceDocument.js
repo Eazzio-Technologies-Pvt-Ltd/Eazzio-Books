@@ -3,10 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiRequest } from "./api";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Tinplate Computer Training Center";
-const ORG_ADDRESS1 = "2nd Floor, Thakur Pyare Singh Road";
-const ORG_ADDRESS2 = "Jamshedpur - 831001";
-const ORG_EMAIL = "india.technologyhelp88@gmail.com";
+// Org info will be fetched from API
 
 function InvoiceDocument() {
   const { id } = useParams();
@@ -18,10 +15,10 @@ function InvoiceDocument() {
   const [fetching, setFetching] = useState(true);
 
   const [orgInfo, setOrgInfo] = useState({
-    name: ORG_NAME,
-    address1: ORG_ADDRESS1,
-    address2: ORG_ADDRESS2,
-    email: ORG_EMAIL,
+    name: "",
+    address: "",
+    email: "",
+    logo: ""
   });
 
   // ...fetch logic same as before...
@@ -41,6 +38,16 @@ function InvoiceDocument() {
             `/customers/${res.invoice.customer_id}`,
           );
           if (custRes?.customer) setCustomer(custRes.customer);
+        }
+
+        const orgRes = await apiRequest("/organization-settings");
+        if (orgRes?.settings) {
+          setOrgInfo({
+            name: orgRes.settings.organization_name || "",
+            address: orgRes.settings.address || "",
+            email: orgRes.settings.organization_email || "",
+            logo: orgRes.settings.logo_url || ""
+          });
         }
       } catch (err) {
         toast.error("Failed to load invoice");
@@ -71,61 +78,6 @@ function InvoiceDocument() {
         border: "1px solid #ddd",
       }}
     >
-      {/* Editable org info */}
-      <div
-        className="print-hide"
-        style={{
-          marginBottom: "20px",
-          borderBottom: "1px solid #eee",
-          paddingBottom: "15px",
-        }}
-      >
-        <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle} className="print-label">Organization Name</label>
-            <input
-              type="text"
-              value={orgInfo.name}
-              onChange={(e) => setOrgInfo({ ...orgInfo, name: e.target.value })}
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle} className="print-label">Address Line 1</label>
-            <input
-              type="text"
-              value={orgInfo.address1}
-              onChange={(e) =>
-                setOrgInfo({ ...orgInfo, address1: e.target.value })
-              }
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle} className="print-label">Address Line 2</label>
-            <input
-              type="text"
-              value={orgInfo.address2}
-              onChange={(e) =>
-                setOrgInfo({ ...orgInfo, address2: e.target.value })
-              }
-              style={inputStyle}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle} className="print-label">Email</label>
-            <input
-              type="email"
-              value={orgInfo.email}
-              onChange={(e) =>
-                setOrgInfo({ ...orgInfo, email: e.target.value })
-              }
-              style={inputStyle}
-            />
-          </div>
-        </div>
-      </div>
-
       <div
         style={{
           display: "flex",
@@ -134,9 +86,9 @@ function InvoiceDocument() {
         }}
       >
         <div>
+          {orgInfo.logo && <img src={orgInfo.logo} alt="Logo" style={{ maxHeight: "80px", marginBottom: "10px", objectFit: "contain" }} />}
           <h3 style={{ margin: 0 }}>{orgInfo.name}</h3>
-          <p style={{ margin: "2px 0" }}>{orgInfo.address1}</p>
-          <p style={{ margin: "2px 0" }}>{orgInfo.address2}</p>
+          <p style={{ margin: "2px 0", whiteSpace: "pre-wrap" }}>{orgInfo.address}</p>
           <p style={{ margin: "2px 0" }}>{orgInfo.email}</p>
         </div>
         <h1 style={{ margin: 0, fontSize: "28px" }}>TAX INVOICE</h1>

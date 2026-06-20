@@ -23,7 +23,7 @@ const tdStyle = {
   verticalAlign: "middle",
 };
 
-const ORG_NAME = "Tinplate Computer Training Center";
+import { useAuth } from "./AuthContext";
 
 const STATUS_COLORS = {
   draft:     { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
@@ -51,8 +51,7 @@ function PurchaseOrders() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const searchParamsUrl = new URLSearchParams(location.search);
-  const searchQuery = searchParamsUrl.get("search") || "";
+  const { user } = useAuth();
 
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -323,8 +322,9 @@ function PurchaseOrders() {
 
   const openEmailModal = (po) => {
     const vend = getVendorById(po.vendor_id);
-    setEmailSubject(`Purchase Order ${po.purchase_order_number} from ${ORG_NAME}`);
-    setEmailBody(`Dear ${vend.display_name || vend.company_name || "Vendor"},\n\nPlease find our Purchase Order attached.\n\nPurchase Order Number: ${po.purchase_order_number}\nTotal: ₹${parseFloat(po.total_amount).toFixed(2)}\n\nThank you.\n\nRegards,\n${ORG_NAME}`);
+    const orgName = user?.organization_name || "My Organization";
+    setEmailSubject(`Purchase Order ${po.purchase_order_number} from ${orgName}`);
+    setEmailBody(`Dear ${vend.display_name || vend.company_name || "Vendor"},\n\nPlease find our Purchase Order attached.\n\nPurchase Order Number: ${po.purchase_order_number}\nTotal: ₹${parseFloat(po.total_amount).toFixed(2)}\n\nThank you.\n\nRegards,\n${orgName}`);
     setShowEmailModal(true);
   };
 
