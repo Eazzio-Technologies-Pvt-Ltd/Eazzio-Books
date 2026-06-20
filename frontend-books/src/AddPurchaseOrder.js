@@ -1,11 +1,12 @@
 /**
- * AddPurchaseOrder.js – New Purchase Order creation form
+ * AddPurchaseOrder.js – Modernized Zoho-style Purchase Order creation & edit form
  */
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "./api";
 import { FormSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
+import AddVendor from "./AddVendor";
 
 function AddPurchaseOrder() {
   const navigate = useNavigate();
@@ -17,54 +18,63 @@ function AddPurchaseOrder() {
   const [poDate, setPoDate] = useState(new Date().toISOString().slice(0, 10));
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
-  const [notes, setNotes] = useState("");
-  const [terms, setTerms] = useState("");
+  const [vendorNotes, setVendorNotes] = useState("");
+  const [terms_conditions, setTermsConditions] = useState("");
+      const [poNumber, setPoNumber] = useState(""); // auto-generated placeholder
 
   // --- Items ---
   const [items, setItems] = useState([
-    { item_id: "", item_name: "", description: "", quantity: 1, rate: 0, tax_rate: 0, discount: 0, discount_type: "flat", hsn_code: "", unit: "" }
+    { item_id: "", item_name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, discount: 0, discount_type: "flat", hsn_code: "", unit: "" }
   ]);
 
   // --- Dropdown data ---
   const [vendors, setVendors] = useState([]);
   const [catalogItems, setCatalogItems] = useState([]);
-  const [loading, setLoading] = useState(false);
+      const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
 
   // --- Modals ---
   const [showVendorModal, setShowVendorModal] = useState(false);
-
+    
   // --- New Vendor form ---
-  const [newVendor, setNewVendor] = useState({ display_name: "", company_name: "", email: "", phone: "", billing_address: "", pan: "" });
-
+  
+  // --- New Salesperson form ---
+  
+  // --- New Project form ---
+  
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [vendRes, itemRes] = await Promise.all([
+        const [custRes, itemRes, ] = await Promise.all([
           apiRequest("/vendors"),
           apiRequest("/items"),
+          
+          
         ]);
-        setVendors(vendRes?.vendors || []);
+        setVendors(custRes?.vendors || []);
         setCatalogItems(itemRes?.items || []);
+        
+        
 
         if (isEditMode) {
           setFetching(true);
           const res = await apiRequest(`/purchase-orders/${id}`);
           if (res?.purchase_order) {
-            const po = res.purchase_order;
-            setVendorId(po.vendor_id ? String(po.vendor_id) : "");
-            setPoDate(po.purchase_order_date ? po.purchase_order_date.slice(0, 10) : "");
-            setExpectedDeliveryDate(po.expected_delivery_date ? po.expected_delivery_date.slice(0, 10) : "");
-            setReferenceNumber(po.reference_number || "");
-            setNotes(po.notes || "");
-            setTerms(po.terms_conditions || "");
+            const so = res.purchase_order;
+            setVendorId(so.vendor_id ? String(so.vendor_id) : "");
+            setPoDate(so.purchase_order_date ? so.purchase_order_date.slice(0, 10) : "");
+            setExpectedDeliveryDate(so.expected_delivery_date ? so.expected_delivery_date.slice(0, 10) : "");
+            setReferenceNumber(so.reference_number || "");
+            setVendorNotes(so.notes || "");
+            setTermsConditions(so.terms_conditions || "");
+                                    setPoNumber(so.purchase_order_number || "");
             if (res.items && res.items.length > 0) {
               setItems(res.items.map(item => ({
                 item_id:       item.item_id       ? String(item.item_id)  : "",
                 item_name:     item.item_name     || "",
                 description:   item.description   || "",
                 quantity:      item.quantity       || 1,
-                rate:          item.rate           || 0,
+                unit_price:    item.rate           || 0,
                 tax_rate:      item.tax_rate       || 0,
                 discount:      item.discount       || 0,
                 discount_type: item.discount_type  || "flat",
@@ -84,7 +94,7 @@ function AddPurchaseOrder() {
   }, [id, isEditMode]);
 
   const addItem = () => {
-    setItems([...items, { item_id: "", item_name: "", description: "", quantity: 1, rate: 0, tax_rate: 0, discount: 0, discount_type: "flat", hsn_code: "", unit: "" }]);
+    setItems([...items, { item_id: "", item_name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, discount: 0, discount_type: "flat", hsn_code: "", unit: "" }]);
   };
 
   const removeItem = (index) => {
@@ -105,7 +115,7 @@ function AddPurchaseOrder() {
       if (catalogItem) {
         updated[index].item_name   = catalogItem.name || "";
         updated[index].description = catalogItem.description || catalogItem.name || "";
-        updated[index].rate        = catalogItem.purchase_price || 0; // PO uses purchase_price
+        updated[index].unit_price  = catalogItem.purchase_price || 0;
         updated[index].tax_rate    = catalogItem.tax_rate || 0;
         updated[index].hsn_code    = catalogItem.hsn_code || "";
         updated[index].unit        = catalogItem.unit || "";
@@ -120,7 +130,7 @@ function AddPurchaseOrder() {
 
   const calcLineAmount = (item) => {
     const qty = parseFloat(item.quantity) || 0;
-    const rate = parseFloat(item.rate) || 0;
+    const rate = parseFloat(item.unit_price) || 0;
     let amt = qty * rate;
     const disc = parseFloat(item.discount) || 0;
     if (item.discount_type === "percent") {
@@ -136,10 +146,10 @@ function AddPurchaseOrder() {
     return amt * ((parseFloat(item.tax_rate) || 0) / 100);
   };
 
-  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.rate) || 0), 0);
+  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0), 0);
   const totalDiscount = items.reduce((sum, item) => {
     const qty = parseFloat(item.quantity) || 0;
-    const rate = parseFloat(item.rate) || 0;
+    const rate = parseFloat(item.unit_price) || 0;
     const disc = parseFloat(item.discount) || 0;
     if (item.discount_type === "percent") return sum + (qty * rate * disc / 100);
     return sum + disc;
@@ -147,61 +157,46 @@ function AddPurchaseOrder() {
   const totalTax = items.reduce((sum, item) => sum + calcLineTax(item), 0);
   const grandTotal = subtotal - totalDiscount + totalTax;
 
-  const handleSave = async () => {
+  const handleSave = async (statusOverride = null) => {
     if (!vendorId) { toast.error("Please select a vendor"); return; }
     if (items.length === 0 || items.every(item => !item.description && !item.item_id)) {
       toast.error("Add at least one item"); return;
     }
     setLoading(true);
     try {
+      const payload = {
+        vendor_id: parseInt(vendorId),
+        purchase_order_date: poDate,
+        expected_delivery_date: expectedDeliveryDate || null,
+        reference_number: referenceNumber,
+        notes: vendorNotes,
+        terms_conditions,
+        items: items.map(item => ({
+          ...item,
+          item_id:   item.item_id   ? parseInt(item.item_id) : null,
+          item_name: item.item_name || null,
+          hsn_code:  item.hsn_code  || null,
+          unit:      item.unit      || null,
+          quantity:  parseFloat(item.quantity) || 0,
+          unit_price: parseFloat(item.unit_price) || 0,
+          tax_rate:  parseFloat(item.tax_rate) || 0,
+          discount:  parseFloat(item.discount) || 0,
+        })),
+      };
+
       if (isEditMode) {
+        if (statusOverride) payload.status = statusOverride;
         await apiRequest(`/purchase-orders/${id}`, {
           method: "PUT",
-          body: JSON.stringify({
-            vendor_id: parseInt(vendorId),
-            purchase_order_date: poDate,
-            expected_delivery_date: expectedDeliveryDate || null,
-            reference_number: referenceNumber,
-            notes: notes,
-            terms_conditions: terms,
-            items: items.map(item => ({
-              ...item,
-              item_id:   item.item_id   ? parseInt(item.item_id) : null,
-              item_name: item.item_name || null,
-              hsn_code:  item.hsn_code  || null,
-              unit:      item.unit      || null,
-              quantity:  parseFloat(item.quantity) || 0,
-              rate:      parseFloat(item.rate) || 0,
-              tax_rate:  parseFloat(item.tax_rate) || 0,
-              discount:  parseFloat(item.discount) || 0,
-            })),
-          }),
+          body: JSON.stringify(payload),
         });
         toast.success("Purchase Order updated");
         navigate(`/purchase-orders/${id}/document`);
       } else {
+        payload.status = statusOverride || "draft";
         await apiRequest("/purchase-orders", {
           method: "POST",
-          body: JSON.stringify({
-            vendor_id: parseInt(vendorId),
-            purchase_order_date: poDate,
-            expected_delivery_date: expectedDeliveryDate || null,
-            reference_number: referenceNumber,
-            status: "Draft",
-            notes: notes,
-            terms_conditions: terms,
-            items: items.map(item => ({
-              ...item,
-              item_id:   item.item_id   ? parseInt(item.item_id) : null,
-              item_name: item.item_name || null,
-              hsn_code:  item.hsn_code  || null,
-              unit:      item.unit      || null,
-              quantity:  parseFloat(item.quantity) || 0,
-              rate:      parseFloat(item.rate) || 0,
-              tax_rate:  parseFloat(item.tax_rate) || 0,
-              discount:  parseFloat(item.discount) || 0,
-            })),
-          }),
+          body: JSON.stringify(payload),
         });
         toast.success("Purchase Order created");
         navigate("/purchase-orders");
@@ -213,235 +208,618 @@ function AddPurchaseOrder() {
     }
   };
 
-  const handleSaveVendor = async () => {
-    if (!newVendor.display_name && !newVendor.company_name) { toast.error("Vendor name required"); return; }
-    try {
-      const res = await apiRequest("/vendors", {
-        method: "POST",
-        body: JSON.stringify(newVendor),
-      });
-      if (res?.vendor) {
-        setVendors(prev => [...prev, res.vendor]);
-        setVendorId(String(res.vendor.id));
-        toast.success("Vendor created");
-      }
-      setShowVendorModal(false);
-      setNewVendor({ display_name: "", company_name: "", email: "", phone: "", billing_address: "", pan: "" });
-    } catch (err) { toast.error("Failed to create vendor"); }
+  const handleSaveVendorSuccess = (newVendor) => {
+    setShowVendorModal(false);
+    setVendors(prev => [...prev, newVendor]);
+    setVendorId(String(newVendor.id));
   };
 
+  
+  
   if (fetching) {
     return (
-      <div style={{ maxWidth: "960px", margin: "auto", padding: "30px" }}>
-        <h2 style={{ marginBottom: "25px" }}>{isEditMode ? "Edit Purchase Order" : "New Purchase Order"}</h2>
+      <div style={{ maxWidth: "1120px", margin: "30px auto", padding: "30px" }}>
         <FormSkeleton fields={8} />
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: "960px", margin: "auto", padding: "30px" }}>
-      <h2 style={{ marginBottom: "25px" }}>{isEditMode ? "Edit Purchase Order" : "New Purchase Order"}</h2>
+    <div style={{ maxWidth: "1120px", margin: "30px auto", background: "#ffffff", borderRadius: "12px", border: "1px solid #eaecf0", boxShadow: "0 4px 20px rgba(16, 24, 40, 0.04)", overflow: "hidden", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+      
+      {/* Styles Injection */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .premium-input {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #d0d5dd;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #344054;
+          background: #ffffff;
+          box-sizing: border-box;
+          outline: none;
+          transition: all 0.15s ease;
+        }
+        .premium-input:hover {
+          border-color: #98a2b3;
+        }
+        .premium-input:focus {
+          border-color: #006ee6;
+          box-shadow: 0 0 0 3px rgba(0, 110, 230, 0.1);
+        }
+        .table-input {
+          border: 1px solid transparent;
+          background: transparent;
+          padding: 6px 8px;
+          border-radius: 4px;
+          font-size: 13px;
+          outline: none;
+          width: 100%;
+          box-sizing: border-box;
+          transition: all 0.1s ease;
+        }
+        .table-input:hover {
+          border-color: #eaecf0;
+          background: #f9fafb;
+        }
+        .table-input:focus {
+          border-color: #006ee6 !important;
+          background: #ffffff !important;
+          box-shadow: 0 0 0 3px rgba(0, 110, 230, 0.1) !important;
+        }
+        .row-action-btn {
+          opacity: 0.6;
+          transition: opacity 0.15s ease, color 0.15s ease;
+        }
+        .row-action-btn:hover {
+          opacity: 1;
+          color: #d92d20;
+        }
+        .add-row-btn {
+          border: 1px solid #d0d5dd;
+          color: #344054;
+          background: #ffffff;
+          transition: all 0.15s ease;
+        }
+        .add-row-btn:hover {
+          border-color: #006ee6;
+          color: #006ee6;
+          background: #f0f6ff;
+        }
+        .attach-box {
+          border: 2px dashed #eaecf0;
+          border-radius: 8px;
+          padding: 24px;
+          text-align: center;
+          background: #fcfcfd;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .attach-box:hover {
+          border-color: #006ee6;
+          background: #f0f6ff;
+        }
+        .control-group-btn {
+          padding: 10px 14px;
+          background: #006ee6;
+          color: #ffffff;
+          border: none;
+          border-radius: 0 6px 6px 0;
+          cursor: pointer;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.15s ease;
+          outline: none;
+        }
+        .control-group-btn:hover {
+          background: #0056b3;
+        }
+      `}} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-        <div>
-          <label><strong>Vendor *</strong></label>
-          <div style={{ display: "flex", gap: "5px" }}>
-            <select value={vendorId} onChange={e => setVendorId(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
-              <option value="">Select vendor</option>
-              {vendors.map(v => (
-                <option key={v.id} value={v.id}>
-                  {v.display_name || v.company_name || v.email}
-                </option>
-              ))}
-            </select>
-            <button onClick={() => setShowVendorModal(true)} style={addBtnSmall} title="New Vendor">+</button>
+      {/* Form Header Banner */}
+      <div style={{ borderBottom: "1px solid #eaecf0", padding: "20px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button
+            onClick={() => navigate(isEditMode ? `/purchase-orders/${id}/document` : "/purchase-orders")}
+            style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "#667085", padding: "4px", borderRadius: "4px" }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#f2f4f7"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#006ee6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#1d2939" }}>
+              {isEditMode ? "Edit Purchase Order" : "New Purchase Order"}
+            </h2>
           </div>
         </div>
-        <div>
-          <label><strong>Purchase Order Date</strong></label>
-          <input type="date" value={poDate} onChange={e => setPoDate(e.target.value)} style={inputStyle} />
-        </div>
-        <div>
-          <label><strong>Expected Delivery Date</strong></label>
-          <input type="date" value={expectedDeliveryDate} onChange={e => setExpectedDeliveryDate(e.target.value)} style={inputStyle} />
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-        <div>
-          <label><strong>Reference#</strong></label>
-          <input type="text" value={referenceNumber} onChange={e => setReferenceNumber(e.target.value)} style={inputStyle} placeholder="e.g. REF-1234" />
-        </div>
-      </div>
-
-      {/* Items Table */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <h3 style={{ margin: 0 }}>Item Table</h3>
-        <button onClick={addItem} style={secondaryBtn}>+ Add Row</button>
-      </div>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px", minWidth: "800px" }}>
-          <thead>
-            <tr style={{ background: "#f1f5f9", textAlign: "left" }}>
-              <th style={thStyle}>Item</th>
-              <th style={thStyle}>Description</th>
-              <th style={{ ...thStyle, width: "70px" }}>Qty</th>
-              <th style={{ ...thStyle, width: "90px" }}>Rate</th>
-              <th style={{ ...thStyle, width: "80px" }}>Discount</th>
-              <th style={{ ...thStyle, width: "60px" }}>Tax %</th>
-              <th style={{ ...thStyle, width: "90px" }}>Amount</th>
-              <th style={{ ...thStyle, width: "40px" }}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, idx) => (
-              <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                <td style={tdStyle}>
-                  <select value={item.item_id} onChange={e => handleItemSelect(idx, e.target.value)}
-                    style={{ ...inputStyle, minWidth: "120px" }}>
-                    <option value="">— Select item —</option>
-                    {catalogItems.map(ci => (
-                      <option key={ci.id} value={ci.id}>{ci.name}</option>
-                    ))}
-                  </select>
-                  {(item.hsn_code || item.unit) && (
-                    <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px", display: "flex", gap: "6px" }}>
-                      {item.hsn_code && <span style={{ background: "#f0f4ff", border: "1px solid #c7d2fe", borderRadius: "3px", padding: "1px 5px" }}>HSN: {item.hsn_code}</span>}
-                      {item.unit && <span style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "3px", padding: "1px 5px" }}>Unit: {item.unit}</span>}
-                    </div>
-                  )}
-                </td>
-                <td style={tdStyle}>
-                  <input type="text" placeholder="Description" value={item.description}
-                    onChange={e => updateItem(idx, "description", e.target.value)} style={{ ...inputStyle, minWidth: "140px" }} />
-                </td>
-                <td style={tdStyle}>
-                  <input type="number" min="0" value={item.quantity}
-                    onChange={e => updateItem(idx, "quantity", e.target.value)} style={{ ...inputStyle, width: "65px" }} />
-                </td>
-                <td style={tdStyle}>
-                  <input type="number" min="0" step="0.01" value={item.rate}
-                    onChange={e => updateItem(idx, "rate", e.target.value)} style={{ ...inputStyle, width: "85px" }} />
-                </td>
-                <td style={tdStyle}>
-                  <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
-                    <input type="number" min="0" step="0.01" value={item.discount}
-                      onChange={e => updateItem(idx, "discount", e.target.value)} style={{ ...inputStyle, width: "55px" }} />
-                    <select value={item.discount_type} onChange={e => updateItem(idx, "discount_type", e.target.value)}
-                      style={{ ...inputStyle, width: "35px", padding: "4px" }}>
-                      <option value="flat">₹</option>
-                      <option value="percent">%</option>
-                    </select>
-                  </div>
-                </td>
-                <td style={tdStyle}>
-                  <input type="number" min="0" max="100" value={item.tax_rate}
-                    onChange={e => updateItem(idx, "tax_rate", e.target.value)} style={{ ...inputStyle, width: "55px" }} />
-                </td>
-                <td style={{ ...tdStyle, fontWeight: "500" }}>
-                  ₹{(calcLineAmount(item) + calcLineTax(item)).toFixed(2)}
-                </td>
-                <td style={tdStyle}>
-                  {items.length > 1 && (
-                    <button onClick={() => removeItem(idx)} style={deleteItemBtn}>✕</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Notes & Terms */}
-      <div style={{ marginBottom: "15px" }}>
-        <label><strong>Notes</strong></label>
-        <textarea value={notes} onChange={e => setNotes(e.target.value)}
-          rows={2} style={inputStyle} placeholder="Looking forward to doing business with you." />
-      </div>
-
-      <div style={{ marginBottom: "15px" }}>
-        <label><strong>Terms & Conditions</strong></label>
-        <textarea value={terms} onChange={e => setTerms(e.target.value)}
-          rows={3} style={inputStyle} placeholder="Enter the terms and conditions..." />
-      </div>
-
-      {/* Totals */}
-      <div style={{ background: "#f9fafb", padding: "15px", borderRadius: "8px", marginBottom: "20px", maxWidth: "350px", marginLeft: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-          <span>Sub Total</span><span>₹{subtotal.toFixed(2)}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", color: "#e74c3c" }}>
-          <span>Total Discount</span><span>- ₹{totalDiscount.toFixed(2)}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", color: "#2980b9" }}>
-          <span>Total Tax</span><span>+ ₹{totalTax.toFixed(2)}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "16px", borderTop: "1px solid #ddd", paddingTop: "10px" }}>
-          <span>Grand Total (₹)</span><span>₹{grandTotal.toFixed(2)}</span>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-        <button onClick={() => navigate(isEditMode ? `/purchase-orders/${id}/document` : "/purchase-orders")} style={cancelBtnStyle}>Cancel</button>
-        <button onClick={handleSave} disabled={loading} style={primaryBtn}>
-          {loading ? "Saving..." : (isEditMode ? "Update Purchase Order" : "Save Purchase Order")}
+        <button
+          onClick={() => navigate(isEditMode ? `/purchase-orders/${id}/document` : "/purchase-orders")}
+          style={{ border: "none", background: "none", cursor: "pointer", fontSize: "20px", color: "#98a2b3", display: "flex", padding: "4px", borderRadius: "4px" }}
+          onMouseEnter={(e) => e.currentTarget.style.background = "#f2f4f7"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+        >
+          &times;
         </button>
       </div>
 
-      {/* ===== NEW VENDOR MODAL ===== */}
+      {/* Main Form Area */}
+      <div style={{ padding: "32px" }}>
+        
+        {/* Row 1: Vendor details & References */}
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 1fr", gap: "24px", marginBottom: "24px" }}>
+          
+          {/* Vendor Selection */}
+          <div>
+            <label style={labelStyle}>Vendor Name <span style={{ color: "#d92d20" }}>*</span></label>
+            <div style={{ display: "flex", width: "100%" }}>
+              <select 
+                value={vendorId} 
+                onChange={e => {
+                  if (e.target.value === "new") setShowVendorModal(true);
+                  else setVendorId(e.target.value);
+                }} 
+                style={{ ...selectStyle, borderRadius: "6px 0 0 6px" }}
+                className="premium-input"
+              >
+                <option value="">Select or add a vendor</option>
+                <option value="new" style={{ color: "#0ba5ec", fontWeight: "600" }}>+ New Vendor</option>
+                {vendors.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.display_name || [c.first_name, c.last_name].filter(Boolean).join(' ') || c.email}
+                  </option>
+                ))}
+              </select>
+              <button 
+                onClick={() => setShowVendorModal(true)} 
+                className="control-group-btn" 
+                title="New Vendor"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Purchase Order# */}
+          <div>
+            <label style={labelStyle}>Purchase Order#</label>
+            <div style={{ position: "relative" }}>
+              <input 
+                type="text" 
+                value={isEditMode ? poNumber : "SO-[Auto-Generated]"} 
+                disabled 
+                style={{ ...inputStyle, background: "#f8fafc", color: "#667085", paddingRight: "36px" }} 
+              />
+              <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", display: "flex", color: "#98a2b3" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          {/* Reference# */}
+          <div>
+            <label style={labelStyle}>Reference#</label>
+            <input 
+              type="text" 
+              value={referenceNumber} 
+              onChange={e => setReferenceNumber(e.target.value)} 
+              placeholder="e.g. PO-12345" 
+              className="premium-input"
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Dates & payment terms_conditions */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginBottom: "24px", borderTop: "1px solid #f2f4f7", paddingTop: "24px" }}>
+          <div>
+            <label style={labelStyle}>Purchase Order Date <span style={{ color: "#d92d20" }}>*</span></label>
+            <input 
+              type="date" 
+              value={poDate} 
+              onChange={e => setPoDate(e.target.value)} 
+              className="premium-input"
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Expected Shipment Date</label>
+            <input 
+              type="date" 
+              value={expectedDeliveryDate} 
+              onChange={e => setExpectedDeliveryDate(e.target.value)} 
+              className="premium-input"
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Payment Terms</label>
+            <select style={selectStyle} className="premium-input">
+              <option>Due on Receipt</option>
+              <option>Net 15</option>
+              <option>Net 30</option>
+              <option>Net 60</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Row 3: Dispatch Details */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginBottom: "32px", borderTop: "1px solid #f2f4f7", paddingTop: "24px" }}>
+          
+          {/* Delivery Method */}
+          <div>
+            <label style={labelStyle}>Delivery Method</label>
+            <select style={selectStyle} className="premium-input">
+              <option value="">Select delivery method</option>
+              <option value="UPS">UPS</option>
+              <option value="FedEx">FedEx</option>
+              <option value="DHL">DHL</option>
+              <option value="Hand Delivery">Hand Delivery</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Item Management Table */}
+        <div style={{ borderTop: "1px solid #eaecf0", paddingTop: "24px", marginBottom: "24px" }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "600", color: "#344054" }}>Item Details</h3>
+          <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
+              <thead>
+                <tr style={{ background: "#f9fafb", borderBottom: "1px solid #eaecf0" }}>
+                  <th style={{ ...thStyle, width: "30px" }}></th>
+                  <th style={{ ...thStyle, width: "30%" }}>Item Details</th>
+                  <th style={thStyle}>Description</th>
+                  <th style={{ ...thStyle, width: "80px", textAlign: "right" }}>Qty</th>
+                  <th style={{ ...thStyle, width: "110px", textAlign: "right" }}>Rate</th>
+                  <th style={{ ...thStyle, width: "140px", textAlign: "right" }}>Discount</th>
+                  <th style={{ ...thStyle, width: "80px", textAlign: "right" }}>Tax %</th>
+                  <th style={{ ...thStyle, width: "120px", textAlign: "right" }}>Amount</th>
+                  <th style={{ ...thStyle, width: "40px" }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid #eaecf0" }}>
+                    <td style={{ ...tdStyle, color: "#98a2b3" }}>
+                      {/* 6-dots drag indicator */}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="19" r="1"></circle>
+                        <circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="19" r="1"></circle>
+                      </svg>
+                    </td>
+                    <td style={tdStyle}>
+                      <select 
+                        value={item.item_id} 
+                        onChange={e => handleItemSelect(idx, e.target.value)}
+                        style={{ border: "1px solid #d0d5dd", padding: "6px", borderRadius: "4px", fontSize: "12px", width: "100%", color: "#344054" }}
+                      >
+                        <option value="">Type or select item...</option>
+                        {catalogItems.map(ci => (
+                          <option key={ci.id} value={ci.id}>{ci.name}</option>
+                        ))}
+                      </select>
+                      {(item.hsn_code || item.unit) && (
+                        <div style={{ fontSize: "10px", color: "#667085", marginTop: "4px", display: "flex", gap: "6px" }}>
+                          {item.hsn_code && <span style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "3px", padding: "1px 4px" }}>HSN: {item.hsn_code}</span>}
+                          {item.unit && <span style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: "3px", padding: "1px 4px" }}>Unit: {item.unit}</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td style={tdStyle}>
+                      <input 
+                        type="text" 
+                        placeholder="Description" 
+                        value={item.description}
+                        onChange={e => updateItem(idx, "description", e.target.value)} 
+                        className="table-input" 
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={item.quantity}
+                        onChange={e => updateItem(idx, "quantity", e.target.value)} 
+                        className="table-input" 
+                        style={{ textAlign: "right" }}
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        step="0.01" 
+                        value={item.unit_price}
+                        onChange={e => updateItem(idx, "unit_price", e.target.value)} 
+                        className="table-input" 
+                        style={{ textAlign: "right" }}
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", gap: "3px", alignItems: "center", justifyContent: "flex-end" }}>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={item.discount}
+                          onChange={e => updateItem(idx, "discount", e.target.value)} 
+                          className="table-input" 
+                          style={{ textAlign: "right", width: "60px" }}
+                        />
+                        <select 
+                          value={item.discount_type} 
+                          onChange={e => updateItem(idx, "discount_type", e.target.value)}
+                          style={{ border: "1px solid #d0d5dd", padding: "4px", borderRadius: "4px", fontSize: "11px", color: "#475569" }}
+                        >
+                          <option value="flat">₹</option>
+                          <option value="percent">%</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td style={tdStyle}>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        max="100" 
+                        value={item.tax_rate}
+                        onChange={e => updateItem(idx, "tax_rate", e.target.value)} 
+                        className="table-input" 
+                        style={{ textAlign: "right" }}
+                      />
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "600", color: "#1d2939" }}>
+                      ₹{(calcLineAmount(item) + calcLineTax(item)).toFixed(2)}
+                    </td>
+                    <td style={tdStyle}>
+                      {items.length > 1 && (
+                        <button onClick={() => removeItem(idx)} className="row-action-btn" style={{ border: "none", background: "none", cursor: "pointer", color: "#667085", padding: 0 }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+            <button onClick={addItem} className="add-row-btn" style={{ padding: "8px 16px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              + Add New Row
+            </button>
+            <button onClick={() => toast("Bulk Add Feature")} className="add-row-btn" style={{ padding: "8px 16px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              Add Items in Bulk
+            </button>
+          </div>
+        </div>
+
+        {/* Lower split layout: Notes & Totals card */}
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "40px", borderTop: "1px solid #eaecf0", paddingTop: "32px", marginTop: "32px" }}>
+          
+          {/* Notes column */}
+          <div>
+            <div style={{ marginBottom: "20px" }}>
+              <label style={labelStyle}>Vendor Notes</label>
+              <textarea 
+                value={vendorNotes} 
+                onChange={e => setVendorNotes(e.target.value)}
+                rows={3} 
+                style={{ ...inputStyle, width: "100%", height: "80px", resize: "none" }} 
+                placeholder="Looking forward to doing business with you." 
+                className="premium-input"
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Terms & Conditions</label>
+              <textarea 
+                value={terms_conditions} 
+                onChange={e => setTermsConditions(e.target.value)}
+                rows={3} 
+                style={{ ...inputStyle, width: "100%", height: "80px", resize: "none" }} 
+                placeholder="Terms and conditions of this sale order..." 
+                className="premium-input"
+              />
+            </div>
+          </div>
+
+          {/* Totals & Upload Card */}
+          <div>
+            
+            {/* Calculation summary */}
+            <div style={{ background: "#fcfcfd", border: "1px solid #eaecf0", borderRadius: "8px", padding: "20px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "13px", color: "#667085" }}>
+                <span>Sub Total</span>
+                <span style={{ fontWeight: "500", color: "#344054" }}>₹{subtotal.toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "13px", color: "#b91c1c" }}>
+                <span>Total Discount</span>
+                <span style={{ fontWeight: "500" }}>- ₹{totalDiscount.toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px", fontSize: "13px", color: "#0f766e" }}>
+                <span>Total Tax</span>
+                <span style={{ fontWeight: "500" }}>+ ₹{totalTax.toFixed(2)}</span>
+              </div>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "15px", borderTop: "1px solid #eaecf0", paddingTop: "14px", color: "#1d2939" }}>
+                <span>Total ( ₹ )</span>
+                <span>₹{grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Attach File block */}
+            <div className="attach-box" onClick={() => toast("File browser opened")}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667085" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "8px", opacity: 0.8 }}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: "#344054", marginBottom: "2px" }}>Upload Files</div>
+              <div style={{ fontSize: "11px", color: "#667085" }}>Drag & Drop or click to upload. Max 5MB.</div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      {/* Action Footer Bar */}
+      <div style={{ background: "#f9fafb", borderTop: "1px solid #eaecf0", padding: "16px 32px", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+        <button 
+          onClick={() => navigate(isEditMode ? `/purchase-orders/${id}/document` : "/purchase-orders")} 
+          style={{ ...cancelBtnStyle, background: "#ffffff", border: "1px solid #d0d5dd", color: "#344054", fontSize: "13px", fontWeight: "600", borderRadius: "6px", padding: "8px 16px", cursor: "pointer" }}
+        >
+          Cancel
+        </button>
+        <button 
+          onClick={() => handleSave("draft")} 
+          disabled={loading}
+          style={{ background: "#ffffff", border: "1px solid #d0d5dd", color: "#344054", fontSize: "13px", fontWeight: "600", borderRadius: "6px", padding: "8px 16px", cursor: "pointer" }}
+        >
+          Save as Draft
+        </button>
+        <button 
+          onClick={() => handleSave("confirmed")} 
+          disabled={loading} 
+          style={{ ...primaryBtn, background: "#006ee6", fontSize: "13px", fontWeight: "600", borderRadius: "6px", padding: "8px 16px", cursor: "pointer", border: "none", color: "#ffffff" }}
+        >
+          {loading ? "Saving..." : (isEditMode ? "Update Order" : "Save and Send")}
+        </button>
+      </div>
+
+      {/* ===== NEW VENDOR MODAL (Unchanged Backend integration) ===== */}
       {showVendorModal && (
         <div style={modalOverlay}>
-          <div style={modalBox}>
-            <h3 style={{ marginTop: 0 }}>+ New Vendor</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              <div>
-                <label>Display Name *</label>
-                <input value={newVendor.display_name} onChange={e => setNewVendor({ ...newVendor, display_name: e.target.value })} style={inputStyle} />
-              </div>
-              <div>
-                <label>Company Name</label>
-                <input value={newVendor.company_name} onChange={e => setNewVendor({ ...newVendor, company_name: e.target.value })} style={inputStyle} />
-              </div>
-              <div>
-                <label>Email</label>
-                <input type="email" value={newVendor.email} onChange={e => setNewVendor({ ...newVendor, email: e.target.value })} style={inputStyle} />
-              </div>
-              <div>
-                <label>Phone</label>
-                <input value={newVendor.phone} onChange={e => setNewVendor({ ...newVendor, phone: e.target.value })} style={inputStyle} />
-              </div>
-              <div>
-                <label>GSTIN / Tax Number</label>
-                <input value={newVendor.pan} onChange={e => setNewVendor({ ...newVendor, pan: e.target.value })} style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: "1/-1" }}>
-                <label>Billing Address</label>
-                <input value={newVendor.billing_address} onChange={e => setNewVendor({ ...newVendor, billing_address: e.target.value })} style={inputStyle} />
-              </div>
+          <div style={{ ...modalBox, width: "950px", maxWidth: "95vw", maxHeight: "90vh", padding: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 0 20px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", color: "#1d2939" }}>+ New Vendor</h3>
+              <button onClick={() => setShowVendorModal(false)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#98a2b3" }}>&times;</button>
             </div>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "15px" }}>
-              <button onClick={() => setShowVendorModal(false)} style={cancelBtnStyle}>Cancel</button>
-              <button onClick={handleSaveVendor} style={primaryBtn}>Save Vendor</button>
-            </div>
+            <AddVendor isModal={true} onSaveSuccess={handleSaveVendorSuccess} onCancel={() => setShowVendorModal(false)} />
           </div>
         </div>
       )}
+
+      
     </div>
   );
 }
 
-// Styles
-const thStyle = { padding: "10px", borderBottom: "2px solid #cbd5e1", whiteSpace: "nowrap", fontSize: "13px" };
-const tdStyle = { padding: "6px 8px" };
-const inputStyle = { width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #ccc", boxSizing: "border-box", fontSize: "13px" };
-const primaryBtn = { padding: "10px 20px", background: "#4a90e2", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "500" };
-const secondaryBtn = { padding: "8px 14px", background: "#f0f0f0", color: "#333", border: "1px solid #ccc", borderRadius: "5px", cursor: "pointer", fontSize: "13px" };
-const cancelBtnStyle = { padding: "10px 20px", background: "#ccc", color: "#333", border: "none", borderRadius: "5px", cursor: "pointer" };
-const deleteItemBtn = { background: "red", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", padding: "4px 8px" };
-const addBtnSmall = { padding: "6px 10px", background: "#4a90e2", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" };
-const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 };
-const modalBox = { background: "#fff", borderRadius: "8px", padding: "25px", width: "550px", maxWidth: "95%", maxHeight: "85vh", overflow: "auto", boxShadow: "0 4px 20px rgba(0,0,0,0.2)" };
+// Inline constant styles
+const labelStyle = {
+  display: "block",
+  fontSize: "12px",
+  fontWeight: "600",
+  color: "#344054",
+  marginBottom: "6px",
+};
+
+const inputStyle = {
+  boxSizing: "border-box",
+};
+
+const selectStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const thStyle = {
+  padding: "10px 12px",
+  color: "#475569",
+  fontSize: "11px",
+  fontWeight: "600",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  borderBottom: "1px solid #eaecf0",
+};
+
+const tdStyle = {
+  padding: "8px 12px",
+  verticalAlign: "top",
+};
+
+const cancelBtnStyle = {
+  transition: "all 0.1s ease",
+};
+
+const primaryBtn = {
+  transition: "all 0.1s ease",
+};
+
+// Modal styles
+const modalOverlay = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  background: "rgba(16, 24, 40, 0.4)",
+  backdropFilter: "blur(4px)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 1000,
+};
+
+const modalBox = {
+  background: "#ffffff",
+  borderRadius: "12px",
+  padding: "24px",
+  width: "550px",
+  maxWidth: "95%",
+  maxHeight: "90vh",
+  overflowY: "auto",
+  boxShadow: "0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03)",
+};
+
+const modalInputStyle = {
+  width: "100%",
+  padding: "8px 12px",
+  border: "1px solid #d0d5dd",
+  borderRadius: "6px",
+  fontSize: "13px",
+  color: "#344054",
+  boxSizing: "border-box",
+  outline: "none",
+  marginTop: "4px",
+};
+
+const modalCancelBtn = {
+  padding: "8px 16px",
+  background: "#ffffff",
+  border: "1px solid #d0d5dd",
+  color: "#344054",
+  fontSize: "13px",
+  fontWeight: "600",
+  borderRadius: "6px",
+  cursor: "pointer",
+};
+
+const modalPrimaryBtn = {
+  padding: "8px 16px",
+  background: "#006ee6",
+  border: "none",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: "600",
+  borderRadius: "6px",
+  cursor: "pointer",
+};
 
 export default AddPurchaseOrder;

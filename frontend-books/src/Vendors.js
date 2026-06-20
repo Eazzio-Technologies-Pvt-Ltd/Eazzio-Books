@@ -1,136 +1,2041 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+/**
+ * Vendors.js – Final version with activity log timeline, active/inactive toggle,
+ * dynamic income chart, column customization, etc.
+ */
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { apiRequest } from "./api";
-import { TableSkeleton } from "./components/skeletons";
+import { TableSkeleton, DetailSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
+import { useAuth } from "./AuthContext";
+import { canAccess, MODULES, ACTIONS } from "./utils/permissions";
+
+
+const BLUE = '#4a90e2';
+const BORDER_COLOR = '#e2e8f0';
+const TEXT_PRIMARY = '#1e293b';
+const TEXT_SECONDARY = '#64748b';
+const BG_PAGE = '#f8fafc';
+const BG_CARD = '#ffffff';
+const RADIUS = '8px';
+const SHADOW = '0 1px 4px rgba(0,0,0,0.06)';
+
+// Minimal inline styles replacements for table
+const thStyle = {
+  padding: "12px 14px",
+  borderBottom: "1px solid #eaecf0",
+  fontSize: "11px",
+  fontWeight: "600",
+  textTransform: "uppercase",
+  color: "#475569",
+  letterSpacing: "0.03em",
+};
+const tdStyle = {
+  padding: "12px 14px",
+  verticalAlign: "middle",
+};
+
+const ORG_NAME = "Tinplate Computer Training Center";
+const ORG_ADDRESS = "2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001";
+const ORG_EMAIL = "kumarrahulraj468@gmail.com";
+const ORG_COUNTRY = "India";
+
+const ALL_COLUMNS = [
+  { key: "checkbox", label: "☐" },
+  { key: "name", label: "Name" },
+  { key: "company", label: "Company Name" },
+  { key: "email", label: "Email" },
+  { key: "workPhone", label: "Work Phone" },
+  { key: "status", label: "Status" },
+  { key: "receivables", label: "Receivables (BCY)" },
+  { key: "unusedCredits", label: "Unused Credits (BCY)" },
+];
 
 function Vendors() {
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParamsUrl = new URLSearchParams(location.search);
+  const searchQuery = searchParamsUrl.get("search") || "";
+
+  const timeAgo = (dateString) => {
+    if (!dateString) return "";
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay > 30) return `${Math.floor(diffDay / 30)} month(s) ago`;
+    if (diffDay > 0) return `${diffDay} day(s) ago`;
+    if (diffHr > 0) return `${diffHr} hour(s) ago`;
+    if (diffMin > 0) return `${diffMin} minute(s) ago`;
+    return "just now";
+  };
+
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all"); // 'all', 'active', 'inactive'
+  const [selected, setSelected] = useState([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("active");
+  const [visibleColumns, setVisibleColumns] = useState(
+    ALL_COLUMNS.reduce((acc, col) => {
+      acc[col.key] = !['receivables', 'unusedCredits'].includes(col.key);
+      if (typeof window !== 'undefined' && window.innerWidth < 768 && ['company', 'workPhone'].includes(col.key)) {
+        acc[col.key] = false;
+      }
+      return acc;
+    }, {})
+  );
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [clipText, setClipText] = useState(true);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   useEffect(() => {
-    fetchVendors();
+    const h = (e) => {
+      if (!e.target.closest('.th-icon-wrapper') && !e.target.closest('.settings-dropdown') && !e.target.closest('.columns-dropdown')) {
+        setShowSettings(false);
+        setColumnsOpen(false);
+      }
+      if (!e.target.closest('.view-dropdown-container')) setMenuOpen(false);
+      if (!e.target.closest('.more-dropdown-container')) setShowMoreMenu(false);
+    };
+    document.addEventListener('click', h);
+    return () => document.removeEventListener('click', h);
   }, []);
 
-  const fetchVendors = async () => {
+  const [expandedId, setExpandedId] = useState(null);
+  const [expandedVendor, setExpandedVendor] = useState(null);
+  const [expandedAddresses, setExpandedAddresses] = useState([]);
+  const [expandedContacts, setExpandedContacts] = useState([]);
+  const [expandedLoading, setExpandedLoading] = useState(false);
+
+  // ✅ FIX 1: activities default [] hai
+  const [activities, setActivities] = useState([]);
+  const [activeTab, setActiveTab] = useState("Overview");
+
+  const [activeStatus, setActiveStatus] = useState(true);
+  useEffect(() => {
+    if (expandedVendor) setActiveStatus(expandedVendor.is_active);
+  }, [expandedVendor]);
+
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(false);
+
+  const [statementPreset, setStatementPreset] = useState("thisMonth");
+  const [statementFilter, setStatementFilter] = useState("all");
+  const [generatedStatement, setGeneratedStatement] = useState(null);
+  const [statementLoading, setStatementLoading] = useState(false);
+  const [orgInfo, setOrgInfo] = useState({
+    name: ORG_NAME,
+    address: ORG_ADDRESS,
+    email: ORG_EMAIL,
+    country: ORG_COUNTRY,
+  });
+  const [statementRange, setStatementRange] = useState({
+    from: new Date().toISOString().slice(0, 10),
+    to: new Date().toISOString().slice(0, 10),
+  });
+
+  const [invoices, setInvoices] = useState([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [newTransactionOpen, setNewTransactionOpen] = useState(false);
+
+  const [incomePeriod, setIncomePeriod] = useState("last6Months");
+
+  // Email modal state
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+
+  // PDF download loading state
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const StatusBadge = ({ isActive }) => (
+    <span style={{
+      display: 'inline-block',
+      padding: '3px 10px',
+      borderRadius: '12px',
+      fontSize: '12px',
+      fontWeight: '600',
+      background: isActive ? '#d1fae5' : '#f3f4f6',
+      color: isActive ? '#065f46' : '#6b7280',
+      border: `1px solid ${isActive ? '#6ee7b7' : '#e5e7eb'}`,
+    }}>
+      {isActive ? 'Active' : 'Inactive'}
+    </span>
+  );
+
+  const handleSingleDelete = async (id) => {
+    if (!window.confirm('Delete this vendor?')) return;
     try {
-      const res = await apiRequest("/vendors");
-      setVendors(res?.vendors || []);
+      await apiRequest(`/vendors/${id}`, { method: 'DELETE' });
+      toast.success('Vendor deleted');
+      if (expandedId === id) setExpandedId(null);
+      fetchVendors();
+    } catch (err) {
+      toast.error('Delete failed');
+    }
+  };
+
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      const newStatus = !currentStatus;
+      await apiRequest(`/vendors/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_active: newStatus }),
+      });
+      toast.success(newStatus ? 'Vendor activated' : 'Vendor deactivated');
+      if (expandedId === id) setActiveStatus(newStatus);
+      fetchVendors();
+    } catch (err) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const getVendorName = (cust) => {
+    if (!cust) return "Unknown Vendor";
+    return (
+      cust.display_name ||
+      [cust.first_name, cust.last_name].filter(Boolean).join(" ") ||
+      cust.company_name ||
+      cust.email ||
+      "Unknown Vendor"
+    );
+  };
+
+  const filteredVendors = vendors.filter(c => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const name = getVendorName(c).toLowerCase();
+    const email = (c.email || "").toLowerCase();
+    const comp = (c.company_name || "").toLowerCase();
+    return name.includes(q) || email.includes(q) || comp.includes(q);
+  });
+
+  const fetchVendors = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
+      const res = await apiRequest(`/vendors${params}`);
+      if (res) setVendors(res.vendors || []);
     } catch (err) {
       toast.error("Failed to load vendors");
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
-  const deleteVendor = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm("Delete this vendor?")) return;
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
+
+  const fetchInvoiceData = async (vendorId) => {
+    setInvoicesLoading(true);
     try {
-      await apiRequest(`/vendors/${id}`, { method: "DELETE" });
-      setVendors(vendors.filter((v) => v.id !== id));
-      toast.success("Vendor deleted");
+      const res = await apiRequest(`/vendors/${vendorId}/invoices`);
+      if (res) setInvoices(res.invoices || []);
     } catch (err) {
-      toast.error("Failed to delete vendor");
+      toast.error("Failed to load invoices");
+    } finally {
+      setInvoicesLoading(false);
     }
   };
 
-  const filteredVendors = vendors.filter((v) => {
-    const matchSearch =
-      v.display_name.toLowerCase().includes(search.toLowerCase()) ||
-      (v.company_name && v.company_name.toLowerCase().includes(search.toLowerCase())) ||
-      (v.email && v.email.toLowerCase().includes(search.toLowerCase()));
-    
-    if (filter === "all") return matchSearch;
-    return matchSearch && v.status === filter;
+  const fetchComments = async (vendorId) => {
+    setCommentsLoading(true);
+    try {
+      const res = await apiRequest(`/vendors/${vendorId}/comments`);
+      if (res) setComments(res.comments || []);
+    } catch (err) {
+      toast.error("Failed to load comments");
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  // ✅ FIX 2: res.activity OR res.activities dono handle karo + fallback []
+  const fetchActivities = async (vendorId) => {
+    try {
+      const res = await apiRequest(`/vendors/${vendorId}/activity`);
+      if (res) setActivities(res.activity || res.activities || []);
+    } catch (err) {
+      console.error("Failed to load activities", err);
+      setActivities([]); // ✅ error pe bhi [] set karo crash nahi hoga
+    }
+  };
+
+  const toggleExpand = async (id) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      setExpandedVendor(null);
+      setExpandedAddresses([]);
+      setExpandedContacts([]);
+      setActiveTab("Overview");
+      setComments([]);
+      setGeneratedStatement(null);
+      setMoreOpen(false);
+      setInvoices([]);
+      setActivities([]);
+      return;
+    }
+    setExpandedId(id);
+    setExpandedLoading(true);
+    setActiveTab("Overview");
+    setComments([]);
+    setGeneratedStatement(null);
+    setMoreOpen(false);
+    setInvoices([]);
+    setActivities([]);
+    try {
+      const res = await apiRequest(`/vendors/${id}`);
+      if (res) {
+        setExpandedVendor(res.vendor);
+        setExpandedAddresses(res.addresses || []);
+        setExpandedContacts(res.contacts || []);
+        setActiveStatus(res.vendor.is_active);
+        fetchInvoiceData(id);
+        fetchComments(id);
+        fetchActivities(id);
+      }
+    } catch (err) {
+      toast.error("Failed to load details");
+      setExpandedId(null);
+    } finally {
+      setExpandedLoading(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.length === vendors.length) setSelected([]);
+    else setSelected(vendors.map((c) => c.id));
+  };
+  const toggleSelectOne = (id) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
+    );
+  };
+
+  const deleteSelected = async () => {
+    if (!window.confirm(`Delete ${selected.length} selected?`)) return;
+    try {
+      await Promise.all(
+        selected.map((id) =>
+          apiRequest(`/vendors/${id}`, { method: "DELETE" }),
+        ),
+      );
+      toast.success("Selected deleted");
+      setSelected([]);
+      if (expandedId && selected.includes(expandedId)) setExpandedId(null);
+      fetchVendors();
+    } catch (err) {
+      toast.error("Batch delete failed");
+    }
+  };
+
+  const handleRefresh = () => {
+    setMenuOpen(false);
+    fetchVendors();
+  };
+  const handleImport = () => {
+    setMenuOpen(false);
+    navigate("/import_more");
+  };
+
+  const handleInvitePortal = async (vendorId) => {
+    try {
+      await apiRequest(`/vendors/${vendorId}`, {
+        method: "PUT",
+        body: JSON.stringify({ enable_portal: true }),
+      });
+      toast.success("Portal access enabled");
+      const res = await apiRequest(`/vendors/${vendorId}`);
+      if (res) setExpandedVendor(res.vendor);
+      fetchVendors();
+    } catch (err) {
+      toast.error("Failed to enable portal");
+    }
+  };
+
+  const handleNewTransaction = (vendorId) => {
+    toast("Invoice page coming soon");
+  };
+
+  const getStatementDates = () => {
+    if (statementPreset !== "custom") {
+      const today = new Date();
+      let from, to;
+      switch (statementPreset) {
+        case "today":
+          from = to = today;
+          break;
+        case "thisWeek": {
+          const day = today.getDay();
+          from = new Date(today.getFullYear(), today.getMonth(), today.getDate() - day);
+          to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - day));
+          break;
+        }
+        case "thisMonth":
+          from = new Date(today.getFullYear(), today.getMonth(), 1);
+          to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          break;
+        case "thisYear":
+          from = new Date(today.getFullYear(), 0, 1);
+          to = new Date(today.getFullYear(), 11, 31);
+          break;
+        case "lifetime":
+        default:
+          from = new Date(2000, 0, 1);
+          to = new Date(2099, 11, 31);
+      }
+      return {
+        from: from.toISOString().slice(0, 10),
+        to: to.toISOString().slice(0, 10),
+      };
+    }
+    return statementRange;
+  };
+
+  const handleGenerateStatement = async () => {
+    if (!expandedId) return;
+    setStatementLoading(true);
+    try {
+      const range = getStatementDates();
+      const filteredInvoices = invoices.filter((inv) => {
+        const invDate = new Date(inv.invoice_date).toISOString().slice(0, 10);
+        return invDate >= range.from && invDate <= range.to;
+      });
+      const totalInvoiced = filteredInvoices.reduce(
+        (sum, inv) => sum + (parseFloat(inv.total_amount) || 0), 0,
+      );
+      const openingBalance = parseFloat(expandedVendor?.opening_balance) || 0;
+      const amountReceived = 0;
+      const balanceDue = openingBalance + totalInvoiced - amountReceived;
+      const rows = filteredInvoices.map((inv) => ({
+        date: new Date(inv.invoice_date).toLocaleDateString(),
+        transaction: `Invoice ${inv.invoice_number || "—"}`,
+        details: inv.description || "",
+        amount: parseFloat(inv.total_amount).toFixed(2),
+        payments: "0.00",
+        balance: balanceDue.toFixed(2),
+      }));
+      setGeneratedStatement({
+        from: range.from,
+        to: range.to,
+        openingBalance: openingBalance.toFixed(2),
+        totalInvoiced: totalInvoiced.toFixed(2),
+        amountReceived: amountReceived.toFixed(2),
+        balanceDue: balanceDue.toFixed(2),
+        rows,
+      });
+      toast.success("Statement generated");
+    } catch (err) {
+      toast.error("Failed to generate statement");
+    } finally {
+      setStatementLoading(false);
+    }
+  };
+
+  const openStatementWindow = () => {
+    if (!generatedStatement) return;
+    const win = window.open("", "_blank", "width=800,height=600");
+    const invoiceRows = generatedStatement.rows
+      .map((row) => `
+      <tr>
+        <td>${row.date}</td>
+        <td>${row.transaction}</td>
+        <td>${row.details}</td>
+        <td style="text-align: right;">${row.amount}</td>
+        <td style="text-align: right;">${row.payments}</td>
+        <td style="text-align: right;">${row.balance}</td>
+      </tr>`)
+      .join("");
+    const html = `
+    <!DOCTYPE html><html><head><title>Statement of Accounts</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; color: #333; margin: 0; padding: 40px; }
+      .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+      .org-details { text-align: right; line-height: 1.5; font-size: 13px; }
+      .org-details h2 { margin: 0 0 5px 0; font-size: 16px; color: #111; }
+      .mid-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+      .to-section { font-size: 13px; }
+      .to-section .to-label { font-weight: bold; margin-bottom: 5px; }
+      .to-section .vendor-name { color: #2275d7; font-weight: bold; font-size: 15px; }
+      .title-section { text-align: center; margin-right: 40px; }
+      .title-section h1 { margin: 0 0 10px 0; font-size: 26px; color: #111; font-weight: bold; }
+      .date-range { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; font-size: 13px; }
+      .account-summary { width: 350px; float: right; margin-bottom: 30px; border-collapse: collapse; }
+      .account-summary th { background: #f2f2f2; padding: 8px 10px; text-align: left; font-weight: bold; }
+      .account-summary td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; }
+      .txn-table { width: 100%; border-collapse: collapse; clear: both; }
+      .txn-table th { background: #333; color: #fff; padding: 10px; text-align: left; font-weight: normal; }
+      .txn-table td { padding: 12px 10px; border-bottom: 1px solid #e0e0e0; }
+      .final-balance { text-align: right; margin-top: 20px; font-weight: bold; font-size: 14px; padding-right: 10px; }
+      .final-balance span { display: inline-block; width: 120px; }
+    </style>
+    </head><body>
+      <div class="header">
+        <div></div>
+        <div class="org-details">
+          <h2>${orgInfo.name}</h2>
+          <div>${orgInfo.address}</div>
+          <div>${orgInfo.country}</div>
+          <div>${orgInfo.email}</div>
+        </div>
+      </div>
+      <div class="mid-section">
+        <div class="to-section">
+          <div class="to-label">To</div>
+          <div class="vendor-name">${getVendorName(expandedVendor)}</div>
+        </div>
+        <div class="title-section">
+          <h1>Statement of Accounts</h1>
+          <div class="date-range">${generatedStatement.from} To ${generatedStatement.to}</div>
+        </div>
+      </div>
+      <table class="account-summary">
+        <thead><tr><th colspan="2">Account Summary</th></tr></thead>
+        <tbody>
+          <tr><td>Opening Balance</td><td style="text-align: right;">₹ ${generatedStatement.openingBalance}</td></tr>
+          <tr><td>Invoiced Amount</td><td style="text-align: right;">₹ ${generatedStatement.totalInvoiced}</td></tr>
+          <tr><td>Amount Received</td><td style="text-align: right;">₹ ${generatedStatement.amountReceived}</td></tr>
+          <tr><td>Balance Due</td><td style="text-align: right;">₹ ${generatedStatement.balanceDue}</td></tr>
+        </tbody>
+      </table>
+      <table class="txn-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Transactions</th><th>Details</th>
+            <th style="text-align: right;">Amount</th>
+            <th style="text-align: right;">Payments</th>
+            <th style="text-align: right;">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${generatedStatement.from}</td>
+            <td>***Opening Balance***</td><td></td>
+            <td style="text-align: right;">${generatedStatement.openingBalance}</td>
+            <td style="text-align: right;"></td>
+            <td style="text-align: right;">${generatedStatement.openingBalance}</td>
+          </tr>
+          ${invoiceRows}
+        </tbody>
+      </table>
+      <div class="final-balance">Balance Due <span>₹ ${generatedStatement.balanceDue}</span></div>
+    </body></html>`;
+    win.document.write(html);
+    win.document.close();
+    return win;
+  };
+
+  const handlePrint = () => {
+    const win = openStatementWindow();
+    if (win) { win.focus(); win.print(); }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!generatedStatement) { toast.error('Please generate the statement first.'); return; }
+    setPdfLoading(true);
+    try {
+      const range = getStatementDates();
+      const url = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/vendors/${expandedId}/statement/pdf?from=${range.from}&to=${range.to}`;
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('PDF generation failed');
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Statement_${getVendorName(expandedVendor)}_${range.from}_${range.to}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      toast.success('PDF downloaded');
+    } catch (err) {
+      toast.error('Failed to download PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const openEmailModal = () => {
+    if (!generatedStatement) { toast.error('Please generate the statement first.'); return; }
+    const range = getStatementDates();
+    setEmailTo(expandedVendor.email || '');
+    setEmailSubject(`Statement of Accounts – ${getVendorName(expandedVendor)} (${range.from} to ${range.to})`);
+    setEmailBody(`Dear ${getVendorName(expandedVendor)},\n\nPlease find your Statement of Accounts attached for the period ${range.from} to ${range.to}.\n\nKindly review and let us know if you have any queries.\n\nRegards,\nTinplate Computer Training Center`);
+    setEmailModalOpen(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailTo.trim()) { toast.error('Please enter a recipient email address.'); return; }
+    setEmailSending(true);
+    const range = getStatementDates();
+    try {
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/vendors/${expandedId}/statement/send`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: emailTo.trim(), subject: emailSubject, body: emailBody,
+            from: range.from, to_date: range.to,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Send failed');
+      toast.success('Statement emailed successfully!');
+      setEmailModalOpen(false);
+    } catch (err) {
+      toast.error(err.message || 'Failed to send email');
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  const handleDownloadXLS = () => {
+    if (!generatedStatement) return;
+    let csv = "Date,Transaction,Details,Amount,Payments,Balance\n";
+    generatedStatement.rows.forEach((row) => {
+      csv += `"${row.date}","${row.transaction}","${row.details}","₹${row.amount}","₹${row.payments}","₹${row.balance}"\n`;
+    });
+    csv += `\n"","","Opening Balance","₹${generatedStatement.openingBalance}","",""\n`;
+    csv += `"","","Invoiced Amount","₹${generatedStatement.totalInvoiced}","",""\n`;
+    csv += `"","","Amount Received","₹${generatedStatement.amountReceived}","",""\n`;
+    csv += `"","","Balance Due","₹${generatedStatement.balanceDue}","",""\n`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Statement_${getVendorName(expandedVendor)}_${generatedStatement.from}_${generatedStatement.to}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("XLS downloaded");
+  };
+
+  const addComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      const res = await apiRequest(`/vendors/${expandedId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ comment_text: newComment.trim() }),
+      });
+      setComments([res.comment, ...comments]);
+      setNewComment("");
+      toast.success("Comment added");
+      fetchActivities(expandedId);
+    } catch (err) {
+      toast.error("Failed to add comment");
+    }
+  };
+
+  const billing = expandedAddresses.find((a) => a.type === "billing");
+  const shipping = expandedAddresses.find((a) => a.type === "shipping");
+  const openingBalance = expandedVendor ? parseFloat(expandedVendor.opening_balance) || 0 : 0;
+  const totalInvoiced = invoices.reduce((sum, inv) => sum + (parseFloat(inv.total_amount) || 0), 0);
+  const amountReceived = 0;
+  const balanceDue = openingBalance + totalInvoiced - amountReceived;
+
+  const getIncomeDateRange = () => {
+    const today = new Date();
+    let start, end;
+    switch (incomePeriod) {
+      case "today":
+        start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+        break;
+      case "thisWeek": {
+        const day = today.getDay();
+        start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - day);
+        end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+        break;
+      }
+      case "thisMonth":
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        break;
+      case "last6Months":
+        start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        break;
+      case "last12Months":
+        start = new Date(today.getFullYear() - 1, today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        break;
+      default:
+        start = new Date(2020, 0, 1);
+        end = new Date(2099, 11, 31);
+    }
+    return { start, end };
+  };
+
+  const buildIncomeChartData = () => {
+    const { start, end } = getIncomeDateRange();
+    const months = [];
+    for (let d = new Date(start.getFullYear(), start.getMonth(), 1); d < end; d.setMonth(d.getMonth() + 1)) {
+      months.push({
+        month: d.toLocaleString("default", { month: "short", year: "2-digit" }),
+        amount: 0,
+        key: d.toISOString().slice(0, 7),
+      });
+    }
+    invoices.forEach((inv) => {
+      if (!inv.invoice_date || !inv.total_amount) return;
+      const invDate = new Date(inv.invoice_date);
+      if (invDate >= start && invDate < end) {
+        const key = invDate.toISOString().slice(0, 7);
+        const monthObj = months.find((m) => m.key === key);
+        if (monthObj) monthObj.amount += parseFloat(inv.total_amount) || 0;
+      }
+    });
+    if (months.length > 0) months[0].amount += openingBalance;
+    return months;
+  };
+
+  const incomeChartData = buildIncomeChartData();
+  const chartMax = Math.max(...incomeChartData.map((d) => d.amount), 1);
+
+  const tabStyle = (name) => ({
+    padding: "10px 20px",
+    cursor: "pointer",
+    borderBottom: activeTab === name ? "3px solid #4a90e2" : "3px solid transparent",
+    fontWeight: activeTab === name ? "bold" : "normal",
+    color: activeTab === name ? "#4a90e2" : "#333",
+    background: "none",
+    borderTop: "none",
+    borderLeft: "none",
+    borderRight: "none",
+    borderBottom: activeTab === name ? "3px solid #4a90e2" : "3px solid transparent",
   });
 
+  const cardStyle = {
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    padding: "15px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  };
+
+  const renderCell = (colKey, content) => {
+    if (!visibleColumns[colKey]) return null;
+    return <td style={tdStyle}>{content}</td>;
+  };
+  const renderHeader = (colKey, label) => {
+    if (!visibleColumns[colKey]) return null;
+    return <th style={thStyle}>{label}</th>;
+  };
   return (
-    <div style={{ padding: "30px", maxWidth: "1000px", margin: "auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2>Vendors</h2>
-        <button onClick={() => navigate("/vendors/new")} style={primaryBtn}>
-          + New Vendor
-        </button>
-      </div>
+    <div style={{ background: "#f8fafc", minHeight: "100vh", fontFamily: "system-ui, -apple-system, sans-serif", color: "#1d2939" }}>
+      <style>{`
+        .premium-input {
+          border: 1px solid #d0d5dd;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .premium-input:focus {
+          border-color: #006ee6 !important;
+          box-shadow: 0 0 0 4px rgba(0, 110, 230, 0.12) !important;
+        }
+        .tab-btn {
+          padding: 12px 18px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 13px;
+          color: #667085;
+          background: none;
+          border: none;
+          border-bottom: 2px solid transparent;
+          transition: all 0.15s ease;
+          outline: none;
+        }
+        .tab-btn:hover {
+          color: #1d2939;
+        }
+        .tab-btn.active {
+          color: #006ee6;
+          border-bottom-color: #006ee6;
+          font-weight: 600;
+        }
+        .full-table-container {
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          min-height: calc(100vh - 60px);
+          margin: 0;
+          font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .full-table-header {
+          padding: 15px 30px;
+          border-bottom: 1px solid #eaeaea;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .full-table-header h3 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 500;
+          color: #333;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          cursor: pointer;
+        }
+        .table-actions {
+          display: flex;
+          gap: 10px;
+        }
+        .btn-new {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-weight: 500;
+        }
+        .btn-new:hover { background: #2563eb; }
+        .btn-more {
+          background: #f5f5f5;
+          border: 1px solid #ddd;
+          color: #555;
+          border-radius: 4px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .table-wrapper {
+          flex: 1;
+          overflow: auto;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+          table-layout: fixed;
+        }
+        .items-table th {
+          text-align: left;
+          padding: 12px 15px;
+          color: #64748b;
+          font-weight: 600;
+          border-bottom: 1px solid #e2e8f0;
+          background: #ffffff;
+          text-transform: uppercase;
+          font-size: 11px;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+          resize: horizontal;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .items-table td {
+          padding: 14px 15px;
+          border-bottom: 1px solid #f8fafc;
+          color: #334155;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .items-table tr:hover {
+          background: #f1f5f9;
+        }
+        .vendor-name-link {
+          color: #2563eb;
+          cursor: pointer;
+          font-weight: 500;
+        }
+        .vendor-name-link:hover {
+          text-decoration: underline;
+        }
+        .th-icon-wrapper { overflow: visible !important; }
+        .th-icon { display: inline-flex; align-items: center; justify-content: center; color: #aaa; cursor: pointer; transition: color 0.2s; }
+        .th-icon:hover, .th-icon.active { color: #007bff; }
+        .settings-dropdown { position: absolute; top: 30px; left: 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; width: 180px; padding: 6px; font-size: 13px; text-transform: none; font-weight: 500; text-align: left; letter-spacing: normal; }
+        .dropdown-item { padding: 8px 12px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; border-radius: 4px; cursor: pointer; color: #334155; transition: background 0.2s; }
+        .dropdown-item:hover { background: #f1f5f9; color: #0f172a; }
+        .dropdown-item svg { width: 16px; height: 16px; min-width: 16px; color: #64748b; }
+        .items-table.clip-text td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-        <input
-          type="text"
-          placeholder="Search by name, company, or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ ...inputStyle, maxWidth: "300px" }}
-        />
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...inputStyle, width: "150px" }}>
-          <option value="all">All Vendors</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
+        .more-dropdown-container { position:relative; }
+        .more-dropdown-menu { position:absolute; top:100%; right:0; margin-top:8px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.1); z-index:1000; width:250px; padding:8px 0; }
+        .more-dropdown-item { position:relative; padding:10px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; font-size:14px; color:#334155; transition:background 0.2s; }
+        .more-dropdown-item:hover { background:#f8fafc; color:#0f172a; }
+        .more-dropdown-item svg { width:16px; height:16px; color:#64748b; }
+        .more-dropdown-divider { height:1px; background:#e2e8f0; margin:4px 0; }
+        .more-dropdown-item span { flex:1; }
+        .more-dropdown-item .chevron { width:14px; height:14px; }
+        .nested-dropdown-menu { display:none; position:absolute; right:100%; top:-8px; margin-right:4px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.1); z-index:1001; min-width:200px; padding:8px 0; }
+        .more-dropdown-item:hover > .nested-dropdown-menu { display:block; }
+        
+        .view-dropdown-container { position: relative; display: inline-block; }
+        .view-dropdown-btn { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: background 0.2s; }
+        .view-dropdown-btn:hover, .view-dropdown-btn.active { background: #f1f5f9; }
+        .view-dropdown-menu { position: absolute; top: 100%; left: 0; margin-top: 4px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; width: 220px; padding: 8px 0; }
+        .view-dropdown-item { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px; color: #334155; transition: background 0.2s; }
+        .view-dropdown-item:hover { background: #f8fafc; }
+        .timeline-line {
+          position: absolute;
+          left: 17px;
+          top: 8px;
+          bottom: 8px;
+          width: 2px;
+          background: #eaecf0;
+        }
+        .timeline-node {
+          position: absolute;
+          left: 12px;
+          top: 4px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 0 2px #d0d5dd;
+          background: #ffffff;
+        }
+        .timeline-node.success { box-shadow: 0 0 0 2px #12b76a; background: #12b76a; }
+        .timeline-node.warning { box-shadow: 0 0 0 2px #f79009; background: #f79009; }
+        .timeline-node.primary { box-shadow: 0 0 0 2px #006ee6; background: #006ee6; }
+        .action-icon-btn {
+          border: 1px solid #d0d5dd;
+          background: #ffffff;
+          padding: 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #475569;
+          transition: all 0.15s ease;
+        }
+        .action-icon-btn:hover {
+          border-color: #98a2b3;
+          background: #f9fafb;
+          color: #1d2939;
+        }
+        .list-item-selected {
+          background-color: #f0f6ff !important;
+          border-left: 3.5px solid #006ee6 !important;
+        }
+        .list-item-normal {
+          border-left: 3.5px solid transparent;
+          cursor: pointer;
+          transition: background-color 0.15s ease;
+        }
+        .list-item-normal:hover {
+          background-color: #f8fafc;
+        }
+        .receivable-card {
+          background: #f8fafc;
+          border: 1px solid #eaecf0;
+          border-radius: 10px;
+          padding: 20px;
+          box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+        }
+        
+        /* Responsive Split Pane */
+        @media (max-width: 768px) {
+          .vendors-main-container {
+            flex-direction: column !important;
+          }
+          .vendors-left-pane {
+            width: 100% !important;
+            min-width: 100% !important;
+            border-right: none !important;
+            border-bottom: 1px solid #eaecf0 !important;
+            height: 400px;
+            flex: none !important;
+          }
+          .vendors-right-pane {
+            width: 100% !important;
+          }
+          .vendors-header-actions {
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+          }
+          .vendors-detail-tabs {
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 5px;
+          }
+          .detail-header-row {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+          }
+        }
+      `}</style>
 
-      {loading ? (
-        <TableSkeleton columns={6} rows={5} />
-      ) : filteredVendors.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "50px", color: "gray", background: "#f9fafb", borderRadius: "8px" }}>
-          <p>No vendors found.</p>
-          <button onClick={() => navigate("/vendors/new")} style={secondaryBtn}>Add Your First Vendor</button>
-        </div>
-      ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: "8px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-          <thead>
-            <tr style={{ background: "#f1f5f9", textAlign: "left" }}>
-              <th style={thStyle}>Name</th>
-              <th style={thStyle}>Company Name</th>
-              <th style={thStyle}>Email</th>
-              <th style={thStyle}>Phone</th>
-              <th style={thStyle}>Status</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredVendors.map((vendor) => (
-              <tr
-                key={vendor.id}
-                onClick={() => navigate(`/vendors/${vendor.id}`)}
-                style={{ borderBottom: "1px solid #e2e8f0", cursor: "pointer", transition: "background 0.2s" }}
-                onMouseOver={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                <td style={tdStyle}><span style={{ color: "#4a90e2" }}>{vendor.display_name}</span></td>
-                <td style={tdStyle}>{vendor.company_name || "—"}</td>
-                <td style={tdStyle}>{vendor.email || "—"}</td>
-                <td style={tdStyle}>{vendor.phone || "—"}</td>
-                <td style={tdStyle}>
-                  {vendor.status === "active" ? (
-                    <span style={activeBadge}>Active</span>
-                  ) : (
-                    <span style={inactiveBadge}>Inactive</span>
+      {/* Main Container */}
+      <div className="vendors-main-container" style={{ display: "flex", minHeight: "100vh" }}>
+        
+        {/* ==================== LEFT PANE (Only in Split View) ==================== */}
+        {expandedId !== null && (
+          <div className="vendors-left-pane" style={{ width: "320px", minWidth: "320px", borderRight: "1px solid #eaecf0", background: "#ffffff", display: "flex", flexDirection: "column" }}>
+            
+            {/* Left Header */}
+            <div style={{ padding: "16px", borderBottom: "1px solid #eaecf0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ position: "relative" }}>
+                <button 
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  style={{ background: "none", border: "none", fontSize: "15px", fontWeight: "600", color: "#1d2939", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  {statusFilter === "all" ? "All Vendors" : statusFilter === "active" ? "Active Vendors" : "Inactive Vendors"}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+                
+                {menuOpen && (
+                  <div style={{ position: "absolute", left: 0, top: "100%", marginTop: "8px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "180px" }}>
+                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("all"); setMenuOpen(false); }}>All Vendors</button>
+                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("active"); setMenuOpen(false); }}>Active Vendors</button>
+                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("inactive"); setMenuOpen(false); }}>Inactive Vendors</button>
+                    <div style={{ borderTop: "1px solid #eaecf0", margin: "4px 0" }}></div>
+                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={handleRefresh}>🔄 Refresh List</button>
+                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={handleImport}>📥 Import Contacts</button>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: "8px" }}>
+                {canAccess(user?.role, MODULES.VENDORS, ACTIONS.CREATE) && (
+                  <button 
+                    onClick={() => navigate("/vendors/new")} 
+                    style={{ background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "6px", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "16px", fontWeight: "600" }}
+                    title="Add Vendor"
+                  >
+                    +
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Left Search Bar */}
+            <div style={{ padding: "12px", borderBottom: "1px solid #eaecf0", background: "#f8fafc" }}>
+              <div style={{ position: "relative", width: "100%" }}>
+                <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#98a2b3", fontSize: "12px" }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search contacts..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const newParams = new URLSearchParams(location.search);
+                    if (e.target.value) newParams.set("search", e.target.value);
+                    else newParams.delete("search");
+                    navigate({ search: newParams.toString() }, { replace: true });
+                  }}
+                  style={{ width: "100%", padding: "8px 8px 8px 30px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px", boxSizing: "border-box", outline: "none", background: "#ffffff" }}
+                />
+              </div>
+            </div>
+
+            {/* Left Scrollable List */}
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              {filteredVendors.length === 0 ? (
+                <div style={{ padding: "40px 16px", textAlign: "center", color: "#667085", fontSize: "13px" }}>No vendors found.</div>
+              ) : (
+                filteredVendors.map((c) => {
+                  const initials = getVendorName(c).split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+                  const isSelected = expandedId === c.id;
+                  
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => toggleExpand(c.id)}
+                      className={isSelected ? "list-item-selected" : "list-item-normal"}
+                      style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #eaecf0", background: "#ffffff" }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={selected.includes(c.id)} 
+                        onChange={(e) => { e.stopPropagation(); toggleSelectOne(c.id); }} 
+                        style={{ cursor: "pointer" }} 
+                      />
+                      
+                      <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: isSelected ? "#006ee6" : "#f2f4f7", color: isSelected ? "#ffffff" : "#475569", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "600" }}>
+                        {initials || "C"}
+                      </div>
+                      
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "13px", fontWeight: "600", color: "#1d2939", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {getVendorName(c)}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#667085", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: "2px" }}>
+                          {c.company_name || "No Company"}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "13px", fontWeight: "600", color: "#344054" }}>
+                          ₹{c.opening_balance ? parseFloat(c.opening_balance).toFixed(0) : "0"}
+                        </div>
+                        <div style={{ fontSize: "10px", color: c.is_active ? "#12b76a" : "#667085", fontWeight: "500", marginTop: "2px" }}>
+                          {c.is_active ? "Active" : "Inactive"}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+          </div>
+        )}
+
+        {/* ==================== RIGHT PANE / DETAIL OR FULL LIST ==================== */}
+        <div className="vendors-right-pane" style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          
+          {expandedId !== null ? (
+            // ==================== DETAIL VIEW MODE ====================
+            expandedLoading ? (
+              <div style={{ padding: "40px" }}><DetailSkeleton /></div>
+            ) : expandedVendor ? (
+              <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#ffffff" }}>
+                
+                {/* Detail View Header Banner */}
+                <div className="detail-header-row" style={{ padding: "16px 24px", borderBottom: "1px solid #eaecf0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#1d2939" }}>
+                      {getVendorName(expandedVendor)}
+                    </h2>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: activeStatus ? "#ecfdf5" : "#f2f4f7", border: `1px solid ${activeStatus ? "#a7f3d0" : "#d0d5dd"}`, padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "500", color: activeStatus ? "#047857" : "#475569" }}>
+                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: activeStatus ? "#10b981" : "#6b7280" }}></span>
+                      {activeStatus ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+
+                  {/* Header Actions */}
+                  <div className="vendors-header-actions" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <button 
+                      onClick={() => navigate(`/vendors/${expandedVendor.id}/edit`)} 
+                      style={{ padding: "8px 14px", background: "#ffffff", border: "1px solid #d0d5dd", borderRadius: "6px", fontSize: "13px", fontWeight: "600", color: "#344054", cursor: "pointer", outline: "none" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#ffffff"}
+                    >
+                      Edit
+                    </button>
+                    
+                    <button 
+                      className="action-icon-btn" 
+                      title="Attach File"
+                      onClick={() => toast("Attachments feature coming soon")}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                      </svg>
+                    </button>
+
+                    {/* New Transaction Dropdown */}
+                    <div style={{ position: "relative" }}>
+                      <button 
+                        onClick={() => setNewTransactionOpen(!newTransactionOpen)} 
+                        style={{ padding: "8px 14px", background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", outline: "none" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#0056b3"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#006ee6"}
+                      >
+                        New Transaction
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+                      
+                      {newTransactionOpen && (
+                        <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "6px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "160px" }}>
+                          <button style={menuItem} onClick={() => { setNewTransactionOpen(false); handleNewTransaction(expandedVendor.id); }}>📄 Invoice</button>
+                          <button style={menuItem} onClick={() => { setNewTransactionOpen(false); toast("Payment page coming soon"); }}>💰 Payment</button>
+                          <button style={menuItem} onClick={() => { setNewTransactionOpen(false); toast("Expense page coming soon"); }}>📉 Expense</button>
+                          <button style={menuItem} onClick={() => { setNewTransactionOpen(false); toast("Project page coming soon"); }}>📂 Project</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* More Menu Dropdown */}
+                    <div style={{ position: "relative" }}>
+                      <button 
+                        onClick={() => setMoreOpen(!moreOpen)} 
+                        style={{ padding: "8px 14px", background: "#ffffff", border: "1px solid #d0d5dd", borderRadius: "6px", fontSize: "13px", fontWeight: "600", color: "#344054", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", outline: "none" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#ffffff"}
+                      >
+                        More
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+
+                      {moreOpen && (
+                        <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "6px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "185px" }}>
+                          <button style={menuItem} onClick={async () => {
+                            setMoreOpen(false);
+                            try {
+                              const newStatus = !activeStatus;
+                              await apiRequest(`/vendors/${expandedVendor.id}`, { method: "PUT", body: JSON.stringify({ is_active: newStatus }) });
+                              toast.success(newStatus ? "Vendor activated" : "Vendor deactivated");
+                              setActiveStatus(newStatus);
+                              const res = await apiRequest(`/vendors/${expandedVendor.id}`);
+                              if (res) setExpandedVendor(res.vendor);
+                              fetchVendors();
+                              fetchActivities(expandedVendor.id);
+                            } catch (err) { toast.error("Failed to update status"); }
+                          }}>
+                            {activeStatus ? "Mark as Inactive" : "Mark as Active"}
+                          </button>
+                          <button style={menuItem} onClick={() => { setMoreOpen(false); handleNewTransaction(expandedVendor.id); }}>New Invoice</button>
+                          <button style={menuItem} onClick={() => { setMoreOpen(false); toast("Credit note page coming soon"); }}>New Credit Note</button>
+                          <button style={menuItem} onClick={() => { setMoreOpen(false); setActiveTab("Transactions"); }}>View All Transactions</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Close Split View */}
+                    <button 
+                      onClick={() => setExpandedId(null)} 
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: "20px", color: "#98a2b3", display: "flex", padding: "4px", borderRadius: "4px", marginLeft: "6px" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f2f4f7"}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}
+                    >
+                      &times;
+                    </button>
+                  </div>
+
+                </div>
+
+                {/* Tabs Bar */}
+                <div style={{ padding: "0 24px", borderBottom: "1px solid #eaecf0", display: "flex", gap: "6px", background: "#ffffff" }}>
+                  {["Overview", "Comments", "Transactions", "Mails", "Statement"].map((tab) => (
+                    <button 
+                      key={tab} 
+                      onClick={() => setActiveTab(tab)} 
+                      className={`tab-btn ${activeTab === tab ? "active" : ""}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab Content Display Area */}
+                <div style={{ flex: 1, overflowY: "auto", padding: "24px", background: "#ffffff" }}>
+                  
+                  {/* ===== TAB: OVERVIEW ===== */}
+                  {activeTab === "Overview" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "32px", alignItems: "start" }}>
+                      
+                      {/* Left Column Details */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                        
+                        <div>
+                          <div style={{ fontSize: "12px", color: "#667085", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>Company Name</div>
+                          <div style={{ fontSize: "16px", fontWeight: "600", color: "#1d2939" }}>{expandedVendor.company_name || "General store pvt ltd"}</div>
+                        </div>
+
+                        {/* Contact details card */}
+                        <div style={{ border: "1px solid #eaecf0", borderRadius: "10px", padding: "20px", display: "flex", gap: "16px", background: "#fcfcfd" }}>
+                          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#e0f2fe", color: "#0369a1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: "600" }}>
+                            {getVendorName(expandedVendor).split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "C"}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: "14px", fontWeight: "600", color: "#1d2939", marginBottom: "4px" }}>{getVendorName(expandedVendor)}</div>
+                            <div style={{ fontSize: "13px", color: "#475569", display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                              <span>✉</span>
+                              <span>{expandedVendor.email || "No Email Provided"}</span>
+                            </div>
+                            <div style={{ fontSize: "13px", color: "#475569", display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span>📞</span>
+                              <span>{expandedVendor.work_phone || expandedVendor.phone || "No Phone Provided"}</span>
+                            </div>
+                            
+                            {!expandedVendor.enable_portal && (
+                              <button 
+                                onClick={() => handleInvitePortal(expandedVendor.id)} 
+                                style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", fontSize: "12px", fontWeight: "600", padding: 0, marginTop: "12px", display: "flex", alignItems: "center", gap: "4px", outline: "none" }}
+                              >
+                                Invite to Portal →
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Addresses Card */}
+                        <div>
+                          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.03em", fontWeight: "600" }}>Address</h4>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                            
+                            {/* Billing */}
+                            <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", padding: "16px", background: "#ffffff" }}>
+                              <div style={{ fontSize: "12px", fontWeight: "600", color: "#667085", marginBottom: "8px" }}>BILLING ADDRESS</div>
+                              {billing ? (
+                                <div style={{ fontSize: "13px", color: "#344054", lineHeight: "1.5" }}>
+                                  <div style={{ fontWeight: "600" }}>{billing.attention}</div>
+                                  <div>{billing.address_line1}</div>
+                                  {billing.address_line2 && <div>{billing.address_line2}</div>}
+                                  <div>{billing.city}, {billing.state} {billing.pin_code}</div>
+                                  <div>{billing.country}</div>
+                                  {billing.phone && <div style={{ marginTop: "4px", color: "#667085" }}>Phone: {billing.phone}</div>}
+                                  <button onClick={() => navigate(`/vendors/${expandedVendor.id}/edit`)} style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", padding: 0, marginTop: "10px", fontSize: "12px", fontWeight: "500", textDecoration: "underline" }}>Edit Billing</button>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: "13px", color: "#667085" }}>
+                                  No Billing Address configured.
+                                  <button onClick={() => navigate(`/vendors/${expandedVendor.id}/edit`)} style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", padding: 0, marginTop: "6px", display: "block", fontSize: "12px", fontWeight: "500" }}>+ Add Address</button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Shipping */}
+                            <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", padding: "16px", background: "#ffffff" }}>
+                              <div style={{ fontSize: "12px", fontWeight: "600", color: "#667085", marginBottom: "8px" }}>SHIPPING ADDRESS</div>
+                              {shipping ? (
+                                <div style={{ fontSize: "13px", color: "#344054", lineHeight: "1.5" }}>
+                                  <div style={{ fontWeight: "600" }}>{shipping.attention}</div>
+                                  <div>{shipping.address_line1}</div>
+                                  {shipping.address_line2 && <div>{shipping.address_line2}</div>}
+                                  <div>{shipping.city}, {shipping.state} {shipping.pin_code}</div>
+                                  <div>{shipping.country}</div>
+                                  {shipping.phone && <div style={{ marginTop: "4px", color: "#667085" }}>Phone: {shipping.phone}</div>}
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: "13px", color: "#667085" }}>
+                                  No Shipping Address configured.
+                                  {billing && <button onClick={() => navigate(`/vendors/${expandedVendor.id}/edit`)} style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", padding: 0, marginTop: "6px", display: "block", fontSize: "12px", fontWeight: "500" }}>Copy from Billing</button>}
+                                </div>
+                              )}
+                            </div>
+
+                          </div>
+                        </div>
+
+                        {/* Contact Persons list */}
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                            <h4 style={{ margin: 0, fontSize: "13px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.03em", fontWeight: "600" }}>Contact Persons</h4>
+                            <button onClick={() => navigate(`/vendors/${expandedVendor.id}/edit`)} style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>+ Add</button>
+                          </div>
+                          
+                          <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", overflow: "hidden" }}>
+                            {expandedContacts.length === 0 ? (
+                              <div style={{ padding: "16px", textAlign: "center", color: "#667085", fontSize: "13px" }}>No contact persons found.</div>
+                            ) : (
+                              expandedContacts.map((p, idx) => (
+                                <div key={idx} style={{ padding: "12px 16px", borderBottom: idx === expandedContacts.length - 1 ? "none" : "1px solid #eaecf0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff" }}>
+                                  <div>
+                                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#1d2939" }}>{[p.salutation, p.first_name, p.last_name].filter(Boolean).join(" ")}</div>
+                                    <div style={{ fontSize: "11px", color: "#667085", marginTop: "2px" }}>{p.email}</div>
+                                  </div>
+                                  <div style={{ fontSize: "12px", color: "#475569", textAlign: "right" }}>
+                                    <div>{p.work_phone || p.mobile || "—"}</div>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Other details */}
+                        <div>
+                          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.03em", fontWeight: "600" }}>Other Details</h4>
+                          <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", background: "#fcfcfd", padding: "16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px" }}>
+                            <div>
+                              <div style={{ fontSize: "11px", color: "#667085", fontWeight: "600" }}>CUSTOMER TYPE</div>
+                              <div style={{ fontSize: "13px", fontWeight: "500", color: "#1d2939", marginTop: "4px" }}>{expandedVendor.vendor_type || "Business"}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "11px", color: "#667085", fontWeight: "600" }}>DEFAULT CURRENCY</div>
+                              <div style={{ fontSize: "13px", fontWeight: "500", color: "#1d2939", marginTop: "4px" }}>{expandedVendor.currency || "INR"}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "11px", color: "#667085", fontWeight: "600" }}>PAN</div>
+                              <div style={{ fontSize: "13px", fontWeight: "500", color: "#1d2939", marginTop: "4px" }}>{expandedVendor.pan || "LNOPKRF16"}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "11px", color: "#667085", fontWeight: "600" }}>PORTAL STATUS</div>
+                              <div style={{ fontSize: "13px", fontWeight: "500", color: expandedVendor.enable_portal ? "#12b76a" : "#f04438", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: expandedVendor.enable_portal ? "#10b981" : "#f04438" }}></span>
+                                {expandedVendor.enable_portal ? "Enabled" : "Disabled"}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: "11px", color: "#667085", fontWeight: "600" }}>CUSTOMER LANGUAGE</div>
+                              <div style={{ fontSize: "13px", fontWeight: "500", color: "#1d2939", marginTop: "4px" }}>{expandedVendor.portal_language || expandedVendor.language || "English"}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* Right Column Details */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                        
+                        {/* Payment Term */}
+                        <div style={{ background: "#f8fafc", border: "1px solid #eaecf0", borderRadius: "8px", padding: "14px 18px", fontSize: "12px", color: "#475569" }}>
+                          <span style={{ fontWeight: "600", color: "#1d2939" }}>Payment due period:</span> {expandedVendor.payment_terms || "Due end of the month"}
+                        </div>
+
+                        {/* Receivables Card */}
+                        <div className="receivable-card">
+                          <h4 style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.03em", fontWeight: "600" }}>Receivables</h4>
+                          
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr 1fr", borderBottom: "1px solid #eaecf0", paddingBottom: "12px", marginBottom: "12px", fontSize: "11px", fontWeight: "600", color: "#667085" }}>
+                            <div>CURRENCY</div>
+                            <div style={{ textAlign: "right" }}>OUTSTANDING RECEIVABLES</div>
+                            <div style={{ textAlign: "right" }}>UNUSED CREDITS</div>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr 1fr", fontSize: "13px", color: "#1d2939", fontWeight: "500" }}>
+                            <div>{expandedVendor.currency || "INR"}</div>
+                            <div style={{ textAlign: "right", color: "#006ee6", fontWeight: "600" }}>₹{balanceDue.toFixed(2)}</div>
+                            <div style={{ textAlign: "right", color: "#667085" }}>₹0.00</div>
+                          </div>
+
+                          {balanceDue === 0 && (
+                            <button 
+                              onClick={() => navigate(`/vendors/${expandedVendor.id}/edit`)} 
+                              style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", fontSize: "12px", fontWeight: "600", padding: 0, marginTop: "16px", textDecoration: "underline" }}
+                            >
+                              View Opening Balance
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Income Graph */}
+                        <div style={{ border: "1px solid #eaecf0", borderRadius: "10px", padding: "20px", background: "#ffffff" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                            <h4 style={{ margin: 0, fontSize: "12px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.03em", fontWeight: "600" }}>Income</h4>
+                            <select 
+                              value={incomePeriod} 
+                              onChange={(e) => setIncomePeriod(e.target.value)} 
+                              style={{ padding: "4px 8px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "11px", background: "#ffffff", outline: "none", cursor: "pointer" }}
+                            >
+                              <option value="last6Months">Last 6 Months</option>
+                              <option value="last12Months">Last 12 Months</option>
+                              <option value="thisMonth">This Month</option>
+                              <option value="thisWeek">This Week</option>
+                            </select>
+                          </div>
+
+                          {incomeChartData.length === 0 ? (
+                            <div style={{ padding: "40px 10px", textAlign: "center", color: "#667085", fontSize: "13px" }}>No income recorded yet.</div>
+                          ) : (
+                            <div>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", height: "130px", paddingBottom: "10px", borderBottom: "1px solid #f2f4f7" }}>
+                                {incomeChartData.map((item) => (
+                                  <div key={item.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }} title={`₹${item.amount.toFixed(2)}`}>
+                                    <div 
+                                      style={{ 
+                                        height: `${(item.amount / chartMax) * 100}px`, 
+                                        width: "14px", 
+                                        background: "#12b76a", 
+                                        borderRadius: "3px 3px 0 0", 
+                                        transition: "height 0.3s ease",
+                                        minHeight: item.amount > 0 ? "4px" : "0" 
+                                      }}
+                                    ></div>
+                                    <div style={{ fontSize: "9px", color: "#475569", marginTop: "6px", transform: "scale(0.95)" }}>{item.month}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ fontSize: "11px", color: "#475569", fontWeight: "500", marginTop: "12px", textAlign: "center" }}>
+                                Total Income ({incomePeriod === "last6Months" ? "Last 6 Months" : "Period"}) - <span style={{ fontWeight: "700", color: "#1d2939" }}>₹{incomeChartData.reduce((s,i)=>s+i.amount,0).toLocaleString("en-IN", {maximumFractionDigits: 2})}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Activity Log / Timeline */}
+                        <div style={{ border: "1px solid #eaecf0", borderRadius: "10px", padding: "20px", background: "#ffffff" }}>
+                          <h4 style={{ margin: "0 0 16px 0", fontSize: "12px", color: "#475569", textTransform: "uppercase", letterSpacing: "0.03em", fontWeight: "600" }}>Timeline</h4>
+                          
+                          <div style={{ position: "relative", paddingLeft: "24px" }}>
+                            <div className="timeline-line"></div>
+                            
+                            {activities.length === 0 ? (
+                              <div style={{ fontSize: "13px", color: "#667085" }}>No recent activity.</div>
+                            ) : (
+                              activities.slice(0, 5).map((act) => {
+                                const typeClass = act.action_type === "created" ? " timeline-node success" : act.action_type === "comment_added" ? " timeline-node primary" : " timeline-node warning";
+                                
+                                return (
+                                  <div key={act.id} style={{ marginBottom: "20px", position: "relative" }}>
+                                    <div className={typeClass}></div>
+                                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#344054" }}>{act.description}</div>
+                                    <div style={{ fontSize: "11px", color: "#667085", marginTop: "3px" }}>
+                                      {new Date(act.created_at).toLocaleDateString()} {new Date(act.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} · {act.user_email || "System"}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
+
+                    </div>
                   )}
-                </td>
-                <td style={tdStyle}>
-                  <button onClick={(e) => { e.stopPropagation(); navigate(`/vendors/${vendor.id}/edit`); }} style={actionBtn}>Edit</button>
-                  <button onClick={(e) => deleteVendor(vendor.id, e)} style={{ ...actionBtn, color: "red", marginLeft: "8px" }}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+                  {/* ===== TAB: COMMENTS ===== */}
+                  {activeTab === "Comments" && (
+                    <div style={{ maxWidth: "700px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#344054" }}>Comments</h3>
+                        <button onClick={addComment} style={{ padding: "8px 16px", background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }} disabled={!newComment.trim()}>Add Comment</button>
+                      </div>
+                      <div style={{ marginBottom: "20px" }}>
+                        <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Write a comment..." style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #d0d5dd", minHeight: "80px", outline: "none", fontSize: "13px", fontFamily: "inherit" }} className="premium-input" />
+                      </div>
+                      {commentsLoading ? (
+                        <p>Loading comments...</p>
+                      ) : comments.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "40px", color: "#667085", fontSize: "13px" }}>No comments yet.</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                          {comments.map((comment) => (
+                            <div key={comment.id} style={{ border: "1px solid #eaecf0", borderRadius: "8px", padding: "16px", background: "#fcfcfd" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                                <strong style={{ fontSize: "13px", color: "#344054" }}>{comment.author_name}</strong>
+                                <span style={{ color: "#667085", fontSize: "11px" }}>{new Date(comment.created_at).toLocaleString()}</span>
+                              </div>
+                              <p style={{ margin: 0, fontSize: "13px", color: "#475569", lineHeight: "1.5" }}>{comment.comment_text}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ===== TAB: TRANSACTIONS ===== */}
+                  {activeTab === "Transactions" && (
+                    <div>
+                      <div style={{ display: "flex", gap: "16px", marginBottom: "32px", flexWrap: "wrap" }}>
+                        <StatBox label="Opening Balance" value={`₹${openingBalance.toFixed(2)}`} />
+                        <StatBox label="Invoiced Amount" value={`₹${totalInvoiced.toFixed(2)}`} />
+                        <StatBox label="Amount Received" value={`₹${amountReceived.toFixed(2)}`} />
+                        <StatBox label="Balance Due" value={`₹${balanceDue.toFixed(2)}`} highlight />
+                      </div>
+
+                      {[
+                        {
+                          title: "Invoices", 
+                          content: invoicesLoading ? (
+                            <p>Loading invoices...</p>
+                          ) : invoices.length === 0 ? (
+                            <div style={{ textAlign: "center", padding: "30px", color: "#667085" }}>
+                              <p style={{ fontSize: "13px" }}>No invoices found.</p>
+                              <button onClick={() => handleNewTransaction(expandedVendor.id)} style={{ padding: "8px 14px", background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer", marginTop: "10px" }}>Add New</button>
+                            </div>
+                          ) : (
+                            <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", overflow: "hidden" }}>
+                              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                                <thead>
+                                  <tr style={{ background: "#f9fafb", textAlign: "left", borderBottom: "1px solid #eaecf0" }}>
+                                    <th style={thStyle}>Date</th>
+                                    <th style={thStyle}>Invoice #</th>
+                                    <th style={thStyle}>Amount</th>
+                                    <th style={thStyle}>Balance Due</th>
+                                    <th style={thStyle}>Status</th>
+                                    <th style={thStyle}>Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {invoices.map((inv) => (
+                                    <tr key={inv.id} style={{ borderBottom: "1px solid #eaecf0" }}>
+                                      <td style={tdStyle}>{new Date(inv.invoice_date).toLocaleDateString()}</td>
+                                      <td style={tdStyle}>{inv.invoice_number || "—"}</td>
+                                      <td style={tdStyle}>₹{parseFloat(inv.total_amount).toFixed(2)}</td>
+                                      <td style={tdStyle}>₹{parseFloat(inv.balance_due).toFixed(2)}</td>
+                                      <td style={tdStyle}>{inv.status}</td>
+                                      <td style={tdStyle}>
+                                        <button onClick={() => navigate(`/invoices/${inv.id}`)} style={{ padding: "4px 8px", background: "none", border: "1px solid #006ee6", color: "#006ee6", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "600" }}>View</button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ), 
+                          btn: "+ New Invoice", 
+                          action: () => handleNewTransaction(expandedVendor.id)
+                        },
+                        { title: "Expenses", content: <div style={{ textAlign: "center", padding: "30px", color: "#667085", fontSize: "13px" }}>No expenses recorded yet.</div>, btn: "+ New Expense", action: () => toast("Expenses feature coming soon") },
+                        { title: "Projects", content: <div style={{ textAlign: "center", padding: "30px", color: "#667085", fontSize: "13px" }}>No projects yet.</div>, btn: "+ New Project", action: () => toast("Projects feature coming soon") },
+                      ].map(({ title, content, btn, action }) => (
+                        <div key={title} style={{ marginBottom: "40px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#344054", textTransform: "uppercase", letterSpacing: "0.03em" }}>{title}</h3>
+                            <button onClick={action} style={{ padding: "6px 12px", background: "#ffffff", border: "1px solid #d0d5dd", color: "#344054", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>{btn}</button>
+                          </div>
+                          {content}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ===== TAB: MAILS ===== */}
+                  {activeTab === "Mails" && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#344054" }}>System Mails</h3>
+                        <button onClick={() => toast("Link email account feature coming soon")} style={{ padding: "8px 14px", background: "#ffffff", border: "1px solid #d0d5dd", color: "#344054", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Link Email Account</button>
+                      </div>
+                      <div style={{ textAlign: "center", padding: "60px", color: "#667085", background: "#fcfcfd", border: "1px dashed #eaecf0", borderRadius: "8px" }}>
+                        <p style={{ fontSize: "14px", fontWeight: "600", color: "#344054", margin: 0 }}>No emails sent.</p>
+                        <p style={{ fontSize: "12px", marginTop: "6px" }}>System emails (e.g., statements, invoice reminders) will appear here once the email account is linked.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ===== TAB: STATEMENT ===== */}
+                  {activeTab === "Statement" && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+                        <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#344054" }}>Statement</h3>
+                        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                          <select value={statementPreset} onChange={(e) => { setStatementPreset(e.target.value); if (e.target.value !== "custom") setGeneratedStatement(null); }} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px", outline: "none", background: "#ffffff", cursor: "pointer" }}>
+                            <option value="today">Today</option>
+                            <option value="thisWeek">This Week</option>
+                            <option value="thisMonth">This Month</option>
+                            <option value="thisYear">This Year</option>
+                            <option value="lifetime">Lifetime</option>
+                            <option value="custom">Custom Range</option>
+                          </select>
+                          
+                          {statementPreset === "custom" && (
+                            <>
+                              <input type="date" value={statementRange.from} onChange={(e) => setStatementRange({ ...statementRange, from: e.target.value })} style={{ padding: "6px 8px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px" }} />
+                              <span style={{ fontSize: "13px", color: "#667085" }}>to</span>
+                              <input type="date" value={statementRange.to} onChange={(e) => setStatementRange({ ...statementRange, to: e.target.value })} style={{ padding: "6px 8px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px" }} />
+                            </>
+                          )}
+                          
+                          <select value={statementFilter} onChange={(e) => setStatementFilter(e.target.value)} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px", outline: "none", background: "#ffffff", cursor: "pointer" }}>
+                            <option value="all">All transactions</option>
+                            <option value="outstanding">Outstanding only</option>
+                          </select>
+                          
+                          <button onClick={handleGenerateStatement} disabled={statementLoading} style={{ padding: "8px 16px", background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>{statementLoading ? "Generating..." : "Generate"}</button>
+                        </div>
+                      </div>
+
+                      {generatedStatement && (
+                        <div style={{ border: "1px solid #eaecf0", borderRadius: "10px", padding: "24px", background: "#ffffff", boxShadow: "0 4px 15px rgba(16,24,40,0.02)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #eaecf0", paddingBottom: "20px", marginBottom: "20px" }}>
+                            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", flex: 1 }}>
+                              <div style={{ minWidth: "180px" }}>
+                                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#667085", marginBottom: "4px" }}>COMPANY NAME</label>
+                                <input type="text" value={orgInfo.name} onChange={(e) => setOrgInfo({ ...orgInfo, name: e.target.value })} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px", width: "100%", boxSizing: "border-box" }} />
+                              </div>
+                              <div style={{ minWidth: "220px" }}>
+                                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#667085", marginBottom: "4px" }}>ADDRESS</label>
+                                <textarea value={orgInfo.address} onChange={(e) => setOrgInfo({ ...orgInfo, address: e.target.value })} rows={2} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px", width: "100%", boxSizing: "border-box", resize: "none" }} />
+                              </div>
+                              <div style={{ minWidth: "150px" }}>
+                                <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#667085", marginBottom: "4px" }}>EMAIL</label>
+                                <input type="email" value={orgInfo.email} onChange={(e) => setOrgInfo({ ...orgInfo, email: e.target.value })} style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px", width: "100%", boxSizing: "border-box" }} />
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: "right" }}>
+                              <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#1d2939" }}>{orgInfo.name}</h3>
+                              <p style={{ margin: 0, fontSize: "12px", color: "#667085", lineHeight: "1.5" }}>{orgInfo.address}</p>
+                              <p style={{ margin: 0, fontSize: "12px", color: "#667085" }}>{orgInfo.email}</p>
+                            </div>
+                          </div>
+
+                          <div style={{ marginBottom: "24px" }}>
+                            <h3 style={{ margin: "0 0 6px 0", fontSize: "18px", color: "#1d2939" }}>Statement of Accounts</h3>
+                            <div style={{ fontSize: "13px", color: "#475569" }}>To: <strong style={{ color: "#1d2939" }}>{getVendorName(expandedVendor)}</strong></div>
+                            <div style={{ fontSize: "12px", color: "#667085", marginTop: "4px" }}>Period: {generatedStatement.from} to {generatedStatement.to}</div>
+                          </div>
+
+                          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "24px", fontSize: "13px" }}>
+                            <thead>
+                              <tr style={{ background: "#f9fafb" }}>
+                                <th style={{ ...thStyle, borderBottom: "1.5px solid #eaecf0" }}>Account Summary</th>
+                                <th style={{ ...thStyle, borderBottom: "1.5px solid #eaecf0", textAlign: "right" }}>Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr style={{ borderBottom: "1px solid #eaecf0" }}><td style={tdStyle}>Opening Balance</td><td style={{ ...tdStyle, textAlign: "right" }}>₹{generatedStatement.openingBalance}</td></tr>
+                              <tr style={{ borderBottom: "1px solid #eaecf0" }}><td style={tdStyle}>Invoiced Amount</td><td style={{ ...tdStyle, textAlign: "right" }}>₹{generatedStatement.totalInvoiced}</td></tr>
+                              <tr style={{ borderBottom: "1px solid #eaecf0" }}><td style={tdStyle}>Amount Received</td><td style={{ ...tdStyle, textAlign: "right" }}>₹{generatedStatement.amountReceived}</td></tr>
+                              <tr style={{ fontWeight: "700", borderBottom: "1.5px solid #d0d5dd", background: "#f8fafc" }}><td style={tdStyle}>Balance Due</td><td style={{ ...tdStyle, textAlign: "right", color: "#006ee6" }}>₹{generatedStatement.balanceDue}</td></tr>
+                            </tbody>
+                          </table>
+
+                          <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#344054", textTransform: "uppercase", letterSpacing: "0.03em" }}>Transactions</h4>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", marginBottom: "24px" }}>
+                            <thead>
+                              <tr style={{ background: "#f9fafb", textAlign: "left", borderBottom: "1.5px solid #eaecf0" }}>
+                                <th style={thStyle}>Date</th>
+                                <th style={thStyle}>Transaction</th>
+                                <th style={thStyle}>Details</th>
+                                <th style={{ ...thStyle, textAlign: "right" }}>Amount</th>
+                                <th style={{ ...thStyle, textAlign: "right" }}>Payments</th>
+                                <th style={{ ...thStyle, textAlign: "right" }}>Balance</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr style={{ borderBottom: "1px solid #eaecf0", fontStyle: "italic", color: "#667085" }}>
+                                <td style={tdStyle}>{generatedStatement.from}</td>
+                                <td style={tdStyle}>*** Opening Balance ***</td>
+                                <td style={tdStyle}></td>
+                                <td style={{ ...tdStyle, textAlign: "right" }}>₹{generatedStatement.openingBalance}</td>
+                                <td style={{ ...tdStyle, textAlign: "right" }}></td>
+                                <td style={{ ...tdStyle, textAlign: "right" }}>₹{generatedStatement.openingBalance}</td>
+                              </tr>
+                              {generatedStatement.rows.map((row, i) => (
+                                <tr key={i} style={{ borderBottom: "1px solid #eaecf0" }}>
+                                  <td style={tdStyle}>{row.date}</td>
+                                  <td style={tdStyle}>{row.transaction}</td>
+                                  <td style={tdStyle}>{row.details}</td>
+                                  <td style={{ ...tdStyle, textAlign: "right" }}>₹{row.amount}</td>
+                                  <td style={{ ...tdStyle, textAlign: "right" }}>₹{row.payments}</td>
+                                  <td style={{ ...tdStyle, textAlign: "right", fontWeight: "600" }}>₹{row.balance}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button onClick={handlePrint} style={{ padding: "8px 16px", background: "#ffffff", border: "1px solid #d0d5dd", borderRadius: "6px", fontSize: "13px", color: "#344054", cursor: "pointer", fontWeight: "600" }}>🖨 Print</button>
+                            <button onClick={handleDownloadPDF} disabled={pdfLoading} style={{ padding: "8px 16px", background: "#ffffff", border: "1px solid #d0d5dd", borderRadius: "6px", fontSize: "13px", color: "#344054", cursor: "pointer", fontWeight: "600" }}>{pdfLoading ? 'Generating PDF...' : '⬇ Download PDF'}</button>
+                            <button onClick={handleDownloadXLS} style={{ padding: "8px 16px", background: "#ffffff", border: "1px solid #d0d5dd", borderRadius: "6px", fontSize: "13px", color: "#344054", cursor: "pointer", fontWeight: "600" }}>📥 XLS / CSV</button>
+                            <button onClick={openEmailModal} style={{ padding: "8px 16px", background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "6px", fontSize: "13px", cursor: "pointer", fontWeight: "600" }}>✉ Send Email</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+
+              </div>
+            ) : (
+              <div style={{ padding: "40px", textAlign: "center" }}>Vendor not found.</div>
+            )
+          ) : (
+            // ==================== FULL LIST VIEW MODE ====================
+            <div className="full-table-container">
+              
+              {/* List Header */}
+              <div className="full-table-header">
+                <div className="view-dropdown-container">
+                  <h3 className={`view-dropdown-btn ${menuOpen ? 'active' : ''}`} onClick={() => setMenuOpen(!menuOpen)} style={{ fontWeight: 600 }}>
+                    {statusFilter === "all" ? "All Vendors" : statusFilter === "active" ? "Active Vendors" : "Inactive Vendors"}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: menuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9" /></svg>
+                  </h3>
+                  {menuOpen && (
+                    <div className="view-dropdown-menu">
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("all"); setMenuOpen(false); }}>All Vendors</div>
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("active"); setMenuOpen(false); }}>Active Vendors</div>
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("inactive"); setMenuOpen(false); }}>Inactive Vendors</div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="table-actions">
+                  {canAccess(user?.role, MODULES.VENDORS, ACTIONS.CREATE) && (
+                    <button className="btn-new" onClick={() => navigate("/vendors/new")}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                      New
+                    </button>
+                  )}
+                  <div className="more-dropdown-container">
+                    <button className="btn-more" onClick={() => setShowMoreMenu(!showMoreMenu)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
+                    </button>
+                    {showMoreMenu && (
+                      <div className="more-dropdown-menu">
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M12 20l-5-5M12 20l5-5"/></svg>
+                          <span>Sort by</span>
+                          <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                          <div className="nested-dropdown-menu">
+                            <div className="more-dropdown-item"><span>Name</span></div>
+                            <div className="more-dropdown-item"><span>Created Time</span></div>
+                            <div className="more-dropdown-item"><span>Last Modified Time</span></div>
+                          </div>
+                        </div>
+                        <div className="more-dropdown-item" onClick={handleImport}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                          <span>Import Vendors</span>
+                        </div>
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                          <span>Export Vendors</span>
+                          <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                          <div className="nested-dropdown-menu">
+                            <div className="more-dropdown-item"><span>Export Vendors</span></div>
+                            <div className="more-dropdown-item"><span>Export Current View</span></div>
+                          </div>
+                        </div>
+                        <div className="more-dropdown-divider"></div>
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                          <span>Preferences</span>
+                        </div>
+                        <div className="more-dropdown-divider"></div>
+                        <div className="more-dropdown-item" onClick={() => { fetchVendors(); setShowMoreMenu(false); }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                          <span>Refresh List</span>
+                        </div>
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 3v5h5M10 12v6M8 15h4"/></svg>
+                          <span>Reset Column Width</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* List Search Bar */}
+              <div style={{ padding: "12px 30px", borderBottom: "1px solid #eaeaea", background: "#fdfdfd" }}>
+                <div style={{ position: "relative", width: "100%", maxWidth: "400px" }}>
+                  <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#98a2b3" }}>🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Search by name, email or company..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      const newParams = new URLSearchParams(location.search);
+                      if (e.target.value) newParams.set("search", e.target.value);
+                      else newParams.delete("search");
+                      navigate({ search: newParams.toString() }, { replace: true });
+                    }}
+                    style={{ width: "100%", padding: "10px 12px 10px 42px", borderRadius: "6px", border: "1px solid #d0d5dd", outline: "none", fontSize: "13px", boxSizing: "border-box" }}
+                    className="premium-input"
+                  />
+                </div>
+              </div>
+
+              {/* Bulk Actions Banner */}
+              {selected.length > 0 && (
+                <div style={{ background: "#f0f6ff", border: "1px solid #bae6fd", borderRadius: "8px", padding: "12px 16px", display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px" }}>
+                  <span style={{ color: "#0369a1", fontWeight: "600", fontSize: "13px" }}>{selected.length} vendor(s) selected</span>
+                  <button onClick={deleteSelected} style={{ background: "#d92d20", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Delete Selected</button>
+                  <button onClick={() => setSelected([])} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: "12px", textDecoration: "underline" }}>Cancel</button>
+                </div>
+              )}
+
+              {/* Table List Layout */}
+              <div className="table-wrapper">
+                {loading ? (
+                  <TableSkeleton rows={8} columns={6} />
+                ) : filteredVendors.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '80px 20px', color: '#98a2b3' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
+                    <h3 style={{ color: '#1d2939', marginBottom: '8px', fontSize: "16px", fontWeight: "600" }}>No vendors found</h3>
+                    <p style={{ marginBottom: '20px', fontSize: "13px" }}>{searchQuery ? 'No vendors match your search.' : 'Start by adding your first vendor.'}</p>
+                    {!searchQuery && canAccess(user?.role, MODULES.VENDORS, ACTIONS.CREATE) && (
+                      <button className="btn-new" onClick={() => navigate('/vendors/new')} style={{ margin: "0 auto" }}>+ New Vendor</button>
+                    )}
+                  </div>
+                ) : (
+                  <table className={`items-table ${clipText ? 'clip-text' : ''}`}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '50px', textAlign: 'center', resize: 'none', position: 'relative' }} className="th-icon-wrapper">
+                          <span className={`th-icon ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(!showSettings)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="8" cy="8" r="2"/><line x1="3" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="21" y2="8"/><circle cx="14" cy="16" r="2"/><line x1="3" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="21" y2="16"/></svg>
+                          </span>
+                          {showSettings && (
+                            <div className="settings-dropdown">
+                              <div className="dropdown-item" onClick={() => { setColumnsOpen(!columnsOpen); setShowSettings(false); }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                                Customize Columns
+                              </div>
+                              <div className="dropdown-item" onClick={() => { setClipText(!clipText); setShowSettings(false); }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="18" y2="18"/></svg>
+                                Clip Text
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Columns Sub-Menu (Triggered by Customize Columns) */}
+                          {columnsOpen && (
+                            <div className="columns-dropdown" style={{ position: "absolute", left: "100%", top: 0, marginLeft: "4px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "180px", padding: "8px 0" }}>
+                              {ALL_COLUMNS.filter((c) => c.key !== "checkbox").map((col) => (
+                                <label key={col.key} style={{ display: "flex", alignItems: "center", padding: "8px 14px", cursor: "pointer" }}>
+                                  <input type="checkbox" checked={visibleColumns[col.key] || false} onChange={() => setVisibleColumns((prev) => ({ ...prev, [col.key]: !prev[col.key] }))} />
+                                  <span style={{ marginLeft: "8px", fontSize: "13px", color: "#344054", fontWeight: 'normal', textTransform: 'none' }}>{col.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </th>
+                        <th style={{ width: '40px', textAlign: 'center', resize: 'none' }}>
+                          <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selected.length === filteredVendors.length && filteredVendors.length > 0} onChange={toggleSelectAll} />
+                        </th>
+                        {ALL_COLUMNS.filter(c => c.key !== "checkbox" && visibleColumns[c.key]).map(col => (
+                          <th key={col.key}>{col.label.toUpperCase()}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredVendors.map((c) => (
+                        <tr key={c.id}>
+                          <td style={{ textAlign: 'center' }}></td>
+                          <td style={{ textAlign: 'center' }}>
+                            <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selected.includes(c.id)} onChange={() => toggleSelectOne(c.id)} />
+                          </td>
+                          {visibleColumns.name && (
+                            <td className="vendor-name-link" onClick={() => toggleExpand(c.id)}>
+                              {getVendorName(c)}
+                            </td>
+                          )}
+                          {visibleColumns.company && <td>{c.company_name || "—"}</td>}
+                          {visibleColumns.email && <td>{c.email || "—"}</td>}
+                          {visibleColumns.workPhone && <td>{c.work_phone || c.phone || "—"}</td>}
+                          {visibleColumns.status && (
+                            <td>{c.is_active ? "Active" : "Inactive"}</td>
+                          )}
+                          {visibleColumns.receivables && (
+                            <td style={{ textAlign: 'right' }}>
+                              ₹{c.opening_balance ? parseFloat(c.opening_balance).toFixed(2) : "0.00"}
+                            </td>
+                          )}
+                          {visibleColumns.unusedCredits && (
+                            <td style={{ textAlign: 'right' }}>₹0.00</td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* ── Email Modal ── */}
+      {emailModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: "blur(4px)", zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '12px', padding: '28px 32px', width: '100%', maxWidth: '520px', boxShadow: '0 20px 40px rgba(0,0,0,0.12)', border: "1px solid #eaecf0" }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#1d2939' }}>✉ Send Statement by Email</h3>
+              <button onClick={() => setEmailModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#98a2b3' }}>✕</button>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={modalLabelStyle}>To *</label>
+                <input type="email" value={emailTo} onChange={e => setEmailTo(e.target.value)} placeholder="recipient@example.com" style={modalInputStyle} className="premium-input" />
+              </div>
+              <div>
+                <label style={modalLabelStyle}>Subject</label>
+                <input type="text" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} style={modalInputStyle} className="premium-input" />
+              </div>
+              <div>
+                <label style={modalLabelStyle}>Message</label>
+                <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={5} style={{ ...modalInputStyle, resize: 'vertical', fontFamily: 'inherit' }} className="premium-input" />
+              </div>
+            </div>
+
+            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 14px', margin: '20px 0', fontSize: '12px', color: '#0284c7', fontWeight: "500" }}>
+              📎 The Statement of Accounts PDF will be automatically attached to this email.
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setEmailModalOpen(false)} style={{ padding: "8px 16px", background: "#ffffff", color: "#344054", border: "1px solid #d0d5dd", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }} disabled={emailSending}>Cancel</button>
+              <button onClick={handleSendEmail} disabled={emailSending || !emailTo.trim()} style={{ padding: "8px 16px", background: "#006ee6", color: "#ffffff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer", opacity: (emailSending || !emailTo.trim()) ? 0.6 : 1 }}>
+                {emailSending ? 'Sending...' : 'Send Email'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
+
     </div>
   );
 }
 
-const thStyle = { padding: "12px", borderBottom: "2px solid #cbd5e1" };
-const tdStyle = { padding: "12px" };
-const primaryBtn = { padding: "10px 20px", background: "#4a90e2", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" };
-const secondaryBtn = { padding: "10px 20px", background: "#f1f5f9", color: "#333", border: "1px solid #ccc", borderRadius: "5px", cursor: "pointer" };
-const actionBtn = { padding: "4px 8px", background: "none", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer" };
-const inputStyle = { padding: "8px", borderRadius: "4px", border: "1px solid #ccc" };
-const activeBadge = { background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" };
-const inactiveBadge = { background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" };
+const StatBox = ({ label, value, highlight }) => (
+  <div style={{ background: highlight ? "#f0f6ff" : "#f8fafc", border: `1px solid ${highlight ? "#bae6fd" : "#eaecf0"}`, borderRadius: "8px", padding: "14px 20px", flex: 1, minWidth: "120px", textAlign: "center" }}>
+    <div style={{ fontSize: "11px", color: "#667085", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.03em" }}>{label}</div>
+    <div style={{ fontSize: "16px", fontWeight: "700", color: highlight ? "#006ee6" : "#344054", marginTop: "6px" }}>{value}</div>
+  </div>
+);
+
+
+
+const labelStyle = {
+  display: "block",
+  fontSize: "11px",
+  fontWeight: "600",
+  color: "#667085",
+  marginBottom: "4px",
+  textTransform: "uppercase",
+};
+
+const inputStyle = {
+  padding: "6px 8px",
+  borderRadius: "6px",
+  border: "1px solid #d0d5dd",
+  fontSize: "13px",
+  outline: "none",
+};
+
+const inputStyleLarge = {
+  width: "100%",
+  padding: "8px 12px",
+  borderRadius: "6px",
+  border: "1px solid #d0d5dd",
+  fontSize: "13px",
+  boxSizing: "border-box",
+};
+
+const menuItem = {
+  display: "block",
+  width: "100%",
+  padding: "10px 14px",
+  border: "none",
+  background: "none",
+  textAlign: "left",
+  cursor: "pointer",
+  fontSize: "13px",
+  color: "#344054",
+  transition: "background 0.1s ease",
+};
+
+const modalLabelStyle = {
+  display: 'block',
+  fontSize: '12px',
+  fontWeight: '600',
+  color: '#344054',
+  marginBottom: '6px',
+};
+
+const modalInputStyle = {
+  width: '100%',
+  padding: '10px 12px',
+  borderRadius: '6px',
+  border: '1px solid #d0d5dd',
+  fontSize: '13px',
+  boxSizing: 'border-box',
+  outline: 'none',
+};
 
 export default Vendors;

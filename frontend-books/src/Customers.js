@@ -11,7 +11,14 @@ import { useAuth } from "./AuthContext";
 import { canAccess, MODULES, ACTIONS } from "./utils/permissions";
 
 
-
+const BLUE = '#4a90e2';
+const BORDER_COLOR = '#e2e8f0';
+const TEXT_PRIMARY = '#1e293b';
+const TEXT_SECONDARY = '#64748b';
+const BG_PAGE = '#f8fafc';
+const BG_CARD = '#ffffff';
+const RADIUS = '8px';
+const SHADOW = '0 1px 4px rgba(0,0,0,0.06)';
 
 // Minimal inline styles replacements for table
 const thStyle = {
@@ -30,7 +37,7 @@ const tdStyle = {
 
 const ORG_NAME = "Tinplate Computer Training Center";
 const ORG_ADDRESS = "2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001";
-const ORG_EMAIL = process.env.FROM_EMAIL;
+const ORG_EMAIL = "kumarrahulraj468@gmail.com";
 const ORG_COUNTRY = "India";
 
 const ALL_COLUMNS = [
@@ -39,6 +46,7 @@ const ALL_COLUMNS = [
   { key: "company", label: "Company Name" },
   { key: "email", label: "Email" },
   { key: "workPhone", label: "Work Phone" },
+  { key: "status", label: "Status" },
   { key: "receivables", label: "Receivables (BCY)" },
   { key: "unusedCredits", label: "Unused Credits (BCY)" },
 ];
@@ -50,7 +58,21 @@ function Customers() {
   const searchParamsUrl = new URLSearchParams(location.search);
   const searchQuery = searchParamsUrl.get("search") || "";
 
-
+  const timeAgo = (dateString) => {
+    if (!dateString) return "";
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay > 30) return `${Math.floor(diffDay / 30)} month(s) ago`;
+    if (diffDay > 0) return `${diffDay} day(s) ago`;
+    if (diffHr > 0) return `${diffHr} hour(s) ago`;
+    if (diffMin > 0) return `${diffMin} minute(s) ago`;
+    return "just now";
+  };
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +89,22 @@ function Customers() {
     }, {})
   );
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [clipText, setClipText] = useState(true);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  useEffect(() => {
+    const h = (e) => {
+      if (!e.target.closest('.th-icon-wrapper') && !e.target.closest('.settings-dropdown') && !e.target.closest('.columns-dropdown')) {
+        setShowSettings(false);
+        setColumnsOpen(false);
+      }
+      if (!e.target.closest('.view-dropdown-container')) setMenuOpen(false);
+      if (!e.target.closest('.more-dropdown-container')) setShowMoreMenu(false);
+    };
+    document.addEventListener('click', h);
+    return () => document.removeEventListener('click', h);
+  }, []);
 
   const [expandedId, setExpandedId] = useState(null);
   const [expandedCustomer, setExpandedCustomer] = useState(null);
@@ -119,7 +157,20 @@ function Customers() {
   // PDF download loading state
   const [pdfLoading, setPdfLoading] = useState(false);
 
-
+  const StatusBadge = ({ isActive }) => (
+    <span style={{
+      display: 'inline-block',
+      padding: '3px 10px',
+      borderRadius: '12px',
+      fontSize: '12px',
+      fontWeight: '600',
+      background: isActive ? '#d1fae5' : '#f3f4f6',
+      color: isActive ? '#065f46' : '#6b7280',
+      border: `1px solid ${isActive ? '#6ee7b7' : '#e5e7eb'}`,
+    }}>
+      {isActive ? 'Active' : 'Inactive'}
+    </span>
+  );
 
   const handleSingleDelete = async (id) => {
     if (!window.confirm('Delete this customer?')) return;
@@ -654,7 +705,26 @@ function Customers() {
   const incomeChartData = buildIncomeChartData();
   const chartMax = Math.max(...incomeChartData.map((d) => d.amount), 1);
 
+  const tabStyle = (name) => ({
+    padding: "10px 20px",
+    cursor: "pointer",
+    borderBottom: activeTab === name ? "3px solid #4a90e2" : "3px solid transparent",
+    fontWeight: activeTab === name ? "bold" : "normal",
+    color: activeTab === name ? "#4a90e2" : "#333",
+    background: "none",
+    borderTop: "none",
+    borderLeft: "none",
+    borderRight: "none",
+    borderBottom: activeTab === name ? "3px solid #4a90e2" : "3px solid transparent",
+  });
 
+  const cardStyle = {
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
+    padding: "15px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  };
 
   const renderCell = (colKey, content) => {
     if (!visibleColumns[colKey]) return null;
@@ -695,9 +765,132 @@ function Customers() {
           border-bottom-color: #006ee6;
           font-weight: 600;
         }
-        .hover-bg:hover {
-          background-color: #f9fafb !important;
+        .full-table-container {
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          min-height: calc(100vh - 60px);
+          margin: 0;
+          font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
+        .full-table-header {
+          padding: 15px 30px;
+          border-bottom: 1px solid #eaeaea;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .full-table-header h3 {
+          margin: 0;
+          font-size: 18px;
+          font-weight: 500;
+          color: #333;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          cursor: pointer;
+        }
+        .table-actions {
+          display: flex;
+          gap: 10px;
+        }
+        .btn-new {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-weight: 500;
+        }
+        .btn-new:hover { background: #2563eb; }
+        .btn-more {
+          background: #f5f5f5;
+          border: 1px solid #ddd;
+          color: #555;
+          border-radius: 4px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .table-wrapper {
+          flex: 1;
+          overflow: auto;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+          table-layout: fixed;
+        }
+        .items-table th {
+          text-align: left;
+          padding: 12px 15px;
+          color: #64748b;
+          font-weight: 600;
+          border-bottom: 1px solid #e2e8f0;
+          background: #ffffff;
+          text-transform: uppercase;
+          font-size: 11px;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+          resize: horizontal;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .items-table td {
+          padding: 14px 15px;
+          border-bottom: 1px solid #f8fafc;
+          color: #334155;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .items-table tr:hover {
+          background: #f1f5f9;
+        }
+        .customer-name-link {
+          color: #2563eb;
+          cursor: pointer;
+          font-weight: 500;
+        }
+        .customer-name-link:hover {
+          text-decoration: underline;
+        }
+        .th-icon-wrapper { overflow: visible !important; }
+        .th-icon { display: inline-flex; align-items: center; justify-content: center; color: #aaa; cursor: pointer; transition: color 0.2s; }
+        .th-icon:hover, .th-icon.active { color: #007bff; }
+        .settings-dropdown { position: absolute; top: 30px; left: 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; width: 180px; padding: 6px; font-size: 13px; text-transform: none; font-weight: 500; text-align: left; letter-spacing: normal; }
+        .dropdown-item { padding: 8px 12px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; border-radius: 4px; cursor: pointer; color: #334155; transition: background 0.2s; }
+        .dropdown-item:hover { background: #f1f5f9; color: #0f172a; }
+        .dropdown-item svg { width: 16px; height: 16px; min-width: 16px; color: #64748b; }
+        .items-table.clip-text td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .more-dropdown-container { position:relative; }
+        .more-dropdown-menu { position:absolute; top:100%; right:0; margin-top:8px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.1); z-index:1000; width:250px; padding:8px 0; }
+        .more-dropdown-item { position:relative; padding:10px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; font-size:14px; color:#334155; transition:background 0.2s; }
+        .more-dropdown-item:hover { background:#f8fafc; color:#0f172a; }
+        .more-dropdown-item svg { width:16px; height:16px; color:#64748b; }
+        .more-dropdown-divider { height:1px; background:#e2e8f0; margin:4px 0; }
+        .more-dropdown-item span { flex:1; }
+        .more-dropdown-item .chevron { width:14px; height:14px; }
+        .nested-dropdown-menu { display:none; position:absolute; right:100%; top:-8px; margin-right:4px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.1); z-index:1001; min-width:200px; padding:8px 0; }
+        .more-dropdown-item:hover > .nested-dropdown-menu { display:block; }
+        
+        .view-dropdown-container { position: relative; display: inline-block; }
+        .view-dropdown-btn { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: background 0.2s; }
+        .view-dropdown-btn:hover, .view-dropdown-btn.active { background: #f1f5f9; }
+        .view-dropdown-menu { position: absolute; top: 100%; left: 0; margin-top: 4px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; width: 220px; padding: 8px 0; }
+        .view-dropdown-item { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px; color: #334155; transition: background 0.2s; }
+        .view-dropdown-item:hover { background: #f8fafc; }
         .timeline-line {
           position: absolute;
           left: 17px;
@@ -1540,72 +1733,83 @@ function Customers() {
             )
           ) : (
             // ==================== FULL LIST VIEW MODE ====================
-            <div style={{ padding: "32px", maxWidth: "1280px", margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+            <div className="full-table-container">
               
               {/* List Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <div>
-                  <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#1d2939", margin: 0 }}>Customers</h2>
-                  <p style={{ color: "#667085", margin: "4px 0 0", fontSize: "13px" }}>Showing {filteredCustomers.length} customers</p>
+              <div className="full-table-header">
+                <div className="view-dropdown-container">
+                  <h3 className={`view-dropdown-btn ${menuOpen ? 'active' : ''}`} onClick={() => setMenuOpen(!menuOpen)} style={{ fontWeight: 600 }}>
+                    {statusFilter === "all" ? "All Customers" : statusFilter === "active" ? "Active Customers" : "Inactive Customers"}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: menuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9" /></svg>
+                  </h3>
+                  {menuOpen && (
+                    <div className="view-dropdown-menu">
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("all"); setMenuOpen(false); }}>All Customers</div>
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("active"); setMenuOpen(false); }}>Active Customers</div>
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("inactive"); setMenuOpen(false); }}>Inactive Customers</div>
+                    </div>
+                  )}
                 </div>
                 
-                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <select 
-                    value={statusFilter} 
-                    onChange={(e) => setStatusFilter(e.target.value)} 
-                    style={{ padding: "9px 12px", borderRadius: "6px", border: "1px solid #d0d5dd", outline: "none", color: "#344054", fontSize: "13px", background: "#ffffff", cursor: "pointer" }}
-                  >
-                    <option value="all">All Customers</option>
-                    <option value="active">Active Customers</option>
-                    <option value="inactive">Inactive Customers</option>
-                  </select>
-                  
+                <div className="table-actions">
                   {canAccess(user?.role, MODULES.CUSTOMERS, ACTIONS.CREATE) && (
-                    <button 
-                      onClick={() => navigate("/customers/new")} 
-                      style={{ background: "#006ee6", color: "#ffffff", borderRadius: "6px", padding: "10px 18px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#0056b3"}
-                      onMouseLeave={e => e.currentTarget.style.background = "#006ee6"}
-                    >
-                      + New Customer
+                    <button className="btn-new" onClick={() => navigate("/customers/new")}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                      New
                     </button>
                   )}
-
-                  <div style={{ position: "relative" }}>
-                    <button 
-                      onClick={() => setMenuOpen(!menuOpen)} 
-                      style={{ background: "#ffffff", border: "1px solid #d0d5dd", padding: "8px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "600", color: "#344054" }}
-                    >
-                      ☰
+                  <div className="more-dropdown-container">
+                    <button className="btn-more" onClick={() => setShowMoreMenu(!showMoreMenu)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
                     </button>
-                    
-                    {menuOpen && (
-                      <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "6px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "160px" }}>
-                        <button style={menuItem} onClick={handleRefresh}>🔄 Refresh</button>
-                        <button style={menuItem} onClick={handleImport}>📥 Import Contacts</button>
-                        <div style={{ borderTop: "1px solid #eaecf0", margin: "4px 0" }}></div>
-                        <button style={menuItem} onClick={() => setColumnsOpen(!columnsOpen)}>📋 Columns ▸</button>
-                        
-                        {columnsOpen && (
-                          <div style={{ position: "absolute", right: "100%", top: 0, marginRight: "4px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "180px" }}>
-                            {ALL_COLUMNS.filter((c) => c.key !== "checkbox").map((col) => (
-                              <label key={col.key} style={{ display: "flex", alignItems: "center", padding: "8px 14px", cursor: "pointer" }}>
-                                <input type="checkbox" checked={visibleColumns[col.key] || false} onChange={() => setVisibleColumns((prev) => ({ ...prev, [col.key]: !prev[col.key] }))} />
-                                <span style={{ marginLeft: "8px", fontSize: "13px", color: "#344054" }}>{col.label}</span>
-                              </label>
-                            ))}
+                    {showMoreMenu && (
+                      <div className="more-dropdown-menu">
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M12 20l-5-5M12 20l5-5"/></svg>
+                          <span>Sort by</span>
+                          <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                          <div className="nested-dropdown-menu">
+                            <div className="more-dropdown-item"><span>Name</span></div>
+                            <div className="more-dropdown-item"><span>Created Time</span></div>
+                            <div className="more-dropdown-item"><span>Last Modified Time</span></div>
                           </div>
-                        )}
+                        </div>
+                        <div className="more-dropdown-item" onClick={handleImport}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                          <span>Import Customers</span>
+                        </div>
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                          <span>Export Customers</span>
+                          <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                          <div className="nested-dropdown-menu">
+                            <div className="more-dropdown-item"><span>Export Customers</span></div>
+                            <div className="more-dropdown-item"><span>Export Current View</span></div>
+                          </div>
+                        </div>
+                        <div className="more-dropdown-divider"></div>
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                          <span>Preferences</span>
+                        </div>
+                        <div className="more-dropdown-divider"></div>
+                        <div className="more-dropdown-item" onClick={() => { fetchCustomers(); setShowMoreMenu(false); }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                          <span>Refresh List</span>
+                        </div>
+                        <div className="more-dropdown-item">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 3v5h5M10 12v6M8 15h4"/></svg>
+                          <span>Reset Column Width</span>
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-
               </div>
 
               {/* List Search Bar */}
-              <div style={{ marginBottom: "20px" }}>
-                <div style={{ position: "relative", width: "100%" }}>
+              <div style={{ padding: "12px 30px", borderBottom: "1px solid #eaeaea", background: "#fdfdfd" }}>
+                <div style={{ position: "relative", width: "100%", maxWidth: "400px" }}>
                   <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#98a2b3" }}>🔍</span>
                   <input
                     type="text"
@@ -1617,7 +1821,7 @@ function Customers() {
                       else newParams.delete("search");
                       navigate({ search: newParams.toString() }, { replace: true });
                     }}
-                    style={{ width: "100%", padding: "12px 12px 12px 42px", borderRadius: "8px", border: "1px solid #d0d5dd", outline: "none", fontSize: "14px", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "10px 12px 10px 42px", borderRadius: "6px", border: "1px solid #d0d5dd", outline: "none", fontSize: "13px", boxSizing: "border-box" }}
                     className="premium-input"
                   />
                 </div>
@@ -1633,7 +1837,7 @@ function Customers() {
               )}
 
               {/* Table List Layout */}
-              <div style={{ background: "#ffffff", borderRadius: "10px", border: "1px solid #eaecf0", boxShadow: "0 1px 3px rgba(16, 24, 40, 0.05)", overflow: "hidden" }}>
+              <div className="table-wrapper">
                 {loading ? (
                   <TableSkeleton rows={8} columns={6} />
                 ) : filteredCustomers.length === 0 ? (
@@ -1642,68 +1846,80 @@ function Customers() {
                     <h3 style={{ color: '#1d2939', marginBottom: '8px', fontSize: "16px", fontWeight: "600" }}>No customers found</h3>
                     <p style={{ marginBottom: '20px', fontSize: "13px" }}>{searchQuery ? 'No customers match your search.' : 'Start by adding your first customer.'}</p>
                     {!searchQuery && canAccess(user?.role, MODULES.CUSTOMERS, ACTIONS.CREATE) && (
-                      <button onClick={() => navigate('/customers/new')} style={{ background: "#006ee6", color: "#ffffff", borderRadius: "6px", padding: "10px 20px", border: "none", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>+ New Customer</button>
+                      <button className="btn-new" onClick={() => navigate('/customers/new')} style={{ margin: "0 auto" }}>+ New Customer</button>
                     )}
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                      <thead>
-                        <tr style={{ background: "#f9fafb", textAlign: "left", borderBottom: "1px solid #eaecf0" }}>
-                          {visibleColumns.checkbox && (
-                            <th style={{ ...thStyle, width: "40px" }}>
-                              <input type="checkbox" checked={selected.length === filteredCustomers.length && filteredCustomers.length > 0} onChange={toggleSelectAll} />
-                            </th>
-                          )}
-                          {renderHeader("name", "Name")}
-                          {renderHeader("company", "Company Name")}
-                          {renderHeader("email", "Email")}
-                          {renderHeader("workPhone", "Phone")}
-                          <th style={thStyle}>Status</th>
-                          <th style={thStyle}>Actions</th>
-                          {renderHeader("receivables", "Receivables")}
-                          {renderHeader("unusedCredits", "Unused Credits")}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredCustomers.map((c) => (
-                          <tr
-                            key={c.id}
-                            style={{ borderBottom: "1px solid #eaecf0", background: selected.includes(c.id) ? "#f0f6ff" : "transparent" }}
-                            className="hover-bg"
-                          >
-                            {visibleColumns.checkbox && (
-                              <td style={tdStyle}><input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggleSelectOne(c.id)} /></td>
-                            )}
-                            {renderCell("name",
-                              <span style={{ color: "#006ee6", cursor: "pointer", fontWeight: "600" }} onClick={() => toggleExpand(c.id)}>{getCustomerName(c)}</span>
-                            )}
-                            {renderCell("company", c.company_name || "—")}
-                            {renderCell("email", c.email || "—")}
-                            {renderCell("workPhone", c.work_phone || c.phone || "—")}
-                            <td style={tdStyle}>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: c.is_active ? "#ecfdf5" : "#f2f4f7", border: `1px solid ${c.is_active ? "#a7f3d0" : "#d0d5dd"}`, padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "500", color: c.is_active ? "#047857" : "#475569" }}>
-                                <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: c.is_active ? "#10b981" : "#6b7280" }}></span>
-                                {c.is_active ? "Active" : "Inactive"}
-                              </span>
-                            </td>
-                            <td style={tdStyle}>
-                              <div style={{ display: "flex", gap: "6px" }}>
-                                <button onClick={() => navigate('/customers/' + c.id)} style={{ padding: "4px 8px", background: "none", border: "1px solid #d0d5dd", color: "#344054", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "500" }}>View</button>
-                                <button onClick={() => navigate('/customers/' + c.id + '/edit')} style={{ padding: "4px 8px", background: "none", border: "1px solid #d0d5dd", color: "#344054", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "500" }}>Edit</button>
-                                <button onClick={() => handleSingleDelete(c.id)} style={{ padding: "4px 8px", background: "none", border: "1px solid #fecdca", color: "#d92d20", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "500" }}>Delete</button>
-                                <button onClick={() => handleToggleStatus(c.id, c.is_active)} style={{ padding: "4px 8px", background: "none", border: "1px solid #d0d5dd", color: "#344054", borderRadius: "4px", fontSize: "11px", cursor: "pointer", fontWeight: "500" }}>
-                                  {c.is_active ? 'Mark Inactive' : 'Mark Active'}
-                                </button>
+                  <table className={`items-table ${clipText ? 'clip-text' : ''}`}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '50px', textAlign: 'center', resize: 'none', position: 'relative' }} className="th-icon-wrapper">
+                          <span className={`th-icon ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(!showSettings)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="8" cy="8" r="2"/><line x1="3" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="21" y2="8"/><circle cx="14" cy="16" r="2"/><line x1="3" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="21" y2="16"/></svg>
+                          </span>
+                          {showSettings && (
+                            <div className="settings-dropdown">
+                              <div className="dropdown-item" onClick={() => { setColumnsOpen(!columnsOpen); setShowSettings(false); }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                                Customize Columns
                               </div>
-                            </td>
-                            {renderCell("receivables", `₹${c.opening_balance ? parseFloat(c.opening_balance).toFixed(2) : "0.00"}`)}
-                            {renderCell("unusedCredits", "₹0.00")}
-                          </tr>
+                              <div className="dropdown-item" onClick={() => { setClipText(!clipText); setShowSettings(false); }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="18" y2="18"/></svg>
+                                Clip Text
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Columns Sub-Menu (Triggered by Customize Columns) */}
+                          {columnsOpen && (
+                            <div className="columns-dropdown" style={{ position: "absolute", left: "100%", top: 0, marginLeft: "4px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "180px", padding: "8px 0" }}>
+                              {ALL_COLUMNS.filter((c) => c.key !== "checkbox").map((col) => (
+                                <label key={col.key} style={{ display: "flex", alignItems: "center", padding: "8px 14px", cursor: "pointer" }}>
+                                  <input type="checkbox" checked={visibleColumns[col.key] || false} onChange={() => setVisibleColumns((prev) => ({ ...prev, [col.key]: !prev[col.key] }))} />
+                                  <span style={{ marginLeft: "8px", fontSize: "13px", color: "#344054", fontWeight: 'normal', textTransform: 'none' }}>{col.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </th>
+                        <th style={{ width: '40px', textAlign: 'center', resize: 'none' }}>
+                          <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selected.length === filteredCustomers.length && filteredCustomers.length > 0} onChange={toggleSelectAll} />
+                        </th>
+                        {ALL_COLUMNS.filter(c => c.key !== "checkbox" && visibleColumns[c.key]).map(col => (
+                          <th key={col.key}>{col.label.toUpperCase()}</th>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCustomers.map((c) => (
+                        <tr key={c.id}>
+                          <td style={{ textAlign: 'center' }}></td>
+                          <td style={{ textAlign: 'center' }}>
+                            <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selected.includes(c.id)} onChange={() => toggleSelectOne(c.id)} />
+                          </td>
+                          {visibleColumns.name && (
+                            <td className="customer-name-link" onClick={() => toggleExpand(c.id)}>
+                              {getCustomerName(c)}
+                            </td>
+                          )}
+                          {visibleColumns.company && <td>{c.company_name || "—"}</td>}
+                          {visibleColumns.email && <td>{c.email || "—"}</td>}
+                          {visibleColumns.workPhone && <td>{c.work_phone || c.phone || "—"}</td>}
+                          {visibleColumns.status && (
+                            <td>{c.is_active ? "Active" : "Inactive"}</td>
+                          )}
+                          {visibleColumns.receivables && (
+                            <td style={{ textAlign: 'right' }}>
+                              ₹{c.opening_balance ? parseFloat(c.opening_balance).toFixed(2) : "0.00"}
+                            </td>
+                          )}
+                          {visibleColumns.unusedCredits && (
+                            <td style={{ textAlign: 'right' }}>₹0.00</td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
 
@@ -1765,7 +1981,31 @@ const StatBox = ({ label, value, highlight }) => (
 
 
 
+const labelStyle = {
+  display: "block",
+  fontSize: "11px",
+  fontWeight: "600",
+  color: "#667085",
+  marginBottom: "4px",
+  textTransform: "uppercase",
+};
 
+const inputStyle = {
+  padding: "6px 8px",
+  borderRadius: "6px",
+  border: "1px solid #d0d5dd",
+  fontSize: "13px",
+  outline: "none",
+};
+
+const inputStyleLarge = {
+  width: "100%",
+  padding: "8px 12px",
+  borderRadius: "6px",
+  border: "1px solid #d0d5dd",
+  fontSize: "13px",
+  boxSizing: "border-box",
+};
 
 const menuItem = {
   display: "block",
