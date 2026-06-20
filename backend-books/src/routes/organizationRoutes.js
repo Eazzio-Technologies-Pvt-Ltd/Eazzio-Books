@@ -7,6 +7,9 @@ const {
   getOrganizations,
   onboardOrganization,
   toggleOrganizationStatus,
+  createOrganization,
+  getMyOrganizations,
+  switchOrganization
 } = require("../controllers/organizationController");
 
 // All routes are strictly Super Admin only — ORGANIZATIONS module is blocked for all other roles
@@ -29,6 +32,25 @@ router.patch(
   authMiddleware,
   requirePermission(MODULES.ORGANIZATIONS, ACTIONS.MANAGE),
   toggleOrganizationStatus
+);
+
+// Routes for regular Admins to manage their 5 organizations
+router.get(
+  "/my-organizations",
+  authMiddleware,
+  getMyOrganizations
+);
+
+router.post(
+  "/my-organizations",
+  authMiddleware,
+  createOrganization
+);
+
+router.post(
+  "/switch-organization/:id",
+  authMiddleware,
+  switchOrganization
 );
 
 module.exports = router;

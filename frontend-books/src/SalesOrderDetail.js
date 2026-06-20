@@ -7,10 +7,7 @@ import { apiRequest } from "./api";
 import { DetailSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Tinplate Computer Training Center";
-const ORG_ADDRESS = "2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001";
-const ORG_EMAIL = process.env.FROM_EMAIL;
-const ORG_COUNTRY = "India";
+// Organization info is fetched dynamically
 
 const STATUS_COLORS = {
   draft:     { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
@@ -29,6 +26,7 @@ function SalesOrderDetail() {
   const [customer, setCustomer] = useState(null);
   const [fetching, setFetching] = useState(true);
   const [converting, setConverting] = useState(false);
+  const [orgInfo, setOrgInfo] = useState({ name: "", address: "", email: "", country: "", logo: "" });
 
   // Master list state
   const [salesOrders, setSalesOrders] = useState([]);
@@ -94,6 +92,17 @@ function SalesOrderDetail() {
         if (res.sales_order.customer_id) {
           const custRes = await apiRequest(`/customers/${res.sales_order.customer_id}`);
           if (custRes?.customer) setCustomer(custRes.customer);
+        }
+
+        const orgRes = await apiRequest("/organization-settings");
+        if (orgRes?.settings) {
+          setOrgInfo({
+            name: orgRes.settings.organization_name || "",
+            address: orgRes.settings.address || "",
+            email: orgRes.settings.organization_email || "",
+            country: orgRes.settings.country || "",
+            logo: orgRes.settings.logo_url || ""
+          });
         }
       } catch (err) {
         toast.error("Failed to load Sales Order details");
@@ -183,9 +192,9 @@ function SalesOrderDetail() {
 
   const openEmailModal = () => {
     setEmailTo(customer?.email || "");
-    setEmailSubject(`Sales Order ${so.sales_order_number} from ${ORG_NAME}`);
+    setEmailSubject(`Sales Order ${so.sales_order_number} from ${orgInfo.name}`);
     setEmailBody(
-      `Dear ${customer?.display_name || "Customer"},\n\nPlease find your Sales Order attached.\n\nSales Order Number: ${so.sales_order_number}\nTotal: ₹${parseFloat(so.total).toFixed(2)}\n\nThank you for your business.\n\nRegards,\n${ORG_NAME}`
+      `Dear ${customer?.display_name || "Customer"},\n\nPlease find your Sales Order attached.\n\nSales Order Number: ${so.sales_order_number}\nTotal: ₹${parseFloat(so.total).toFixed(2)}\n\nThank you for your business.\n\nRegards,\n${orgInfo.name}`
     );
     setShowEmailModal(true);
   };
@@ -724,13 +733,14 @@ function SalesOrderDetail() {
                   </div>
 
                   <div style={{ textAlign: "right" }}>
+                    {orgInfo.logo && <img src={orgInfo.logo} alt="Logo" style={{ maxHeight: "60px", marginBottom: "10px", objectFit: "contain" }} />}
                     <h3 style={{ margin: "0 0 4px 0", fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>
-                      {ORG_NAME}
+                      {orgInfo.name}
                     </h3>
                     <div style={{ fontSize: "12px", color: "#475569", maxWidth: "250px", lineHeight: "1.4" }}>
-                      {ORG_ADDRESS}<br />
-                      {ORG_COUNTRY}<br />
-                      Email: {ORG_EMAIL}
+                      <div style={{ whiteSpace: "pre-wrap" }}>{orgInfo.address}</div>
+                      {orgInfo.country}<br />
+                      Email: {orgInfo.email}
                     </div>
                   </div>
                 </div>

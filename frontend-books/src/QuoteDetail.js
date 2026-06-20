@@ -24,6 +24,7 @@ function QuoteDetail() {
   const [fetching, setFetching] = useState(true);
   const [converting, setConverting] = useState(false);
   const [invoicedId, setInvoicedId] = useState(null);
+  const [orgInfo, setOrgInfo] = useState({ name: "", address: "", email: "", phone: "", country: "", logo: "" });
 
   // Master list state
   const [quotes, setQuotes] = useState([]);
@@ -93,6 +94,18 @@ function QuoteDetail() {
         if (res.quote.customer_id) {
           const custRes = await apiRequest(`/customers/${res.quote.customer_id}`);
           if (custRes?.customer) setCustomer(custRes.customer);
+        }
+
+        const orgRes = await apiRequest("/organization-settings");
+        if (orgRes?.settings) {
+          setOrgInfo({
+            name: orgRes.settings.organization_name || "",
+            address: orgRes.settings.address || "",
+            email: orgRes.settings.organization_email || "",
+            phone: orgRes.settings.organization_phone || "",
+            country: orgRes.settings.country || "",
+            logo: orgRes.settings.logo_url || ""
+          });
         }
       } catch (err) {
         toast.error("Failed to load quote details");
@@ -191,9 +204,9 @@ function QuoteDetail() {
 
   const openEmailModal = () => {
     setEmailTo(customer?.email || "");
-    setEmailSubject(`Quote ${quote.quote_number || ""} from Thesis International College`);
+    setEmailSubject(`Quote ${quote.quote_number || ""} from ${orgInfo.name}`);
     setEmailBody(
-      `Dear ${customer?.display_name || "Customer"},\n\nPlease find your quote attached.\n\nQuote Number: ${quote.quote_number}\nTotal: ₹${parseFloat(quote.total_amount).toFixed(2)}\n\nThank you for your business.\n\nRegards,\nThesis International College`
+      `Dear ${customer?.display_name || "Customer"},\n\nPlease find your quote attached.\n\nQuote Number: ${quote.quote_number}\nTotal: ₹${parseFloat(quote.total_amount).toFixed(2)}\n\nThank you for your business.\n\nRegards,\n${orgInfo.name}`
     );
     setShowEmailModal(true);
   };
@@ -1165,11 +1178,11 @@ function QuoteDetail() {
                   {/* Document Header */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", marginTop: "10px" }}>
                     <div style={{ fontSize: "12px", color: "#475569" }}>
-                      <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700", color: "#1d2939" }}>Thesis International College</h3>
-                      <div style={{ margin: "2px 0" }}>Jharkhand</div>
-                      <div style={{ margin: "2px 0" }}>India</div>
-                      <div style={{ margin: "2px 0" }}>91-9065329152</div>
-                      <div style={{ margin: "2px 0" }}>pritishakumari555@gmail.com</div>
+                      {orgInfo.logo && <img src={orgInfo.logo} alt="Logo" style={{ maxHeight: "60px", marginBottom: "10px", objectFit: "contain" }} />}
+                      <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700", color: "#1d2939" }}>{orgInfo.name}</h3>
+                      <div style={{ whiteSpace: "pre-wrap" }}>{orgInfo.address}</div>
+                      {orgInfo.phone && <div style={{ margin: "2px 0" }}>{orgInfo.phone}</div>}
+                      <div style={{ margin: "2px 0" }}>{orgInfo.email}</div>
                     </div>
                     <div style={{ fontSize: "28px", fontWeight: "700", color: "#1d2939", textTransform: "uppercase", letterSpacing: "0.02em" }}>
                       Quote

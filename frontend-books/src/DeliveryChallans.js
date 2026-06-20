@@ -7,6 +7,8 @@ import { apiRequest } from "./api";
 import { TableSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
 
+import { useAuth } from "./AuthContext";
+
 const STATUS_COLORS = {
   draft:     { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
   open:      { bg: "#eff6ff", color: "#1d4ed8", label: "OPEN" },
@@ -28,6 +30,7 @@ const ALL_COLUMNS = [
 function DeliveryChallans() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const [challans, setChallans] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -150,10 +153,12 @@ function DeliveryChallans() {
     }
   };
 
-  const handleSelectOne = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
-    );
+  const openEmailModal = (dc) => {
+    const cust = getCustomerById(dc.customer_id);
+    const orgName = user?.organization_name || "My Organization";
+    setEmailSubject(`Delivery Challan ${dc.delivery_challan_number} from ${orgName}`);
+    setEmailBody(`Dear ${cust.display_name || cust.company_name || "Customer"},\n\nPlease find the attached Delivery Challan for your recent order.\n\nChallan Number: ${dc.delivery_challan_number}\n\nThank you.\n\nRegards,\n${orgName}`);
+    setShowEmailModal(true);
   };
 
   const handleDeleteSelected = async () => {

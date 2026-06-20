@@ -8,10 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiRequest } from "./api";
 import toast from "react-hot-toast";
 
-const ORG_NAME = "Tinplate Computer Training Center";
-const ORG_ADDRESS = "2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001";
-const ORG_EMAIL = process.env.FROM_EMAIL;
-const ORG_COUNTRY = "India";
+// Org info will be fetched from API
 
 function QuoteDocument() {
   const { id } = useParams();
@@ -22,12 +19,12 @@ function QuoteDocument() {
   const [customer, setCustomer] = useState(null);
   const [fetching, setFetching] = useState(true);
 
-  // Editable org info
   const [orgInfo, setOrgInfo] = useState({
-    name: ORG_NAME,
-    address: ORG_ADDRESS,
-    email: ORG_EMAIL,
-    country: ORG_COUNTRY,
+    name: "",
+    address: "",
+    email: "",
+    country: "",
+    logo: ""
   });
 
   useEffect(() => {
@@ -45,6 +42,17 @@ function QuoteDocument() {
         if (res.quote.customer_id) {
           const custRes = await apiRequest(`/customers/${res.quote.customer_id}`);
           if (custRes?.customer) setCustomer(custRes.customer);
+        }
+
+        const orgRes = await apiRequest("/organization-settings");
+        if (orgRes?.settings) {
+          setOrgInfo({
+            name: orgRes.settings.organization_name || "",
+            address: orgRes.settings.address || "",
+            email: orgRes.settings.organization_email || "",
+            country: orgRes.settings.country || "",
+            logo: orgRes.settings.logo_url || ""
+          });
         }
       } catch (err) {
         toast.error("Failed to load quote");
@@ -84,62 +92,6 @@ function QuoteDocument() {
         lineHeight: "1.6",
       }}
     >
-      {/* EDITABLE ORG INFO IN HEADER (HIDDEN WHEN PRINTED) */}
-      <div
-        className="print-hide"
-        style={{
-          marginBottom: "24px",
-          border: "1px solid #eaecf0",
-          borderRadius: "6px",
-          padding: "16px 20px",
-          background: "#f9fafb",
-        }}
-      >
-        <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "600", color: "#344054", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-          Edit Organization Information (Hidden in print)
-        </h4>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "16px", marginBottom: "12px" }}>
-          <div>
-            <label style={labelStyle}>Organization Name</label>
-            <input
-              type="text"
-              value={orgInfo.name}
-              onChange={(e) => setOrgInfo({ ...orgInfo, name: e.target.value })}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Organization Address</label>
-            <input
-              type="text"
-              value={orgInfo.address}
-              onChange={(e) => setOrgInfo({ ...orgInfo, address: e.target.value })}
-              style={inputStyle}
-            />
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          <div>
-            <label style={labelStyle}>Country</label>
-            <input
-              type="text"
-              value={orgInfo.country}
-              onChange={(e) => setOrgInfo({ ...orgInfo, country: e.target.value })}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input
-              type="email"
-              value={orgInfo.email}
-              onChange={(e) => setOrgInfo({ ...orgInfo, email: e.target.value })}
-              style={inputStyle}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* PRINT AREA CONTAINER */}
       <div
         style={{
@@ -153,8 +105,9 @@ function QuoteDocument() {
         {/* Company Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
           <div style={{ fontSize: "12px", color: "#475569" }}>
+            {orgInfo.logo && <img src={orgInfo.logo} alt="Logo" style={{ maxHeight: "80px", marginBottom: "10px", objectFit: "contain" }} />}
             <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700", color: "#1d2939" }}>{orgInfo.name}</h3>
-            <div style={{ margin: "2px 0" }}>{orgInfo.address}</div>
+            <div style={{ margin: "2px 0", whiteSpace: "pre-wrap" }}>{orgInfo.address}</div>
             <div style={{ margin: "2px 0" }}>{orgInfo.country}</div>
             <div style={{ margin: "2px 0" }}>{orgInfo.email}</div>
           </div>

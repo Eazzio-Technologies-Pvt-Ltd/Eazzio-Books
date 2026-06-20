@@ -18,7 +18,7 @@ const thStyle = {
   letterSpacing: "0.03em",
 };
 
-const ORG_NAME = "Tinplate Computer Training Center";
+import { useAuth } from "./AuthContext";
 
 const STATUS_COLORS = {
   draft:     { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
@@ -42,8 +42,7 @@ function VendorCredits() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const searchParamsUrl = new URLSearchParams(location.search);
-  const searchQuery = searchParamsUrl.get("search") || "";
+  const { user } = useAuth();
 
   const [vendorCredits, setVendorCredits] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -263,8 +262,9 @@ function VendorCredits() {
 
   const openEmailModal = (vc) => {
     const vendor = getVendorById(vc.vendor_id);
-    setEmailSubject(`Vendor Credit ${vc.vendor_credit_number} from ${ORG_NAME}`);
-    setEmailBody(`Dear ${vendor.display_name || vendor.company_name || "Vendor"},\n\nPlease find the attached Vendor Credit for your records.\n\nVendor Credit Number: ${vc.vendor_credit_number}\nAmount: ₹${parseFloat(vc.total).toFixed(2)}\n\nThank you.\n\nRegards,\n${ORG_NAME}`);
+    const orgName = user?.organization_name || "My Organization";
+    setEmailSubject(`Vendor Credit ${vc.vendor_credit_number} from ${orgName}`);
+    setEmailBody(`Dear ${vendor.display_name || vendor.company_name || "Vendor"},\n\nPlease find the attached Vendor Credit for your records.\n\nVendor Credit Number: ${vc.vendor_credit_number}\nAmount: ₹${parseFloat(vc.total).toFixed(2)}\n\nThank you.\n\nRegards,\n${orgName}`);
     setShowEmailModal(true);
   };
 

@@ -8,7 +8,7 @@ function Documents() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [moduleFilter, setModuleFilter] = useState("all");
@@ -47,12 +47,12 @@ function Documents() {
         credentials: 'include'
       });
       toast.dismiss(toastId);
-      
+
       if (!res.ok) {
         toast.error("Failed to load. The physical file may be missing.");
         return;
       }
-      
+
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -75,9 +75,9 @@ function Documents() {
       </div>
 
       <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <input 
-          placeholder="Search documents..." 
-          value={searchTerm} 
+        <input
+          placeholder="Search documents..."
+          value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           style={inputStyle}
         />
@@ -125,7 +125,7 @@ function Documents() {
             <tbody>
               {filtered.map(doc => (
                 <tr key={doc.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td style={{...tdStyle, fontWeight: "500", color: "#1e293b"}}>{doc.document_name}</td>
+                  <td style={{ ...tdStyle, fontWeight: "500", color: "#1e293b" }}>{doc.document_name}</td>
                   <td style={tdStyle}>{doc.category || "—"}</td>
                   <td style={tdStyle}>{doc.related_module || "—"}</td>
                   <td style={tdStyle}>{doc.file_name || "—"}</td>
@@ -133,7 +133,7 @@ function Documents() {
                   <td style={tdStyle}>
                     <div style={{ display: "flex", gap: "10px" }}>
                       <button onClick={() => handleView(doc)} style={secondaryBtn}>View / Download</button>
-                      <button onClick={() => deleteDocument(doc.id)} style={{...secondaryBtn, color: "#dc2626", border: "1px solid #fca5a5"}}>Delete</button>
+                      <button onClick={() => deleteDocument(doc.id)} style={{ ...secondaryBtn, color: "#dc2626", border: "1px solid #fca5a5" }}>Delete</button>
                     </div>
                   </td>
                 </tr>

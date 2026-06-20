@@ -23,6 +23,33 @@ function Topbar() {
   const searchTimeout = useRef(null);
   const searchRef = useRef(null);
 
+  const [organizations, setOrganizations] = useState([]);
+
+  useEffect(() => {
+    const fetchOrgs = async () => {
+      try {
+        if (user && user.role === "Admin") {
+          const res = await apiRequest("/my-organizations");
+          if (res && res.organizations) {
+            setOrganizations(res.organizations);
+          }
+        }
+      } catch(e) {
+        console.error("Failed to fetch orgs:", e);
+      }
+    };
+    fetchOrgs();
+  }, [user]);
+
+  const handleSwitchOrg = async (orgId) => {
+    try {
+      await apiRequest(`/switch-organization/${orgId}`, { method: "POST" });
+      window.location.reload();
+    } catch(e) {
+      console.error("Failed to switch org");
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -169,13 +196,29 @@ function Topbar() {
             {showOrgMenu && (
               <div className="topbar-dropdown-menu org-menu">
                 <div className="dropdown-header">Organizations</div>
-                <div 
-                  className="dropdown-item active"
-                  onClick={() => setShowOrgMenu(false)}
-                >
-                  {user?.organization_name || "Primary Organization"}
-                  <span className="dropdown-check">✓</span>
-                </div>
+                {organizations.length > 0 ? (
+                  organizations.map(org => (
+                    <div 
+                      key={org.id}
+                      className={`dropdown-item ${user?.organization_id === org.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setShowOrgMenu(false);
+                        if (user?.organization_id !== org.id) {
+                          handleSwitchOrg(org.id);
+                        }
+                      }}
+                    >
+                      {org.name}
+                      {user?.organization_id === org.id && <span className="dropdown-check">✓</span>}
+                    </div>
+                  ))
+                ) : (
+                  <div className="dropdown-item active">
+                    {user?.organization_name || "Primary Organization"}
+                    <span className="dropdown-check">✓</span>
+                  </div>
+                )}
+                
                 <div className="dropdown-divider"></div>
                 <div 
                   className="dropdown-item"
@@ -183,12 +226,14 @@ function Topbar() {
                 >
                   ⚙ Manage Organization
                 </div>
-                <div 
-                  className="dropdown-item"
-                  onClick={() => { setShowOrgMenu(false); setShowCreateOrg(true); }}
-                >
-                  + Create New Organization
-                </div>
+                {user?.role === "Admin" && (
+                  <div 
+                    className="dropdown-item"
+                    onClick={() => { setShowOrgMenu(false); setShowCreateOrg(true); }}
+                  >
+                    + Create New Organization
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -201,9 +246,6 @@ function Topbar() {
           {/* Notification / users icons */}
           <button className="topbar-icon-btn" aria-label="Users" onClick={() => navigate("/users-roles")}>
             👤
-          </button>
-          <button className="topbar-icon-btn" aria-label="Settings" onClick={() => navigate("/organization-settings")}>
-            ⚙
           </button>
 
           {/* Profile Dropdown */}

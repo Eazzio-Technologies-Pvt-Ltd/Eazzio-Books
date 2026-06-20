@@ -47,6 +47,9 @@ const register = async (req, res) => {
       [email.trim().toLowerCase(), hashedPassword, newOrg.id, fullName?.trim() || null]
     );
 
+    // 4. Set owner_id for the organization
+    await client.query("UPDATE organizations SET owner_id = $1 WHERE id = $2", [userResult.rows[0].id, newOrg.id]);
+
     await client.query("COMMIT");
 
     res.status(201).json({
@@ -88,9 +91,12 @@ const login = async (req, res) => {
   }
 
   try {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email.trim(),
-    ]);
+    const result = await pool.query(`
+      SELECT u.*, o.name AS organization_name, o.business_type AS org_business_type 
+      FROM users u 
+      LEFT JOIN organizations o ON u.organization_id = o.id 
+      WHERE u.email = $1
+    `, [email.trim()]);
 
     if (result.rows.length === 0) {
       return res.status(401).json({ message: "User not found" });
@@ -128,7 +134,7 @@ const login = async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        business_type: user.business_type || "Other",
+        business_type: user.org_business_type || user.business_type || "Other",
         role: user.role || "Admin",
         organization_id: user.organization_id,
         organization_name: user.organization_name
@@ -150,10 +156,12 @@ const getProfile = async (req, res) => {
       });
     }
 
-    const result = await pool.query(
-      "SELECT id, email, business_type, role, organization_id, organization_name FROM users WHERE id = $1", // ✅ added business_type & role
-      [req.user.id],
-    );
+    const result = await pool.query(`
+      SELECT u.id, u.email, o.business_type, u.role, u.organization_id, o.name AS organization_name 
+      FROM users u
+      LEFT JOIN organizations o ON u.organization_id = o.id
+      WHERE u.id = $1
+    `, [req.user.id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
