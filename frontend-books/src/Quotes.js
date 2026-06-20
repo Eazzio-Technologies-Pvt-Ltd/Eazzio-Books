@@ -1,7 +1,5 @@
 /**
- * Quotes.js – Redesigned Quote list view matching Zoho Books style (input_file_0.png)
- * Redesigned with checkboxes, clean borders, custom badges, right-aligned amount,
- * search layout, status filters, and row redirection to QuoteDetail split view.
+ * Quotes.js – Redesigned Quote list view matching Customer UI
  */
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -17,6 +15,20 @@ const STATUS_COLORS = {
   expired:  { bg: "#fff1f2", color: "#be123c", label: "EXPIRED" },
   invoiced: { bg: "#f0fdfa", color: "#0f766e", label: "INVOICED" },
 };
+
+const ALL_COLUMNS = [
+  { key: "checkbox", label: "☐" },
+  { key: "quote_date", label: "Date" },
+  { key: "quote_number", label: "Quote Number" },
+  { key: "reference_number", label: "Reference Number" },
+  { key: "customer_name", label: "Customer Name" },
+  { key: "company_name", label: "Company Name" },
+  { key: "status", label: "Status" },
+  { key: "expiry_date", label: "Expiry Date" },
+  { key: "accepted_date", label: "Accepted Date" },
+  { key: "declined_date", label: "Declined Date" },
+  { key: "total_amount", label: "Amount" },
+];
 
 function Quotes() {
   const navigate = useNavigate();
@@ -39,6 +51,32 @@ function Quotes() {
   const [hoveredItem, setHoveredItem] = useState(null);
   const [sortBy, setSortBy] = useState("quote_date");
   const [sortOrder, setSortOrder] = useState("desc");
+  
+  const [showSettings, setShowSettings] = useState(false);
+  const [clipText, setClipText] = useState(true);
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState(
+    ALL_COLUMNS.reduce((acc, col) => {
+      acc[col.key] = !["company_name", "expiry_date", "accepted_date", "declined_date"].includes(col.key);
+      if (typeof window !== 'undefined' && window.innerWidth < 768 && ['reference_number'].includes(col.key)) {
+        acc[col.key] = false;
+      }
+      return acc;
+    }, {})
+  );
+
+  useEffect(() => {
+    const h = (e) => {
+      if (!e.target.closest('.th-icon-wrapper') && !e.target.closest('.settings-dropdown') && !e.target.closest('.columns-dropdown')) {
+        setShowSettings(false);
+        setColumnsOpen(false);
+      }
+      if (!e.target.closest('.view-dropdown-container')) setStatusDropdownOpen(false);
+      if (!e.target.closest('.more-dropdown-container')) setMoreMenuOpen(false);
+    };
+    document.addEventListener('click', h);
+    return () => document.removeEventListener('click', h);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -77,7 +115,12 @@ function Quotes() {
       : "—";
   };
 
-  // Filter quotes
+  const getCustomerCompany = (customerId) => {
+    if (!customerId) return "—";
+    const cust = customers.find((c) => c.id === customerId);
+    return cust ? cust.company_name || "—" : "—";
+  };
+
   const filteredQuotes = quotes.filter((q) => {
     const matchSearch =
       search === "" ||
@@ -88,7 +131,6 @@ function Quotes() {
     return matchSearch && matchStatus;
   });
 
-  // Sort quotes
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
     let aVal = a[sortBy];
     let bVal = b[sortBy];
@@ -112,7 +154,6 @@ function Quotes() {
     return 0;
   });
 
-  // Checkbox handlers
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       setSelectedIds(sortedQuotes.map((q) => q.id));
@@ -121,13 +162,10 @@ function Quotes() {
     }
   };
 
-  const handleSelectOne = (e, id) => {
-    e.stopPropagation();
-    if (e.target.checked) {
-      setSelectedIds((prev) => [...prev, id]);
-    } else {
-      setSelectedIds((prev) => prev.filter((item) => item !== id));
-    }
+  const handleSelectOne = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id],
+    );
   };
 
   const handleDeleteSelected = async () => {
@@ -144,54 +182,19 @@ function Quotes() {
     }
   };
 
-  const handleExportCSV = () => {
-    const headers = ["Quote Number", "Customer Name", "Date", "Expiry Date", "Amount", "Status"];
-    const rows = sortedQuotes.map(q => [
-      q.quote_number,
-      getCustomerName(q.customer_id),
-      new Date(q.quote_date).toLocaleDateString("en-GB"),
-      q.expiry_date ? new Date(q.expiry_date).toLocaleDateString("en-GB") : "",
-      q.total_amount,
-      q.status
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-      + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `quotes_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Quotes exported as CSV successfully!");
-  };
-
-  const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sortedQuotes, null, 2));
-    const link = document.createElement("a");
-    link.setAttribute("href", dataStr);
-    link.setAttribute("download", `quotes_export_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Quotes exported as JSON successfully!");
-  };
-
   const statusBadge = (status) => {
     const colors = STATUS_COLORS[status] || STATUS_COLORS.draft;
     return (
-      <span
-        style={{
-          padding: "3px 8px",
-          borderRadius: "4px",
-          fontSize: "11px",
-          fontWeight: "600",
-          background: colors.bg,
-          color: colors.color,
-          letterSpacing: "0.03em",
-          display: "inline-block",
-        }}
-      >
+      <span style={{
+        padding: "3px 8px",
+        borderRadius: "4px",
+        fontSize: "11px",
+        fontWeight: "600",
+        background: colors.bg,
+        color: colors.color,
+        letterSpacing: "0.03em",
+        display: "inline-block",
+      }}>
         {colors.label}
       </span>
     );
@@ -225,69 +228,156 @@ function Quotes() {
     { key: "declined", label: "Declined" },
     { key: "expired", label: "Expired" },
   ];
-
+  
   const filteredViews = allViews.filter(v => v.label.toLowerCase().includes(filterSearch.toLowerCase()));
 
   return (
-    <div style={{ background: "#ffffff", minHeight: "100vh", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      {/* Header Area */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #eaecf0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
-          <h2 
-            onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-            style={{ fontSize: "20px", fontWeight: "600", color: "#1d2939", margin: 0, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}
-          >
-            {getFilterLabel(statusFilter)}
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: statusDropdownOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }}>
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </h2>
+    <div style={{ background: "#f8fafc", minHeight: "100vh", fontFamily: "system-ui, -apple-system, sans-serif", color: "#1d2939" }}>
+      <style>{`
+        .premium-input {
+          border: 1px solid #d0d5dd;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .premium-input:focus {
+          border-color: #006ee6 !important;
+          box-shadow: 0 0 0 4px rgba(0, 110, 230, 0.12) !important;
+        }
+        .full-table-container {
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          min-height: calc(100vh - 60px);
+          margin: 0;
+          font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .full-table-header {
+          padding: 15px 30px;
+          border-bottom: 1px solid #eaeaea;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .table-actions {
+          display: flex;
+          gap: 10px;
+        }
+        .btn-new {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          font-size: 14px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-weight: 500;
+        }
+        .btn-new:hover { background: #2563eb; }
+        .btn-more {
+          background: #f5f5f5;
+          border: 1px solid #ddd;
+          color: #555;
+          border-radius: 4px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .table-wrapper {
+          flex: 1;
+          overflow: auto;
+        }
+        .items-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+          table-layout: fixed;
+        }
+        .items-table th {
+          text-align: left;
+          padding: 12px 15px;
+          color: #64748b;
+          font-weight: 600;
+          border-bottom: 1px solid #e2e8f0;
+          background: #ffffff;
+          text-transform: uppercase;
+          font-size: 11px;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+          resize: horizontal;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .items-table td {
+          padding: 14px 15px;
+          border-bottom: 1px solid #f8fafc;
+          color: #334155;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .items-table tr:hover {
+          background: #f1f5f9;
+        }
+        .customer-name-link {
+          color: #2563eb;
+          cursor: pointer;
+          font-weight: 500;
+        }
+        .customer-name-link:hover {
+          text-decoration: underline;
+        }
+        .th-icon-wrapper { overflow: visible !important; }
+        .th-icon { display: inline-flex; align-items: center; justify-content: center; color: #aaa; cursor: pointer; transition: color 0.2s; }
+        .th-icon:hover, .th-icon.active { color: #007bff; }
+        .settings-dropdown { position: absolute; top: 30px; left: 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1000; width: 180px; padding: 6px; font-size: 13px; text-transform: none; font-weight: 500; text-align: left; letter-spacing: normal; }
+        .dropdown-item { padding: 8px 12px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; border-radius: 4px; cursor: pointer; color: #334155; transition: background 0.2s; }
+        .dropdown-item:hover { background: #f1f5f9; color: #0f172a; }
+        .dropdown-item svg { width: 16px; height: 16px; min-width: 16px; color: #64748b; }
+        .items-table.clip-text td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-          {statusDropdownOpen && (
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: "100%",
-                marginTop: "8px",
-                background: "#ffffff",
-                border: "1px solid #eaecf0",
-                borderRadius: "8px",
-                boxShadow: "0 10px 30px rgba(16, 24, 40, 0.08)",
-                zIndex: 1000,
-                width: "280px",
-                padding: "10px 0",
-              }}
-            >
-              {/* Search views */}
-              <div style={{ padding: "0 12px 10px 12px", borderBottom: "1px solid #f2f4f7" }}>
-                <div style={{ position: "relative", width: "100%" }}>
-                  <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", display: "flex" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" strokeWidth="2">
-                      <circle cx="11" cy="11" r="8"></circle>
-                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search views..."
-                    value={filterSearch}
-                    onChange={(e) => setFilterSearch(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "6px 10px 6px 30px",
-                      borderRadius: "6px",
-                      border: "1px solid #d0d5dd",
-                      fontSize: "13px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                    }}
-                  />
+        .more-dropdown-container { position:relative; }
+        .more-dropdown-menu { position:absolute; top:100%; right:0; margin-top:8px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.1); z-index:1000; width:250px; padding:8px 0; }
+        .more-dropdown-item { position:relative; padding:10px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; font-size:14px; color:#334155; transition:background 0.2s; }
+        .more-dropdown-item:hover { background:#f8fafc; color:#0f172a; }
+        .more-dropdown-item svg { width:16px; height:16px; min-width:16px; color:#64748b; }
+        .more-dropdown-divider { height:1px; background:#e2e8f0; margin:4px 0; }
+        .more-dropdown-item span { flex:1; }
+        .more-dropdown-item .chevron { width:14px; height:14px; }
+        .nested-dropdown-menu { display:none; position:absolute; right:100%; top:-8px; margin-right:4px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.1); z-index:1001; min-width:200px; padding:8px 0; }
+        .more-dropdown-item:hover > .nested-dropdown-menu { display:block; }
+        
+        .view-dropdown-container { position: relative; display: inline-block; }
+        .view-dropdown-btn { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: background 0.2s; font-size: 18px; color: #333; margin: 0; }
+        .view-dropdown-btn:hover, .view-dropdown-btn.active { background: #f1f5f9; }
+        .view-dropdown-menu { position: absolute; top: 100%; left: 0; margin-top: 4px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; width: 220px; padding: 8px 0; max-height: 300px; overflow-y: auto; }
+        .view-dropdown-item { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 14px; color: #334155; transition: background 0.2s; }
+        .view-dropdown-item:hover { background: #f8fafc; }
+      `}</style>
+
+      <div className="full-table-container">
+        {/* List Header */}
+        <div className="full-table-header">
+          <div className="view-dropdown-container">
+            <h3 className={`view-dropdown-btn \${statusDropdownOpen ? 'active' : ''}`} onClick={() => setStatusDropdownOpen(!statusDropdownOpen)} style={{ fontWeight: 600 }}>
+              {getFilterLabel(statusFilter)}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: statusDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9" /></svg>
+            </h3>
+            {statusDropdownOpen && (
+              <div className="view-dropdown-menu">
+                <div style={{ padding: "0 12px 10px 12px", borderBottom: "1px solid #f2f4f7", position: "sticky", top: 0, background: "#fff", paddingTop: "8px" }}>
+                  <div style={{ position: "relative", width: "100%" }}>
+                    <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", display: "flex" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
+                    <input type="text" placeholder="Search views..." value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} style={{ width: "100%", padding: "6px 10px 6px 30px", borderRadius: "6px", border: "1px solid #d0d5dd", fontSize: "13px", outline: "none", boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()} />
+                  </div>
                 </div>
-              </div>
-
-              {/* Views List */}
-              <div style={{ maxHeight: "240px", overflowY: "auto", padding: "4px 0" }}>
                 {filteredViews.length === 0 ? (
                   <div style={{ padding: "12px 16px", color: "#667085", fontSize: "13px", textAlign: "center" }}>No views found</div>
                 ) : (
@@ -295,597 +385,169 @@ function Quotes() {
                     const isSelected = statusFilter === view.key;
                     const isFav = favoriteView === view.key;
                     return (
-                      <div
-                        key={view.key}
-                        onClick={() => {
-                          setStatusFilter(view.key);
-                          setStatusDropdownOpen(false);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "8px 16px",
-                          background: isSelected ? "#f0f6ff" : "transparent",
-                          cursor: "pointer",
-                          fontSize: "13px",
-                          color: isSelected ? "#006ee6" : "#344054",
-                          fontWeight: isSelected ? "500" : "400",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) e.currentTarget.style.background = "#f9fafb";
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) e.currentTarget.style.background = "transparent";
-                        }}
-                      >
+                      <div key={view.key} className="view-dropdown-item" onClick={() => { setStatusFilter(view.key); setStatusDropdownOpen(false); }} style={{ background: isSelected ? "#f0f6ff" : "transparent", color: isSelected ? "#006ee6" : "#344054", fontWeight: isSelected ? "500" : "400" }}>
                         <span>{view.label}</span>
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const newFav = isFav ? null : view.key;
-                            setFavoriteView(newFav);
-                            if (newFav) {
-                              localStorage.setItem("favQuoteView", newFav);
-                              toast.success(`"${view.label}" set as default view`);
-                            } else {
-                              localStorage.removeItem("favQuoteView");
-                              toast.success("Default view cleared");
-                            }
-                          }}
-                          style={{ color: isFav ? "#f59e0b" : "#d0d5dd", fontSize: "14px", cursor: "pointer", padding: "2px 6px" }}
-                        >
-                          {isFav ? "★" : "☆"}
-                        </span>
+                        <span onClick={(e) => { e.stopPropagation(); const newFav = isFav ? null : view.key; setFavoriteView(newFav); if (newFav) { localStorage.setItem("favQuoteView", newFav); toast.success(`"\${view.label}" set as default view`); } else { localStorage.removeItem("favQuoteView"); toast.success("Default view cleared"); } }} style={{ color: isFav ? "#f59e0b" : "#d0d5dd", fontSize: "14px", padding: "2px 6px" }}>{isFav ? "★" : "☆"}</span>
                       </div>
                     );
                   })
                 )}
               </div>
-
-              {/* Bottom Custom View Button */}
-              <div style={{ padding: "8px 16px 4px", borderTop: "1px solid #f2f4f7" }}>
-                <button
-                  onClick={() => { setStatusDropdownOpen(false); toast("Custom views feature coming soon"); }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    background: "none",
-                    border: "none",
-                    color: "#006ee6",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    padding: 0,
-                    outline: "none",
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                  </svg>
-                  New Custom View
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <button
-            onClick={() => navigate("/quotes/new")}
-            style={{
-              padding: "8px 14px",
-              background: "#006ee6",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontWeight: "500",
-              fontSize: "13px",
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            New
-          </button>
-          
-          {/* Three Dots More Menu */}
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-              style={{
-                padding: "8px",
-                background: "#ffffff",
-                border: "1px solid #d0d5dd",
-                borderRadius: "4px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                outline: "none",
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#344054" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="1"></circle>
-                <circle cx="12" cy="5" r="1"></circle>
-                <circle cx="12" cy="19" r="1"></circle>
-              </svg>
-            </button>
-
-            {moreMenuOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "100%",
-                  marginTop: "6px",
-                  background: "#ffffff",
-                  border: "1px solid #eaecf0",
-                  borderRadius: "6px",
-                  boxShadow: "0 10px 30px rgba(16, 24, 40, 0.08)",
-                  zIndex: 1000,
-                  minWidth: "220px",
-                  padding: "4px 0",
-                }}
-              >
-                {/* Sort By Option */}
-                <div
-                  style={{ position: "relative" }}
-                  onMouseEnter={() => { setSortSubMenuOpen(true); setHoveredItem("sort"); }}
-                  onMouseLeave={() => { setSortSubMenuOpen(false); setHoveredItem(null); }}
-                >
-                  <button
-                    style={{
-                      ...dropdownItemBtn,
-                      background: hoveredItem === "sort" ? "#006ee6" : "transparent",
-                      color: hoveredItem === "sort" ? "#ffffff" : "#344054",
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: "8px" }}>
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <polyline points="19 12 12 19 5 12"></polyline>
-                    </svg>
-                    Sort by
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginLeft: "auto" }}>
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </button>
-                  
-                  {/* Sort Submenu */}
-                  {sortSubMenuOpen && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "-190px",
-                        top: 0,
-                        background: "#ffffff",
-                        border: "1px solid #eaecf0",
-                        borderRadius: "6px",
-                        boxShadow: "0 10px 30px rgba(16, 24, 40, 0.08)",
-                        zIndex: 1001,
-                        minWidth: "180px",
-                        padding: "4px 0",
-                      }}
-                      onMouseEnter={() => { setSortSubMenuOpen(true); setHoveredItem("sort"); }}
-                      onMouseLeave={() => { setSortSubMenuOpen(false); setHoveredItem(null); }}
-                    >
-                      <button
-                        onClick={() => { setSortBy("quote_date"); setSortOrder("desc"); setMoreMenuOpen(false); }}
-                        style={{ ...dropdownItemBtn, background: hoveredItem === "sort_date_desc" ? "#f4f5f7" : "transparent" }}
-                        onMouseEnter={() => setHoveredItem("sort_date_desc")}
-                        onMouseLeave={() => setHoveredItem("sort")}
-                      >
-                        Date (Newest first)
-                      </button>
-                      <button
-                        onClick={() => { setSortBy("quote_date"); setSortOrder("asc"); setMoreMenuOpen(false); }}
-                        style={{ ...dropdownItemBtn, background: hoveredItem === "sort_date_asc" ? "#f4f5f7" : "transparent" }}
-                        onMouseEnter={() => setHoveredItem("sort_date_asc")}
-                        onMouseLeave={() => setHoveredItem("sort")}
-                      >
-                        Date (Oldest first)
-                      </button>
-                      <button
-                        onClick={() => { setSortBy("quote_number"); setSortOrder("asc"); setMoreMenuOpen(false); }}
-                        style={{ ...dropdownItemBtn, background: hoveredItem === "sort_num_asc" ? "#f4f5f7" : "transparent" }}
-                        onMouseEnter={() => setHoveredItem("sort_num_asc")}
-                        onMouseLeave={() => setHoveredItem("sort")}
-                      >
-                        Quote Number (A-Z)
-                      </button>
-                      <button
-                        onClick={() => { setSortBy("customer_name"); setSortOrder("asc"); setMoreMenuOpen(false); }}
-                        style={{ ...dropdownItemBtn, background: hoveredItem === "sort_cust_asc" ? "#f4f5f7" : "transparent" }}
-                        onMouseEnter={() => setHoveredItem("sort_cust_asc")}
-                        onMouseLeave={() => setHoveredItem("sort")}
-                      >
-                        Customer Name (A-Z)
-                      </button>
-                      <button
-                        onClick={() => { setSortBy("total_amount"); setSortOrder("desc"); setMoreMenuOpen(false); }}
-                        style={{ ...dropdownItemBtn, background: hoveredItem === "sort_amt_desc" ? "#f4f5f7" : "transparent" }}
-                        onMouseEnter={() => setHoveredItem("sort_amt_desc")}
-                        onMouseLeave={() => setHoveredItem("sort")}
-                      >
-                        Amount (High to Low)
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Import Quotes */}
-                <button
-                  onClick={() => { setMoreMenuOpen(false); toast("Import functionality coming soon"); }}
-                  style={{
-                    ...dropdownItemBtn,
-                    background: hoveredItem === "import" ? "#f4f5f7" : "transparent",
-                  }}
-                  onMouseEnter={() => setHoveredItem("import")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: "8px", color: "#006ee6" }}>
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
-                  Import Quotes
-                </button>
-
-                {/* Export Option */}
-                <div
-                  style={{ position: "relative" }}
-                  onMouseEnter={() => { setExportSubMenuOpen(true); setHoveredItem("export"); }}
-                  onMouseLeave={() => { setExportSubMenuOpen(false); setHoveredItem(null); }}
-                >
-                  <button
-                    style={{
-                      ...dropdownItemBtn,
-                      background: hoveredItem === "export" ? "#f4f5f7" : "transparent",
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: "8px", color: "#006ee6" }}>
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    Export
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginLeft: "auto" }}>
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </button>
-
-                  {/* Export Submenu */}
-                  {exportSubMenuOpen && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: "-190px",
-                        top: 0,
-                        background: "#ffffff",
-                        border: "1px solid #eaecf0",
-                        borderRadius: "6px",
-                        boxShadow: "0 10px 30px rgba(16, 24, 40, 0.08)",
-                        zIndex: 1001,
-                        minWidth: "180px",
-                        padding: "4px 0",
-                      }}
-                      onMouseEnter={() => { setExportSubMenuOpen(true); setHoveredItem("export"); }}
-                      onMouseLeave={() => { setExportSubMenuOpen(false); setHoveredItem(null); }}
-                    >
-                      <button
-                        onClick={() => { handleExportCSV(); setMoreMenuOpen(false); }}
-                        style={{ ...dropdownItemBtn, background: hoveredItem === "export_csv" ? "#f4f5f7" : "transparent" }}
-                        onMouseEnter={() => setHoveredItem("export_csv")}
-                        onMouseLeave={() => setHoveredItem("export")}
-                      >
-                        Export as CSV
-                      </button>
-                      <button
-                        onClick={() => { handleExportJSON(); setMoreMenuOpen(false); }}
-                        style={{ ...dropdownItemBtn, background: hoveredItem === "export_json" ? "#f4f5f7" : "transparent" }}
-                        onMouseEnter={() => setHoveredItem("export_json")}
-                        onMouseLeave={() => setHoveredItem("export")}
-                      >
-                        Export as JSON
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Preferences */}
-                <button
-                  onClick={() => { setMoreMenuOpen(false); toast("Preferences loaded"); }}
-                  style={{
-                    ...dropdownItemBtn,
-                    background: hoveredItem === "preferences" ? "#f4f5f7" : "transparent",
-                    borderTop: "1px solid #f1f5f9",
-                  }}
-                  onMouseEnter={() => setHoveredItem("preferences")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: "8px", color: "#667085" }}>
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                  </svg>
-                  Preferences
-                </button>
-
-                {/* Manage Custom Fields */}
-                <button
-                  onClick={() => { setMoreMenuOpen(false); toast("Custom fields manager opened"); }}
-                  style={{
-                    ...dropdownItemBtn,
-                    background: hoveredItem === "custom_fields" ? "#f4f5f7" : "transparent",
-                  }}
-                  onMouseEnter={() => setHoveredItem("custom_fields")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: "8px", color: "#667085" }}>
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                  </svg>
-                  Manage Custom Fields
-                </button>
-
-                {/* Refresh List */}
-                <button
-                  onClick={() => { setMoreMenuOpen(false); fetchData(); }}
-                  style={{
-                    ...dropdownItemBtn,
-                    background: hoveredItem === "refresh" ? "#f4f5f7" : "transparent",
-                    borderTop: "1px solid #f1f5f9",
-                  }}
-                  onMouseEnter={() => setHoveredItem("refresh")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: "8px", color: "#667085" }}>
-                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-                  </svg>
-                  Refresh List
-                </button>
-
-                {/* Reset Column Width */}
-                <button
-                  onClick={() => { setMoreMenuOpen(false); toast("Column widths reset"); }}
-                  style={{
-                    ...dropdownItemBtn,
-                    background: hoveredItem === "reset" ? "#f4f5f7" : "transparent",
-                  }}
-                  onMouseEnter={() => setHoveredItem("reset")}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: "8px", color: "#667085" }}>
-                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
-                    <polyline points="16 3 21 8 16 8"></polyline>
-                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
-                    <polyline points="8 21 3 16 8 16"></polyline>
-                  </svg>
-                  Reset Column Width
-                </button>
-              </div>
             )}
           </div>
+          
+          <div className="table-actions">
+            <button className="btn-new" onClick={() => navigate("/quotes/new")}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              New
+            </button>
+            <div className="more-dropdown-container">
+              <button className="btn-more" onClick={() => setMoreMenuOpen(!moreMenuOpen)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
+              </button>
+              {moreMenuOpen && (
+                <div className="more-dropdown-menu">
+                  <div className="more-dropdown-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M12 20l-5-5M12 20l5-5"/></svg>
+                    <span>Sort by</span>
+                    <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    <div className="nested-dropdown-menu">
+                      <div className="more-dropdown-item" onClick={() => { setSortBy("quote_date"); setSortOrder("desc"); setMoreMenuOpen(false); }}><span>Date (Newest first)</span></div>
+                      <div className="more-dropdown-item" onClick={() => { setSortBy("quote_date"); setSortOrder("asc"); setMoreMenuOpen(false); }}><span>Date (Oldest first)</span></div>
+                      <div className="more-dropdown-item" onClick={() => { setSortBy("quote_number"); setSortOrder("asc"); setMoreMenuOpen(false); }}><span>Quote Number (A-Z)</span></div>
+                      <div className="more-dropdown-item" onClick={() => { setSortBy("customer_name"); setSortOrder("asc"); setMoreMenuOpen(false); }}><span>Customer Name (A-Z)</span></div>
+                      <div className="more-dropdown-item" onClick={() => { setSortBy("total_amount"); setSortOrder("desc"); setMoreMenuOpen(false); }}><span>Amount (High to Low)</span></div>
+                    </div>
+                  </div>
+                  <div className="more-dropdown-item" onClick={() => { setMoreMenuOpen(false); toast("Import functionality coming soon"); }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <span>Import Quotes</span>
+                  </div>
+                  <div className="more-dropdown-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    <span>Export Quotes</span>
+                    <svg className="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    <div className="nested-dropdown-menu">
+                      <div className="more-dropdown-item" onClick={() => { toast("Exported CSV"); setMoreMenuOpen(false); }}><span>Export as CSV</span></div>
+                      <div className="more-dropdown-item" onClick={() => { toast("Exported JSON"); setMoreMenuOpen(false); }}><span>Export as JSON</span></div>
+                    </div>
+                  </div>
+                  <div className="more-dropdown-divider"></div>
+                  <div className="more-dropdown-item" onClick={() => { fetchData(); setMoreMenuOpen(false); }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                    <span>Refresh List</span>
+                  </div>
+                  <div className="more-dropdown-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 3v5h5M10 12v6M8 15h4"/></svg>
+                    <span>Reset Column Width</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Filter and Search controls */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 24px", background: "#fcfcfd", borderBottom: "1px solid #eaecf0" }}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {/* Search Input */}
-          <div style={{ position: "relative", width: "260px" }}>
-            <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#667085" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </span>
+        {/* List Search Bar */}
+        <div style={{ padding: "12px 30px", borderBottom: "1px solid #eaeaea", background: "#fdfdfd" }}>
+          <div style={{ position: "relative", width: "100%", maxWidth: "400px" }}>
+            <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#98a2b3" }}>🔍</span>
             <input
               type="text"
               placeholder="Search in Quotes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px 12px 8px 32px",
-                borderRadius: "4px",
-                border: "1px solid #d0d5dd",
-                fontSize: "13px",
-                boxSizing: "border-box",
-                outline: "none",
-                color: "#344054",
-              }}
+              style={{ width: "100%", padding: "10px 12px 10px 42px", borderRadius: "6px", border: "1px solid #d0d5dd", outline: "none", fontSize: "13px", boxSizing: "border-box" }}
+              className="premium-input"
             />
           </div>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: "7px 12px",
-              borderRadius: "4px",
-              border: "1px solid #d0d5dd",
-              fontSize: "13px",
-              color: "#344054",
-              background: "#ffffff",
-              cursor: "pointer",
-              outline: "none",
-            }}
-          >
-            <option value="all">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="sent">Sent</option>
-            <option value="accepted">Accepted</option>
-            <option value="declined">Declined</option>
-            <option value="expired">Expired</option>
-            <option value="invoiced">Invoiced</option>
-          </select>
-
-          {/* Bulk actions */}
-          {selectedIds.length > 0 && (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center", borderLeft: "1px solid #eaecf0", paddingLeft: "12px" }}>
-              <span style={{ fontSize: "13px", color: "#475569", fontWeight: "500" }}>{selectedIds.length} selected</span>
-              <button
-                onClick={handleDeleteSelected}
-                style={{
-                  padding: "5px 10px",
-                  background: "#fee2e2",
-                  color: "#b91c1c",
-                  border: "1px solid #fecaca",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: "500",
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          )}
         </div>
-      </div>
 
-      {/* Table Container */}
-      <div style={{ padding: "0" }}>
-        {loading ? (
-          <div style={{ padding: "24px" }}><TableSkeleton columns={6} rows={5} /></div>
-        ) : filteredQuotes.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px 20px", color: "#667085" }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d0d5dd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "16px" }}>
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <h3 style={{ margin: "0 0 8px", fontSize: "16px", color: "#344054", fontWeight: "600" }}>No quotes found</h3>
-            <p style={{ margin: "0 0 16px", fontSize: "14px", color: "#667085" }}>Try adjusting your search query or filter, or create a new quote.</p>
-            <button
-              onClick={() => navigate("/quotes/new")}
-              style={{
-                padding: "8px 14px",
-                background: "#006ee6",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontWeight: "500",
-                fontSize: "13px",
-              }}
-            >
-              + New Quote
-            </button>
+        {/* Bulk Actions Banner */}
+        {selectedIds.length > 0 && (
+          <div style={{ background: "#f0f6ff", border: "1px solid #bae6fd", borderRadius: "8px", padding: "12px 16px", display: "flex", alignItems: "center", gap: "16px", margin: "20px 30px 0" }}>
+            <span style={{ color: "#0369a1", fontWeight: "600", fontSize: "13px" }}>{selectedIds.length} quote(s) selected</span>
+            <button onClick={handleDeleteSelected} style={{ background: "#d92d20", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Delete Selected</button>
+            <button onClick={() => setSelectedIds([])} style={{ background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: "12px", textDecoration: "underline" }}>Cancel</button>
           </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
+        )}
+
+        {/* Table List Layout */}
+        <div className="table-wrapper">
+          {loading ? (
+            <TableSkeleton rows={8} columns={6} />
+          ) : filteredQuotes.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#98a2b3' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📄</div>
+              <h3 style={{ color: '#1d2939', marginBottom: '8px', fontSize: "16px", fontWeight: "600" }}>No quotes found</h3>
+              <p style={{ marginBottom: '20px', fontSize: "13px" }}>{search ? 'No quotes match your search.' : 'Start by creating your first quote.'}</p>
+              <button className="btn-new" onClick={() => navigate('/quotes/new')} style={{ margin: "0 auto" }}>+ New Quote</button>
+            </div>
+          ) : (
+            <table className={`items-table \${clipText ? 'clip-text' : ''}`}>
               <thead>
-                <tr style={{ background: "#f9fafb", borderBottom: "1px solid #eaecf0" }}>
-                  <th style={{ ...thStyle, width: "40px" }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.length > 0 && selectedIds.length === sortedQuotes.length}
-                      onChange={handleSelectAll}
-                      style={checkboxStyle}
-                    />
+                <tr>
+                  <th style={{ width: '50px', textAlign: 'center', resize: 'none', position: 'relative' }} className="th-icon-wrapper">
+                    <span className={`th-icon \${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(!showSettings)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="8" cy="8" r="2"/><line x1="3" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="21" y2="8"/><circle cx="14" cy="16" r="2"/><line x1="3" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="21" y2="16"/></svg>
+                    </span>
+                    {showSettings && (
+                      <div className="settings-dropdown">
+                        <div className="dropdown-item" onClick={() => { setColumnsOpen(!columnsOpen); setShowSettings(false); }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                          Customize Columns
+                        </div>
+                        <div className="dropdown-item" onClick={() => { setClipText(!clipText); setShowSettings(false); }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="18" y2="18"/></svg>
+                          Clip Text
+                        </div>
+                      </div>
+                    )}
+                    
+                    {columnsOpen && (
+                      <div className="columns-dropdown" style={{ position: "absolute", left: "100%", top: 0, marginLeft: "4px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "180px", padding: "8px 0" }}>
+                        {ALL_COLUMNS.filter((c) => c.key !== "checkbox").map((col) => (
+                          <label key={col.key} style={{ display: "flex", alignItems: "center", padding: "8px 14px", cursor: "pointer" }}>
+                            <input type="checkbox" checked={visibleColumns[col.key] || false} onChange={() => setVisibleColumns((prev) => ({ ...prev, [col.key]: !prev[col.key] }))} />
+                            <span style={{ marginLeft: "8px", fontSize: "13px", color: "#344054", fontWeight: 'normal', textTransform: 'none' }}>{col.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </th>
-                  <th style={thStyle}>Date</th>
-                  <th style={thStyle}>Quote Number</th>
-                  <th style={thStyle}>Reference Number</th>
-                  <th style={thStyle}>Customer Name</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={{ ...thStyle, textAlign: "right" }}>Amount</th>
-                  <th style={{ ...thStyle, width: "30px" }}></th>
+                  <th style={{ width: '40px', textAlign: 'center', resize: 'none' }}>
+                    <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selectedIds.length === sortedQuotes.length && sortedQuotes.length > 0} onChange={handleSelectAll} />
+                  </th>
+                  {ALL_COLUMNS.filter(c => c.key !== "checkbox" && visibleColumns[c.key]).map(col => (
+                    <th key={col.key} style={col.key === 'total_amount' ? { textAlign: 'right' } : {}}>{col.label.toUpperCase()}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {sortedQuotes.map((q) => (
-                  <tr
-                    key={q.id}
-                    onClick={() => navigate(`/quotes/${q.id}`)}
-                    style={{
-                      borderBottom: "1px solid #eaecf0",
-                      cursor: "pointer",
-                      background: selectedIds.includes(q.id) ? "#fcfcfd" : "#ffffff",
-                      transition: "background 0.1s ease",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "#f9fafb"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = selectedIds.includes(q.id) ? "#fcfcfd" : "#ffffff"; }}
-                  >
-                    <td style={tdStyle} onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(q.id)}
-                        onChange={(e) => handleSelectOne(e, q.id)}
-                        style={checkboxStyle}
-                      />
+                  <tr key={q.id} onClick={() => navigate(`/quotes/${q.id}`)} style={{ cursor: "pointer", background: selectedIds.includes(q.id) ? "#fcfcfd" : "" }}>
+                    <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}></td>
+                    <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selectedIds.includes(q.id)} onChange={() => handleSelectOne(q.id)} />
                     </td>
-                    <td style={tdStyle}>{new Date(q.quote_date).toLocaleDateString("en-GB")}</td>
-                    <td style={{ ...tdStyle, color: "#006ee6", fontWeight: "500" }}>
-                      {q.quote_number}
-                    </td>
-                    <td style={tdStyle}>{q.reference_number || "—"}</td>
-                    <td style={{ ...tdStyle, color: "#344054" }}>{getCustomerName(q.customer_id)}</td>
-                    <td style={tdStyle}>{statusBadge(q.status)}</td>
-                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "600", color: "#1d2939" }}>
-                      ₹{parseFloat(q.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td style={tdStyle}></td>
+                    {visibleColumns.quote_date && <td>{new Date(q.quote_date).toLocaleDateString("en-GB")}</td>}
+                    {visibleColumns.quote_number && <td className="customer-name-link">{q.quote_number}</td>}
+                    {visibleColumns.reference_number && <td>{q.reference_number || "—"}</td>}
+                    {visibleColumns.customer_name && <td>{getCustomerName(q.customer_id)}</td>}
+                    {visibleColumns.company_name && <td>{getCustomerCompany(q.customer_id)}</td>}
+                    {visibleColumns.status && <td>{statusBadge(q.status)}</td>}
+                    {visibleColumns.expiry_date && <td>{q.expiry_date ? new Date(q.expiry_date).toLocaleDateString("en-GB") : "—"}</td>}
+                    {visibleColumns.accepted_date && <td>{q.accepted_date ? new Date(q.accepted_date).toLocaleDateString("en-GB") : "—"}</td>}
+                    {visibleColumns.declined_date && <td>{q.declined_date ? new Date(q.declined_date).toLocaleDateString("en-GB") : "—"}</td>}
+                    {visibleColumns.total_amount && <td style={{ textAlign: 'right', fontWeight: "600", color: "#1d2939" }}>₹{parseFloat(q.total_amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>}
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-const thStyle = {
-  padding: "10px 16px",
-  color: "#475569",
-  fontSize: "11px",
-  fontWeight: "600",
-  textTransform: "uppercase",
-  letterSpacing: "0.05em",
-  borderBottom: "1px solid #eaecf0",
-};
-
-const tdStyle = {
-  padding: "12px 16px",
-  color: "#475569",
-  whiteSpace: "nowrap",
-  verticalAlign: "middle",
-};
-
-const checkboxStyle = {
-  cursor: "pointer",
-  width: "14px",
-  height: "14px",
-};
-
-const dropdownItemBtn = {
-  display: "flex",
-  alignItems: "center",
-  width: "100%",
-  padding: "8px 14px",
-  border: "none",
-  background: "none",
-  textAlign: "left",
-  cursor: "pointer",
-  fontSize: "13px",
-  color: "#344054",
-  outline: "none",
-  transition: "all 0.1s ease",
-  fontFamily: "system-ui, -apple-system, sans-serif",
-};
 
 export default Quotes;

@@ -1,14 +1,41 @@
-/**
- * AddQuote.js – Redesigned Quote Form UI (Zoho Books style)
- * Visually updated with grids, subtle borders, highlighted table, calculations summary block,
- * and elegant modals, maintaining all original logic, state, and API variables.
- */
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "./api";
 import { FormSkeleton } from "./components/skeletons";
 import toast from "react-hot-toast";
 import AddCustomer from "./AddCustomer";
+
+const customCSS = `
+  .add-item-container { background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #212529; min-height: calc(100vh - 60px); }
+  .add-item-header { padding: 15px 30px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+  .add-item-header h2 { margin: 0; font-size: 20px; font-weight: 400; }
+  .form-section { padding: 30px; display: flex; flex-direction: column; }
+  .top-left { max-width: 800px; }
+  .form-row { display: flex; margin-bottom: 20px; align-items: flex-start; }
+  .form-label { width: 200px; font-size: 13px; padding-top: 8px; display: flex; align-items: center; gap: 5px; color: #333; }
+  .req-dashed { color: #d32f2f; }
+  .form-control { flex: 1; min-width: 0; }
+  .input-field { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box; transition: border-color 0.2s; background: #fff; }
+  .input-field:focus { border-color: #4a90e2; }
+  .form-actions { padding: 20px 30px; border-top: 1px solid #f0f0f0; display: flex; gap: 15px; position: sticky; bottom: 0; background: #fff; z-index: 100; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+  .btn-save { background: #4a90e2; color: #fff; border: none; padding: 8px 20px; border-radius: 4px; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+  .btn-save:hover { background: #357abd; }
+  .btn-cancel { background: #fff; color: #333; border: 1px solid #ccc; padding: 8px 20px; border-radius: 4px; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+  .btn-cancel:hover { background: #f9f9f9; }
+  
+  .item-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  .item-table th { background: #f9f9f9; border-bottom: 1px solid #eee; padding: 10px; text-align: left; font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; }
+  .item-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+  .table-input { width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 13px; outline: none; box-sizing: border-box; transition: border-color 0.2s; background: transparent; }
+  .table-input:hover { border-color: #e0e0e0; background: #f9f9f9; }
+  .table-input:focus { border-color: #4a90e2; background: #fff; }
+  
+  .totals-section { background: #f9f9f9; border-radius: 8px; padding: 20px; width: 350px; }
+  .totals-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: #333; }
+  
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; alignItems: center; z-index: 1000; }
+  .modal-box { background: #fff; border-radius: 8px; padding: 25px; width: 450px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+`;
 
 function AddQuote() {
   const navigate = useNavigate();
@@ -22,6 +49,8 @@ function AddQuote() {
   const [expiryDate, setExpiryDate] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
   const [terms, setTerms] = useState("");
+  const [termsConditions, setTermsConditions] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
   const [salespersonId, setSalespersonId] = useState("");
   const [projectId, setProjectId] = useState("");
 
@@ -29,6 +58,10 @@ function AddQuote() {
   const [items, setItems] = useState([
     { item_id: "", item_name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, discount: 0, discount_type: "flat", hsn_code: "", unit: "" }
   ]);
+
+  const [tdsTcsType, setTdsTcsType] = useState("TDS");
+  const [taxSelection, setTaxSelection] = useState("");
+  const [adjustment, setAdjustment] = useState(0);
 
   // --- Dropdown data ---
   const [customers, setCustomers] = useState([]);
@@ -49,7 +82,6 @@ function AddQuote() {
   // --- New Project form ---
   const [newProj, setNewProj] = useState({ project_name: "", customer_id: "", start_date: "", end_date: "", description: "", status: "active" });
 
-  // Fetch all dropdown data
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -102,7 +134,6 @@ function AddQuote() {
     fetchAll();
   }, [id, isEditMode]);
 
-  // Item helpers
   const addItem = () => {
     setItems([...items, { item_id: "", item_name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, discount: 0, discount_type: "flat", hsn_code: "", unit: "" }]);
   };
@@ -117,7 +148,6 @@ function AddQuote() {
     setItems(updated);
   };
 
-  // When selecting an item from dropdown, auto-fill fields from catalog
   const handleItemSelect = (index, itemId) => {
     const updated = [...items];
     updated[index].item_id = itemId;
@@ -139,7 +169,6 @@ function AddQuote() {
     setItems(updated);
   };
 
-  // Calculations
   const calcLineAmount = (item) => {
     const qty = parseFloat(item.quantity) || 0;
     const rate = parseFloat(item.unit_price) || 0;
@@ -167,7 +196,8 @@ function AddQuote() {
     return sum + disc;
   }, 0);
   const totalTax = items.reduce((sum, item) => sum + calcLineTax(item), 0);
-  const grandTotal = subtotal - totalDiscount + totalTax;  // Save
+  const grandTotal = subtotal - totalDiscount + totalTax + parseFloat(adjustment || 0);
+
   const handleSave = async (statusArg) => {
     if (!customerId) { toast.error("Please select a customer"); return; }
     if (items.length === 0 || items.every(item => !item.description && !item.item_id)) {
@@ -234,10 +264,7 @@ function AddQuote() {
   const handleSaveSalesperson = async () => {
     if (!newSp.name) { toast.error("Name required"); return; }
     try {
-      const res = await apiRequest("/salespersons", {
-        method: "POST",
-        body: JSON.stringify(newSp),
-      });
+      const res = await apiRequest("/salespersons", { method: "POST", body: JSON.stringify(newSp) });
       if (res?.salesperson) {
         setSalespersons(prev => [...prev, res.salesperson]);
         setSalespersonId(String(res.salesperson.id));
@@ -251,10 +278,15 @@ function AddQuote() {
   const handleSaveProject = async () => {
     if (!newProj.project_name) { toast.error("Project name required"); return; }
     try {
-      const res = await apiRequest("/projects", {
-        method: "POST",
-        body: JSON.stringify(newProj),
-      });
+      const payload = {
+        project_name: newProj.project_name,
+        customer_id: newProj.customer_id ? parseInt(newProj.customer_id) : null,
+        start_date: newProj.start_date || null,
+        end_date: newProj.end_date || null,
+        description: newProj.description,
+        status: newProj.status,
+      };
+      const res = await apiRequest("/projects", { method: "POST", body: JSON.stringify(payload) });
       if (res?.project) {
         setProjects(prev => [...prev, res.project]);
         setProjectId(String(res.project.id));
@@ -267,593 +299,277 @@ function AddQuote() {
 
   if (fetching) {
     return (
-      <div style={{ maxWidth: "1000px", margin: "auto", padding: "40px" }}>
-        <h2 style={{ marginBottom: "25px", fontSize: "20px", fontWeight: "600" }}>{isEditMode ? "Edit Quote" : "New Quote"}</h2>
+      <div style={{ maxWidth: "1100px", margin: "auto", padding: "30px" }}>
         <FormSkeleton fields={8} />
       </div>
     );
   }
 
   return (
-    <div style={{ background: "#f8fafc", minHeight: "100vh", padding: "24px 16px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      <style>{`
-        .premium-input {
-          border: 1px solid #d0d5dd;
-          transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .premium-input:focus {
-          border-color: #006ee6 !important;
-          box-shadow: 0 0 0 4px rgba(0, 110, 230, 0.12) !important;
-        }
-        .table-input {
-          border: 1px solid transparent;
-          background: transparent;
-          padding: 8px 10px;
-          border-radius: 4px;
-          transition: all 0.15s ease;
-          width: 100%;
-          font-size: 13px;
-          color: #344054;
-          box-sizing: border-box;
-          outline: none;
-        }
-        .table-input:hover {
-          border-color: #eaecf0;
-          background: #f9fafb;
-        }
-        .table-input:focus {
-          border-color: #006ee6 !important;
-          background: #ffffff !important;
-          box-shadow: 0 0 0 3px rgba(0, 110, 230, 0.1) !important;
-        }
-        .row-action-btn {
-          opacity: 0.6;
-          transition: opacity 0.15s ease, color 0.15s ease;
-        }
-        .row-action-btn:hover {
-          opacity: 1;
-          color: #d92d20;
-        }
-        .add-row-btn {
-          border: 1px solid #d0d5dd;
-          color: #344054;
-          background: #ffffff;
-          transition: all 0.15s ease;
-        }
-        .add-row-btn:hover {
-          border-color: #006ee6;
-          color: #006ee6;
-          background: #f0f6ff;
-        }
-        .attach-box {
-          border: 2px dashed #eaecf0;
-          border-radius: 8px;
-          padding: 24px;
-          text-align: center;
-          background: #fcfcfd;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-        .attach-box:hover {
-          border-color: #006ee6;
-          background: #f0f6ff;
-        }
-        .control-group-btn {
-          padding: 10px 14px;
-          background: #006ee6;
-          color: #ffffff;
-          border: none;
-          border-radius: 0 6px 6px 0;
-          cursor: pointer;
-          font-weight: 500;
-          display: flex;
-          alignItems: center;
-          justifyContent: center;
-          transition: background 0.15s ease;
-          outline: none;
-        }
-        .control-group-btn:hover {
-          background: #0056b3;
-        }
-      `}</style>
-
-      <div style={{ maxWidth: "1120px", margin: "0 auto", background: "#ffffff", borderRadius: "12px", border: "1px solid #eaecf0", boxShadow: "0 4px 20px rgba(16, 24, 40, 0.04)", overflow: "hidden" }}>
+    <>
+      <style>{customCSS}</style>
+      <div className="add-item-container">
         
-        {/* Header Banner */}
-        <div style={{ borderBottom: "1px solid #eaecf0", padding: "20px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <button
-              onClick={() => navigate(isEditMode ? `/quotes/${id}` : "/quotes")}
-              style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "#667085", padding: "4px", borderRadius: "4px" }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "#f2f4f7"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
-            </button>
-            <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#1d2939" }}>
-              {isEditMode ? "Edit Quote" : "New Quote"}
-            </h2>
-          </div>
-          <button
-            onClick={() => navigate(isEditMode ? `/quotes/${id}` : "/quotes")}
-            style={{ border: "none", background: "none", cursor: "pointer", fontSize: "20px", color: "#98a2b3", display: "flex", padding: "4px", borderRadius: "4px" }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#f2f4f7"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "none"}
-          >
-            &times;
-          </button>
+        {/* Header */}
+        <div className="add-item-header">
+          <h2>{isEditMode ? "Edit Quote" : "New Quote"}</h2>
+          <button className="btn-cancel" onClick={() => navigate("/quotes")} style={{ border: 'none', background: 'none', fontSize: '24px', padding: '0', color: '#888' }}>&times;</button>
         </div>
 
-        {/* Form Grid Area */}
-        <div style={{ padding: "32px" }}>
+        <div className="form-section">
           
-          {/* Section 1: Customer Details */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr 1fr", gap: "24px", marginBottom: "24px" }}>
-            
-            {/* Customer Name selection */}
-            <div>
-              <label style={labelStyle}>Customer Name <span style={{ color: "#d92d20" }}>*</span></label>
-              <div style={{ display: "flex", width: "100%" }}>
-                <select 
-                  value={customerId} 
-                  onChange={e => setCustomerId(e.target.value)} 
-                  style={{ ...selectStyle, borderRadius: "6px 0 0 6px" }}
-                  className="premium-input"
-                >
-                  <option value="">Select or add a customer</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.display_name || [c.first_name, c.last_name].filter(Boolean).join(' ') || c.email}
-                    </option>
-                  ))}
+          <div className="top-left">
+            <div className="form-row">
+              <label className="form-label">Customer Name <span className="req-dashed">*</span></label>
+              <div className="form-control" style={{ display: "flex", gap: "10px" }}>
+                <select className="input-field" value={customerId} onChange={e => setCustomerId(e.target.value)}>
+                  <option value="">Select a customer</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.display_name || c.email}</option>)}
                 </select>
-                <button 
-                  onClick={() => setShowCustomerModal(true)} 
-                  className="control-group-btn" 
-                  title="New Customer"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                </button>
+                <button type="button" onClick={() => setShowCustomerModal(true)} style={{ background: "none", border: "1px solid #ccc", padding: "0 15px", borderRadius: "4px", cursor: "pointer", color: "#4a90e2", whiteSpace: "nowrap" }}>+ New</button>
               </div>
             </div>
 
-            {/* Quote ID input */}
-            <div>
-              <label style={labelStyle}>Quote#</label>
-              <div style={{ position: "relative" }}>
-                <input 
-                  type="text" 
-                  value={isEditMode ? quoteNumber : "QT-[Auto-Generated]"} 
-                  disabled 
-                  style={{ ...inputStyle, background: "#f8fafc", color: "#667085", paddingRight: "36px" }} 
-                />
-                <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", display: "flex", color: "#98a2b3" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                  </svg>
-                </span>
+            <div className="form-row">
+              <label className="form-label">Quote# <span className="req-dashed">*</span></label>
+              <div className="form-control">
+                <input className="input-field" type="text" value={isEditMode ? quoteNumber : "QT-[Auto-Generated]"} disabled={!isEditMode} style={{ background: isEditMode ? "#fff" : "#f9f9f9", color: "#666" }} />
               </div>
             </div>
 
-            {/* Date Pickers */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div>
-                <label style={labelStyle}>Quote Date <span style={{ color: "#d92d20" }}>*</span></label>
-                <input 
-                  type="date" 
-                  value={quoteDate} 
-                  onChange={e => setQuoteDate(e.target.value)} 
-                  style={inputStyle} 
-                  className="premium-input"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Expiry Date</label>
-                <input 
-                  type="date" 
-                  value={expiryDate} 
-                  onChange={e => setExpiryDate(e.target.value)} 
-                  style={inputStyle} 
-                  className="premium-input"
-                />
+            <div className="form-row">
+              <label className="form-label">Quote Date <span className="req-dashed">*</span></label>
+              <div className="form-control" style={{ display: "flex", gap: "20px" }}>
+                <input className="input-field" type="date" value={quoteDate} onChange={e => setQuoteDate(e.target.value)} />
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%" }}>
+                  <label className="form-label" style={{ width: "auto", paddingTop: "0" }}>Terms</label>
+                  <select className="input-field" value={terms} onChange={e => setTerms(e.target.value)}>
+                    <option value="">Due on Receipt</option>
+                    <option value="Net 15">Net 15</option>
+                    <option value="Net 30">Net 30</option>
+                    <option value="Net 45">Net 45</option>
+                    <option value="Net 60">Net 60</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-          </div>
+            <div className="form-row">
+              <label className="form-label">Expiry Date</label>
+              <div className="form-control">
+                <input className="input-field" type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} style={{ borderStyle: "dashed" }} />
+              </div>
+            </div>
 
-          {/* Section 2: Salesperson, Project, Subject */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr", gap: "24px", marginBottom: "32px", borderTop: "1px solid #f2f4f7", paddingTop: "24px" }}>
-            
-            {/* Salesperson */}
-            <div>
-              <label style={labelStyle}>Salesperson</label>
-              <div style={{ display: "flex", width: "100%" }}>
-                <select 
-                  value={salespersonId} 
-                  onChange={e => setSalespersonId(e.target.value)} 
-                  style={{ ...selectStyle, borderRadius: "6px 0 0 6px" }}
-                  className="premium-input"
-                >
-                  <option value="">Select salesperson</option>
+            <div className="form-row">
+              <label className="form-label">Salesperson</label>
+              <div className="form-control" style={{ display: "flex", gap: "10px" }}>
+                <select className="input-field" value={salespersonId} onChange={e => setSalespersonId(e.target.value)}>
+                  <option value="">Select Salesperson</option>
                   {salespersons.map(sp => <option key={sp.id} value={sp.id}>{sp.name}</option>)}
                 </select>
-                <button 
-                  onClick={() => setShowSalespersonModal(true)} 
-                  className="control-group-btn" 
-                  title="New Salesperson"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                </button>
+                <button type="button" onClick={() => setShowSalespersonModal(true)} style={{ background: "none", border: "1px solid #ccc", padding: "0 15px", borderRadius: "4px", cursor: "pointer", color: "#4a90e2", whiteSpace: "nowrap" }}>+ New</button>
               </div>
             </div>
 
-            {/* Project */}
-            <div>
-              <label style={labelStyle}>Project Name</label>
-              <div style={{ display: "flex", width: "100%" }}>
-                <select 
-                  value={projectId} 
-                  onChange={e => setProjectId(e.target.value)} 
-                  style={{ ...selectStyle, borderRadius: "6px 0 0 6px" }}
-                  className="premium-input"
-                >
+            <div className="form-row">
+              <label className="form-label">Project Name</label>
+              <div className="form-control" style={{ display: "flex", gap: "10px" }}>
+                <select className="input-field" value={projectId} onChange={e => setProjectId(e.target.value)}>
                   <option value="">Select project</option>
                   {projects.map(p => <option key={p.id} value={p.id}>{p.project_name}</option>)}
                 </select>
-                <button 
-                  onClick={() => setShowProjectModal(true)} 
-                  className="control-group-btn" 
-                  title="New Project"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
+                <button type="button" onClick={() => setShowProjectModal(true)} style={{ background: "none", border: "1px solid #ccc", padding: "0 15px", borderRadius: "4px", cursor: "pointer", color: "#4a90e2", whiteSpace: "nowrap" }}>+ New</button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: "40px", border: "1px solid #eee", borderRadius: "8px", background: "#fff", overflow: "hidden" }}>
+            <div style={{ padding: "15px 20px", background: "#f9f9f9", borderBottom: "1px solid #eee" }}>
+              <h3 style={{ fontSize: "16px", color: "#333", fontWeight: "600", margin: 0 }}>Item Table</h3>
+            </div>
+            <table className="item-table" style={{ marginTop: 0 }}>
+              <thead>
+                <tr>
+                  <th style={{ width: "40%", padding: "12px 20px" }}>ITEM DETAILS</th>
+                  <th style={{ width: "15%", textAlign: "right" }}>QUANTITY</th>
+                  <th style={{ width: "15%", textAlign: "right" }}>RATE <span style={{ fontSize: '10px' }}>🏷️</span></th>
+                  <th style={{ width: "15%", textAlign: "right" }}>DISCOUNT</th>
+                  <th style={{ width: "15%", textAlign: "right", paddingRight: "20px" }}>AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, idx) => (
+                  <tr key={idx}>
+                    <td style={{ padding: "10px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                        <span style={{ color: "#ccc", cursor: "grab", marginTop: "5px" }}>⋮⋮</span>
+                        <div style={{ flex: 1 }}>
+                          <select 
+                            value={item.item_id} 
+                            onChange={e => handleItemSelect(idx, e.target.value)} 
+                            className="table-input"
+                            style={{ appearance: "none", cursor: "pointer", fontWeight: "500", color: "#888", padding: "4px 8px" }}
+                          >
+                            <option value="">Type or click to select an item.</option>
+                            {catalogItems.map(ci => <option key={ci.id} value={ci.id}>{ci.name}</option>)}
+                          </select>
+                          {item.item_id && (
+                            <textarea 
+                              value={item.description}
+                              onChange={e => updateItem(idx, "description", e.target.value)}
+                              placeholder="Description"
+                              rows={1}
+                              className="table-input"
+                              style={{ resize: "none", color: "#666", marginTop: "4px", padding: "4px 8px" }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="number" min="0" value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value)} className="table-input" style={{ textAlign: "right" }} />
+                    </td>
+                    <td>
+                      <input type="number" min="0" step="0.01" value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)} className="table-input" style={{ textAlign: "right" }} />
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0", background: "#f9f9f9", borderRadius: "4px" }}>
+                        <input type="number" min="0" step="0.01" value={item.discount} onChange={e => updateItem(idx, "discount", e.target.value)} className="table-input" style={{ textAlign: "right", background: "transparent" }} />
+                        <select value={item.discount_type} onChange={e => updateItem(idx, "discount_type", e.target.value)} className="table-input" style={{ width: "45px", padding: "6px 2px", borderLeft: "1px solid #eee", background: "transparent", borderRadius: "0 4px 4px 0" }}>
+                          <option value="percent">%</option>
+                          <option value="flat">₹</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: "right", fontWeight: "600", color: "#333", paddingTop: "16px", paddingRight: "20px" }}>
+                      {(calcLineAmount(item)).toFixed(2)}
+                      {items.length > 1 && (
+                        <button onClick={() => removeItem(idx)} className="remove-row-btn" style={{ marginLeft: "10px" }}>✕</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px", gap: "60px", alignItems: "flex-start" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", gap: "10px", marginBottom: "30px" }}>
+                <button type="button" onClick={addItem} style={{ background: "#f0f4ff", color: "#4a90e2", border: "none", padding: "8px 16px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ background: "#4a90e2", color: "#fff", borderRadius: "50%", width: "14px", height: "14px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "12px", paddingBottom: "2px" }}>+</span> Add New Row <span style={{ marginLeft: "4px", color: "#888" }}>⌄</span>
+                </button>
+                <button type="button" onClick={() => toast("Bulk add feature coming soon")} style={{ background: "#f0f4ff", color: "#4a90e2", border: "none", padding: "8px 16px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ background: "#4a90e2", color: "#fff", borderRadius: "50%", width: "14px", height: "14px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "12px", paddingBottom: "2px" }}>+</span> Add Items in Bulk
                 </button>
               </div>
-            </div>
 
-            {/* Subject */}
-            <div>
-              <label style={labelStyle}>Subject</label>
-              <input 
-                type="text" 
-                placeholder="Let your customer know what this Quote is for..." 
-                style={inputStyle} 
-                className="premium-input"
-              />
-            </div>
+              <div className="form-row" style={{ display: "block", marginBottom: "20px" }}>
+                <label className="form-label" style={{ width: "100%", marginBottom: "10px", color: "#333", fontWeight: "500" }}>Customer Notes</label>
+                <div className="form-control">
+                  <textarea className="input-field" value={customerNotes} onChange={e => setCustomerNotes(e.target.value)} rows="3" placeholder="Looking forward for your business." style={{ borderRadius: "8px" }} />
+                  <div style={{ fontSize: "12px", color: "#888", marginTop: "5px" }}>Will be displayed on the quote</div>
+                </div>
+              </div>
 
-          </div>
+              <div className="form-row" style={{ display: "block", marginBottom: "20px" }}>
+                <label className="form-label" style={{ width: "100%", marginBottom: "10px", color: "#333", fontWeight: "500" }}>Terms & Conditions</label>
+                <div className="form-control">
+                  <textarea className="input-field" value={termsConditions} onChange={e => setTermsConditions(e.target.value)} rows="3" placeholder="Enter the terms and conditions of your business to be displayed in your transaction" style={{ borderRadius: "8px" }} />
+                </div>
+              </div>
 
-          {/* Section 3: Item Table */}
-          <div style={{ borderTop: "1px solid #f2f4f7", paddingTop: "24px", marginBottom: "32px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "#344054", textTransform: "uppercase", letterSpacing: "0.03em" }}>Item Details</h3>
-            </div>
-
-            <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", overflow: "hidden", boxShadow: "0 1px 3px rgba(16, 24, 40, 0.05)" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px", fontSize: "13px" }}>
-                <thead>
-                  <tr style={{ background: "#f9fafb", borderBottom: "1px solid #eaecf0", textAlign: "left" }}>
-                    <th style={{ ...thStyle, width: "260px" }}>Item Details</th>
-                    <th style={thStyle}>Description</th>
-                    <th style={{ ...thStyle, width: "90px", textAlign: "right" }}>Quantity</th>
-                    <th style={{ ...thStyle, width: "120px", textAlign: "right" }}>Rate</th>
-                    <th style={{ ...thStyle, width: "140px", textAlign: "right" }}>Discount</th>
-                    <th style={{ ...thStyle, width: "90px", textAlign: "right" }}>Tax %</th>
-                    <th style={{ ...thStyle, width: "140px", textAlign: "right" }}>Amount</th>
-                    <th style={{ ...thStyle, width: "50px" }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item, idx) => (
-                    <tr key={idx} style={{ borderBottom: "1px solid #eaecf0", background: "#ffffff" }}>
-                      
-                      {/* Item drop selection */}
-                      <td style={{ ...tdStyle, padding: "8px 12px" }}>
-                        <select
-                          value={item.item_id}
-                          onChange={e => handleItemSelect(idx, e.target.value)}
-                          style={{ ...selectStyle, padding: "8px 10px", border: "1px solid #eaecf0" }}
-                          className="premium-input"
+              <div className="form-row" style={{ display: "block" }}>
+                <label className="form-label" style={{ width: "100%", marginBottom: "10px", color: "#333", fontWeight: "500" }}>Attach File(s) to Quote</label>
+                <div className="form-control">
+                  <div 
+                    style={{ border: "1px dashed #ccc", borderRadius: "8px", padding: "20px", textAlign: "center", background: "#f8f9fb", cursor: "pointer", transition: "background 0.2s" }}
+                    onClick={() => document.getElementById('quote-file-upload').click()}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#f0f8ff"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#f8f9fb"}
+                  >
+                    <span style={{ fontSize: "20px", color: "#888", display: "block", marginBottom: "8px" }}>📎</span>
+                    {selectedFile ? (
+                      <div style={{ color: "#333", fontWeight: "500" }}>
+                        {selectedFile.name}
+                        <span 
+                          style={{ color: "#ef4444", marginLeft: "10px", fontSize: "12px", cursor: "pointer" }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
                         >
-                          <option value="">— Select an item —</option>
-                          {catalogItems.map(ci => (
-                            <option key={ci.id} value={ci.id}>{ci.name}</option>
-                          ))}
-                        </select>
-                        {(item.hsn_code || item.unit) && (
-                          <div style={{ fontSize: "10px", color: "#667085", marginTop: "6px", display: "flex", gap: "6px" }}>
-                            {item.hsn_code && <span style={{ background: "#f0f4ff", border: "1px solid #c7d2fe", borderRadius: "4px", padding: "1px 6px", fontWeight: "500" }}>HSN: {item.hsn_code}</span>}
-                            {item.unit && <span style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "4px", padding: "1px 6px", fontWeight: "500" }}>Unit: {item.unit}</span>}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Description */}
-                      <td style={{ ...tdStyle, padding: "8px 12px" }}>
-                        <input
-                          type="text"
-                          placeholder="Enter description..."
-                          value={item.description}
-                          onChange={e => updateItem(idx, "description", e.target.value)}
-                          className="table-input"
-                        />
-                      </td>
-
-                      {/* Quantity */}
-                      <td style={{ ...tdStyle, padding: "8px 12px" }}>
-                        <input
-                          type="number"
-                          min="0"
-                          value={item.quantity}
-                          onChange={e => updateItem(idx, "quantity", e.target.value)}
-                          style={{ textAlign: "right" }}
-                          className="table-input"
-                        />
-                      </td>
-
-                      {/* Unit Price Rate */}
-                      <td style={{ ...tdStyle, padding: "8px 12px" }}>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unit_price}
-                          onChange={e => updateItem(idx, "unit_price", e.target.value)}
-                          style={{ textAlign: "right" }}
-                          className="table-input"
-                        />
-                      </td>
-
-                      {/* Discount block */}
-                      <td style={{ ...tdStyle, padding: "8px 12px" }}>
-                        <div style={{ display: "flex", gap: "6px", alignItems: "center", justifyContent: "flex-end" }}>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.discount}
-                            onChange={e => updateItem(idx, "discount", e.target.value)}
-                            style={{ width: "70px", textAlign: "right", border: "1px solid #eaecf0", padding: "6px" }}
-                            className="premium-input"
-                          />
-                          <select
-                            value={item.discount_type}
-                            onChange={e => updateItem(idx, "discount_type", e.target.value)}
-                            style={{ ...selectStyle, padding: "6px", width: "45px", fontSize: "12px", border: "1px solid #eaecf0" }}
-                            className="premium-input"
-                          >
-                            <option value="flat">₹</option>
-                            <option value="percent">%</option>
-                          </select>
-                        </div>
-                      </td>
-
-                      {/* Tax Rate */}
-                      <td style={{ ...tdStyle, padding: "8px 12px" }}>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={item.tax_rate}
-                          onChange={e => updateItem(idx, "tax_rate", e.target.value)}
-                          style={{ textAlign: "right" }}
-                          className="table-input"
-                        />
-                      </td>
-
-                      {/* Amount */}
-                      <td style={{ ...tdStyle, padding: "8px 12px", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>
-                        ₹{(calcLineAmount(item) + calcLineTax(item)).toFixed(2)}
-                      </td>
-
-                      {/* Actions */}
-                      <td style={{ ...tdStyle, padding: "8px 12px", textAlign: "center" }}>
-                        {items.length > 1 && (
-                          <button
-                            onClick={() => removeItem(idx)}
-                            style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}
-                            className="row-action-btn"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                          </button>
-                        )}
-                      </td>
-
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Add buttons */}
-            <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-              <button
-                onClick={addItem}
-                className="add-row-btn"
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Add Row
-              </button>
-              <button
-                onClick={() => toast("Bulk add feature coming soon")}
-                style={{
-                  padding: "8px 14px",
-                  background: "#ffffff",
-                  border: "1px solid #d0d5dd",
-                  color: "#344054",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
-              >
-                Add Items in Bulk
-              </button>
-            </div>
-          </div>
-
-          {/* Section 4: Customer Notes & Totals Layout */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "40px", borderTop: "1px solid #f2f4f7", paddingTop: "24px", alignItems: "start" }}>
-            
-            {/* Notes, Terms, and Attachments dropzone */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                <div>
-                  <label style={labelStyle}>Customer Notes</label>
-                  <textarea
-                    value={customerNotes}
-                    onChange={e => setCustomerNotes(e.target.value)}
-                    rows={3}
-                    style={{ ...inputStyle, height: "auto", resize: "vertical" }}
-                    placeholder="Looking forward to your business."
-                    className="premium-input"
-                  />
-                </div>
-                <div>
-                  <label style={labelStyle}>Terms &amp; Conditions</label>
-                  <textarea
-                    value={terms}
-                    onChange={e => setTerms(e.target.value)}
-                    rows={3}
-                    style={{ ...inputStyle, height: "auto", resize: "vertical" }}
-                    placeholder="Enter the terms and conditions..."
-                    className="premium-input"
-                  />
+                          Remove
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <span style={{ color: "#4a90e2", fontWeight: "500" }}>Click to upload</span> or drag and drop<br/>
+                        <span style={{ fontSize: "12px", color: "#888", marginTop: "5px", display: "inline-block" }}>Maximum file size 5MB</span>
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      id="quote-file-upload" 
+                      style={{ display: "none" }} 
+                      onChange={(e) => setSelectedFile(e.target.files[0])}
+                    />
+                  </div>
                 </div>
               </div>
-
-              {/* File drop zone */}
-              <div>
-                <label style={labelStyle}>Attach File(s) to Quote</label>
-                <div className="attach-box" onClick={() => toast("File upload feature coming soon")}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#006ee6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "8px" }}>
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: "#344054" }}>Upload File</div>
-                  <div style={{ fontSize: "11px", color: "#667085", marginTop: "4px" }}>You can upload a maximum of 5 files, 10MB each</div>
-                </div>
-              </div>
-
             </div>
 
-            {/* Calculations Card Summary */}
-            <div style={{ background: "#f8fafc", borderRadius: "10px", border: "1px solid #eaecf0", padding: "24px", boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px", fontSize: "13px", color: "#475569" }}>
+            <div className="totals-section" style={{ background: "#f8f9fb", borderRadius: "10px", padding: "25px", width: "400px" }}>
+              <div className="totals-row" style={{ fontWeight: "600", marginBottom: "20px" }}>
                 <span>Sub Total</span>
-                <span style={{ fontWeight: "600" }}>₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px", fontSize: "13px", color: "#d92d20" }}>
-                <span>Total Discount</span>
-                <span style={{ fontWeight: "600" }}>- ₹{totalDiscount.toFixed(2)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", fontSize: "13px", color: "#006ee6" }}>
-                <span>Total Tax</span>
-                <span style={{ fontWeight: "600" }}>+ ₹{totalTax.toFixed(2)}</span>
+                <span>{subtotal.toFixed(2)}</span>
               </div>
               
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", fontSize: "15px", borderTop: "1.5px dashed #d0d5dd", paddingTop: "16px", color: "#1d2939" }}>
-                <span>Total (₹)</span>
-                <span style={{ color: "#006ee6", fontSize: "16px" }}>₹{grandTotal.toFixed(2)}</span>
+              <div className="totals-row" style={{ alignItems: "center", marginBottom: "20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "13px", cursor: "pointer", color: "#4a90e2" }}>
+                    <input type="radio" name="tdsTcs" checked={tdsTcsType === "TDS"} onChange={() => setTdsTcsType("TDS")} style={{ accentColor: "#4a90e2" }} /> TDS
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "13px", cursor: "pointer", color: "#666" }}>
+                    <input type="radio" name="tdsTcs" checked={tdsTcsType === "TCS"} onChange={() => setTdsTcsType("TCS")} /> TCS
+                  </label>
+                </div>
+                <div style={{ flex: 1, marginLeft: "15px" }}>
+                  <select className="input-field" value={taxSelection} onChange={(e) => setTaxSelection(e.target.value)} style={{ padding: "6px 10px", color: "#666" }}>
+                    <option value="">Select a Tax</option>
+                    <option value="5">5%</option>
+                    <option value="10">10%</option>
+                  </select>
+                </div>
+                <span style={{ color: "#888", width: "60px", textAlign: "right" }}>- 0.00</span>
+              </div>
+
+              <div className="totals-row" style={{ alignItems: "center", marginBottom: "20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                  <input type="text" value="Adjustment" readOnly className="input-field" style={{ width: "90px", borderStyle: "dashed", background: "transparent", padding: "6px", color: "#666" }} />
+                  <input type="number" value={adjustment} onChange={(e) => setAdjustment(parseFloat(e.target.value) || 0)} className="input-field" style={{ width: "80px", padding: "6px" }} />
+                  <span style={{ color: "#888", fontSize: "12px", cursor: "help" }} title="Adjustment">(?)</span>
+                </div>
+                <span style={{ color: "#333", width: "60px", textAlign: "right" }}>{parseFloat(adjustment || 0).toFixed(2)}</span>
+              </div>
+              
+              <div className="totals-row" style={{ marginTop: "20px", paddingTop: "20px", borderTop: "1px solid #e0e0e0", fontSize: "18px", fontWeight: "700", color: "#111" }}>
+                <span>Total ( ₹ )</span>
+                <span>{grandTotal.toFixed(2)}</span>
               </div>
             </div>
-
           </div>
 
         </div>
 
-        {/* Action Button Footer bar */}
-        <div style={{ borderTop: "1px solid #eaecf0", padding: "20px 32px", display: "flex", gap: "12px", justifyContent: "flex-end", background: "#ffffff" }}>
-          <button
-            onClick={() => navigate(isEditMode ? `/quotes/${id}` : "/quotes")}
-            style={{
-              padding: "10px 20px",
-              background: "#ffffff",
-              color: "#344054",
-              border: "1px solid #d0d5dd",
-              borderRadius: "6px",
-              fontWeight: "600",
-              fontSize: "13px",
-              cursor: "pointer",
-              transition: "background 0.15s ease",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
-          >
-            Cancel
-          </button>
-          
-          <button
-            onClick={() => handleSave("draft")}
-            disabled={loading}
-            style={{
-              padding: "10px 20px",
-              background: "#ffffff",
-              color: "#006ee6",
-              border: "1px solid #006ee6",
-              borderRadius: "6px",
-              fontWeight: "600",
-              fontSize: "13px",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#f0f6ff"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "#ffffff"; }}
-          >
+        {/* Action Buttons */}
+        <div className="form-actions">
+          <button type="button" className="btn-save" onClick={() => handleSave("draft")} disabled={loading} style={{ background: "#f5f5f5", color: "#333", border: "1px solid #ccc" }}>
             Save as Draft
           </button>
-
-          <button
-            onClick={() => handleSave("sent")}
-            disabled={loading}
-            style={{
-              padding: "10px 20px",
-              background: "#006ee6",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: "600",
-              fontSize: "13px",
-              cursor: "pointer",
-              transition: "background 0.15s ease",
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "#0056b3"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "#006ee6"}
-          >
-            {loading ? "Saving..." : (isEditMode ? "Update & Send" : "Save and Send")}
+          <button type="button" className="btn-save" onClick={() => handleSave("sent")} disabled={loading}>
+            {loading ? "Saving..." : (isEditMode ? "Update and Send" : "Save and Send")}
+          </button>
+          <button type="button" className="btn-cancel" onClick={() => navigate("/quotes")}>
+            Cancel
           </button>
         </div>
 
@@ -861,84 +577,31 @@ function AddQuote() {
 
       {/* ===== NEW CUSTOMER MODAL ===== */}
       {showCustomerModal && (
-        <div style={modalOverlay}>
-          <div style={{ ...modalBox, width: "950px", maxWidth: "95vw", maxHeight: "90vh", padding: "12px", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px 0 20px" }}>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#1d2939" }}>+ New Customer</h3>
-              <button
-                onClick={() => setShowCustomerModal(false)}
-                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#98a2b3", display: "flex", padding: "4px" }}
-              >
-                &times;
-              </button>
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ width: "950px", maxWidth: "95vw", padding: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", borderBottom: "1px solid #eee" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", color: "#333", fontWeight: "500" }}>New Customer</h3>
+              <button onClick={() => setShowCustomerModal(false)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#888" }}>&times;</button>
             </div>
-            <AddCustomer isModal={true} onSaveSuccess={handleSaveCustomerSuccess} onCancel={() => setShowCustomerModal(false)} />
+            <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+              <AddCustomer isModal={true} onSaveSuccess={handleSaveCustomerSuccess} onCancel={() => setShowCustomerModal(false)} />
+            </div>
           </div>
         </div>
       )}
 
       {/* ===== NEW SALESPERSON MODAL ===== */}
       {showSalespersonModal && (
-        <div style={modalOverlay}>
-          <div style={{ ...modalBox, width: "420px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#1d2939" }}>+ New Salesperson</h3>
-              <button
-                onClick={() => setShowSalespersonModal(false)}
-                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#98a2b3", display: "flex", padding: "4px" }}
-              >
-                &times;
-              </button>
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <h3 style={{ marginTop: 0, fontSize: "18px", color: "#333", fontWeight: "500", marginBottom: "20px" }}>New Salesperson</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              <div><label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>Name *</label><input value={newSp.name} onChange={e => setNewSp({ ...newSp, name: e.target.value })} className="input-field" /></div>
+              <div><label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>Email</label><input type="email" value={newSp.email} onChange={e => setNewSp({ ...newSp, email: e.target.value })} className="input-field" /></div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div>
-                <label style={modalLabelStyle}>Name <span style={{ color: "#d92d20" }}>*</span></label>
-                <input value={newSp.name} onChange={e => setNewSp({ ...newSp, name: e.target.value })} style={modalInputStyle} className="premium-input" />
-              </div>
-              <div>
-                <label style={modalLabelStyle}>Email</label>
-                <input type="email" value={newSp.email} onChange={e => setNewSp({ ...newSp, email: e.target.value })} style={modalInputStyle} className="premium-input" />
-              </div>
-              <div>
-                <label style={modalLabelStyle}>Phone</label>
-                <input value={newSp.phone} onChange={e => setNewSp({ ...newSp, phone: e.target.value })} style={modalInputStyle} className="premium-input" />
-              </div>
-              <div>
-                <label style={modalLabelStyle}>Employee ID</label>
-                <input value={newSp.employee_id} onChange={e => setNewSp({ ...newSp, employee_id: e.target.value })} style={modalInputStyle} className="premium-input" />
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
-              <button
-                onClick={() => setShowSalespersonModal(false)}
-                style={{
-                  padding: "8px 16px",
-                  background: "#ffffff",
-                  color: "#344054",
-                  border: "1px solid #d0d5dd",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveSalesperson}
-                style={{
-                  padding: "8px 16px",
-                  background: "#006ee6",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                }}
-              >
-                Save
-              </button>
+            <div style={{ display: "flex", gap: "15px", justifyContent: "flex-end", marginTop: "25px" }}>
+              <button onClick={() => setShowSalespersonModal(false)} className="btn-cancel">Cancel</button>
+              <button onClick={handleSaveSalesperson} className="btn-save">Save</button>
             </div>
           </div>
         </div>
@@ -946,181 +609,56 @@ function AddQuote() {
 
       {/* ===== NEW PROJECT MODAL ===== */}
       {showProjectModal && (
-        <div style={modalOverlay}>
-          <div style={{ ...modalBox, width: "450px" }}>
+        <div className="modal-overlay">
+          <div className="modal-box">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#1d2939" }}>+ New Project</h3>
-              <button
-                onClick={() => setShowProjectModal(false)}
-                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#98a2b3", display: "flex", padding: "4px" }}
-              >
-                &times;
-              </button>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "500", color: "#333" }}>New Project</h3>
+              <button onClick={() => setShowProjectModal(false)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#888" }}>&times;</button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
               <div>
-                <label style={modalLabelStyle}>Project Name <span style={{ color: "#d92d20" }}>*</span></label>
-                <input value={newProj.project_name} onChange={e => setNewProj({ ...newProj, project_name: e.target.value })} style={modalInputStyle} className="premium-input" />
+                <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>Project Name *</label>
+                <input value={newProj.project_name} onChange={e => setNewProj({ ...newProj, project_name: e.target.value })} className="input-field" />
               </div>
               <div>
-                <label style={modalLabelStyle}>Customer</label>
-                <select value={newProj.customer_id} onChange={e => setNewProj({ ...newProj, customer_id: e.target.value })} style={selectStyle} className="premium-input">
+                <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>Customer</label>
+                <select value={newProj.customer_id} onChange={e => setNewProj({ ...newProj, customer_id: e.target.value })} className="input-field">
                   <option value="">Select customer</option>
                   {customers.map(c => <option key={c.id} value={c.id}>{c.display_name || c.email}</option>)}
                 </select>
               </div>
-              <div style={{ display: "flex", gap: "12px" }}>
+              <div style={{ display: "flex", gap: "15px" }}>
                 <div style={{ flex: 1 }}>
-                  <label style={modalLabelStyle}>Start Date</label>
-                  <input type="date" value={newProj.start_date} onChange={e => setNewProj({ ...newProj, start_date: e.target.value })} style={modalInputStyle} className="premium-input" />
+                  <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>Start Date</label>
+                  <input type="date" value={newProj.start_date} onChange={e => setNewProj({ ...newProj, start_date: e.target.value })} className="input-field" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={modalLabelStyle}>End Date</label>
-                  <input type="date" value={newProj.end_date} onChange={e => setNewProj({ ...newProj, end_date: e.target.value })} style={modalInputStyle} className="premium-input" />
+                  <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>End Date</label>
+                  <input type="date" value={newProj.end_date} onChange={e => setNewProj({ ...newProj, end_date: e.target.value })} className="input-field" />
                 </div>
               </div>
               <div>
-                <label style={modalLabelStyle}>Description</label>
-                <textarea value={newProj.description} onChange={e => setNewProj({ ...newProj, description: e.target.value })} rows={2} style={modalInputStyle} className="premium-input" />
+                <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>Description</label>
+                <textarea value={newProj.description} onChange={e => setNewProj({ ...newProj, description: e.target.value })} rows={2} className="input-field" />
               </div>
               <div>
-                <label style={modalLabelStyle}>Status</label>
-                <select value={newProj.status} onChange={e => setNewProj({ ...newProj, status: e.target.value })} style={selectStyle} className="premium-input">
+                <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>Status</label>
+                <select value={newProj.status} onChange={e => setNewProj({ ...newProj, status: e.target.value })} className="input-field">
                   <option value="active">Active</option>
                   <option value="on_hold">On Hold</option>
                   <option value="completed">Completed</option>
                 </select>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
-              <button
-                onClick={() => setShowProjectModal(false)}
-                style={{
-                  padding: "8px 16px",
-                  background: "#ffffff",
-                  color: "#344054",
-                  border: "1px solid #d0d5dd",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveProject}
-                style={{
-                  padding: "8px 16px",
-                  background: "#006ee6",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                }}
-              >
-                Save
-              </button>
+            <div style={{ display: "flex", gap: "15px", justifyContent: "flex-end", marginTop: "25px" }}>
+              <button onClick={() => setShowProjectModal(false)} className="btn-cancel">Cancel</button>
+              <button onClick={handleSaveProject} className="btn-save">Save</button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
-
-// Styling definitions
-const thStyle = {
-  padding: "12px 14px",
-  borderBottom: "1px solid #eaecf0",
-  fontSize: "11px",
-  fontWeight: "600",
-  textTransform: "uppercase",
-  color: "#475569",
-  letterSpacing: "0.03em",
-};
-
-const tdStyle = {
-  padding: "12px 14px",
-  verticalAlign: "middle",
-};
-
-const labelStyle = {
-  display: "block",
-  fontSize: "13px",
-  fontWeight: "550",
-  color: "#344054",
-  marginBottom: "6px",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px 14px",
-  borderRadius: "6px",
-  border: "1px solid #d0d5dd",
-  fontSize: "13px",
-  boxSizing: "border-box",
-  color: "#344054",
-  outline: "none",
-  background: "#ffffff",
-};
-
-const selectStyle = {
-  width: "100%",
-  padding: "10px 14px",
-  borderRadius: "6px",
-  border: "1px solid #d0d5dd",
-  fontSize: "13px",
-  boxSizing: "border-box",
-  color: "#344054",
-  outline: "none",
-  background: "#ffffff",
-  cursor: "pointer",
-};
-
-const modalOverlay = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  background: "rgba(15, 23, 42, 0.4)",
-  backdropFilter: "blur(4px)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 1000,
-};
-
-const modalBox = {
-  background: "#ffffff",
-  borderRadius: "12px",
-  padding: "32px",
-  maxHeight: "90vh",
-  overflowY: "auto",
-  boxShadow: "0 20px 40px rgba(0,0,0,0.12)",
-  border: "1px solid #eaecf0",
-};
-
-const modalLabelStyle = {
-  display: "block",
-  fontSize: "12px",
-  fontWeight: "600",
-  color: "#344054",
-  marginBottom: "6px",
-};
-
-const modalInputStyle = {
-  width: "100%",
-  padding: "10px 14px",
-  borderRadius: "6px",
-  border: "1px solid #d0d5dd",
-  fontSize: "13px",
-  boxSizing: "border-box",
-  outline: "none",
-  color: "#344054",
-};
 
 export default AddQuote;
