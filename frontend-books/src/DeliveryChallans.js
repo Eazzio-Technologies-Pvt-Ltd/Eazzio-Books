@@ -153,12 +153,10 @@ function DeliveryChallans() {
     }
   };
 
-  const openEmailModal = (dc) => {
-    const cust = getCustomerById(dc.customer_id);
-    const orgName = user?.organization_name || "My Organization";
-    setEmailSubject(`Delivery Challan ${dc.delivery_challan_number} from ${orgName}`);
-    setEmailBody(`Dear ${cust.display_name || cust.company_name || "Customer"},\n\nPlease find the attached Delivery Challan for your recent order.\n\nChallan Number: ${dc.delivery_challan_number}\n\nThank you.\n\nRegards,\n${orgName}`);
-    setShowEmailModal(true);
+  const handleSelectOne = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+    );
   };
 
   const handleDeleteSelected = async () => {
