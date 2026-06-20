@@ -143,21 +143,29 @@ function RecurringExpenses() {
   };
 
   return (
-    <div style={{ padding: "30px", maxWidth: "1200px", margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2>Recurring / Fixed Expenses</h2>
-        <button onClick={handleOpenAdd} style={primaryBtn}>+ New Recurring Expense</button>
+    <div style={{ padding: "40px", maxWidth: "1200px", margin: "0 auto", background: "#f8fafc", minHeight: "100vh" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
+        <div>
+          <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#0f172a", margin: "0 0 4px 0" }}>Recurring Expenses</h2>
+          <p style={{ color: "#64748b", margin: 0, fontSize: "14px" }}>Manage your automated, fixed, or scheduled expenses.</p>
+        </div>
+        <button onClick={handleOpenAdd} style={primaryBtn}>
+          <span style={{ marginRight: "6px" }}>+</span> New Recurring Expense
+        </button>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Search by Expense Name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={inputStyle}
-        />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={inputStyle}>
+      <div style={{ display: "flex", gap: "16px", marginBottom: "24px", background: "#fff", padding: "16px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>🔍</span>
+          <input
+            type="text"
+            placeholder="Search by Expense Name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ ...inputStyle, paddingLeft: "40px" }}
+          />
+        </div>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ ...inputStyle, width: "200px", cursor: "pointer", appearance: "none" }}>
           <option value="All">All Statuses</option>
           <option value="Active">Active</option>
           <option value="Paused">Paused</option>
@@ -165,76 +173,92 @@ function RecurringExpenses() {
         </select>
       </div>
 
-      <div style={{ background: "#fff", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+      <div style={{ background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)", overflow: "hidden", border: "1px solid #e2e8f0" }}>
         {loading ? (
-          <div style={{ padding: "30px", textAlign: "center", color: "#64748b" }}>Loading...</div>
+          <div style={{ padding: "60px", textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: "24px", marginBottom: "16px" }}>⏳</div>
+            Loading recurring expenses...
+          </div>
         ) : filteredExpenses.length === 0 ? (
-          <div style={{ padding: "50px", textAlign: "center", color: "#64748b" }}>
-            <p>No recurring expenses found.</p>
-            <button onClick={handleOpenAdd} style={{ ...primaryBtn, marginTop: "10px" }}>Add New Expense</button>
+          <div style={{ padding: "80px 20px", textAlign: "center", color: "#64748b" }}>
+            <div style={{ fontSize: "48px", marginBottom: "16px", opacity: 0.5 }}>🔄</div>
+            <h3 style={{ margin: "0 0 8px 0", color: "#1e293b", fontSize: "18px" }}>No recurring expenses found</h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: "14px" }}>You don't have any automated expenses matching this criteria.</p>
+            <button onClick={handleOpenAdd} style={{ ...primaryBtn, background: "#fff", color: "#006ee6", border: "1px solid #006ee6", boxShadow: "none" }}>Add First Expense</button>
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: "2px solid #cbd5e1", background: "#f8fafc", textAlign: "left" }}>
-                <th style={thStyle}>Expense Name</th>
-                <th style={thStyle}>Category</th>
-                <th style={thStyle}>Amount</th>
-                <th style={thStyle}>Frequency</th>
-                <th style={thStyle}>Due Day</th>
-                <th style={thStyle}>Status</th>
-                <th style={thStyle}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredExpenses.map((exp) => {
-                const statusColor = getStatusColor(exp.status);
-                return (
-                  <tr key={exp.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                    <td style={{ ...tdStyle, fontWeight: "500", color: "#1e293b" }}>{exp.expense_name}</td>
-                    <td style={tdStyle}>{exp.category}</td>
-                    <td style={{ ...tdStyle, fontWeight: "bold" }}>₹{parseFloat(exp.amount).toFixed(2)}</td>
-                    <td style={tdStyle}>{exp.frequency}</td>
-                    <td style={tdStyle}>Day {exp.due_day}</td>
-                    <td style={tdStyle}>
-                      <span style={{
-                        background: statusColor.bg, color: statusColor.text,
-                        padding: "4px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold"
-                      }}>
-                        {exp.status}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button onClick={() => handleOpenEdit(exp)} style={actionBtn}>Edit</button>
-                        
-                        {exp.status === "Active" && (
-                          <button onClick={() => handleStatusUpdate(exp.id, "pause")} style={{ ...actionBtn, color: "#b45309" }}>Pause</button>
-                        )}
-                        {exp.status === "Paused" && (
-                          <button onClick={() => handleStatusUpdate(exp.id, "resume")} style={{ ...actionBtn, color: "#16a34a" }}>Resume</button>
-                        )}
-                        {(exp.status === "Active" || exp.status === "Paused") && (
-                          <button onClick={() => handleStatusUpdate(exp.id, "stop")} style={{ ...actionBtn, color: "#dc2626" }}>Stop</button>
-                        )}
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
+              <thead>
+                <tr style={{ background: "#f8fafc", textAlign: "left" }}>
+                  <th style={thStyle}>Expense Name</th>
+                  <th style={thStyle}>Category</th>
+                  <th style={thStyle}>Amount</th>
+                  <th style={thStyle}>Frequency</th>
+                  <th style={thStyle}>Due Day</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredExpenses.map((exp) => {
+                  const statusColor = getStatusColor(exp.status);
+                  return (
+                    <tr key={exp.id} style={{ transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                      <td style={{ ...tdStyle, fontWeight: "600", color: "#0f172a" }}>{exp.expense_name}</td>
+                      <td style={tdStyle}>
+                        <span style={{ display: "inline-block", background: "#f1f5f9", padding: "4px 10px", borderRadius: "6px", fontSize: "13px", color: "#475569", fontWeight: "500" }}>
+                          {exp.category}
+                        </span>
+                      </td>
+                      <td style={{ ...tdStyle, fontWeight: "700", color: "#1e293b" }}>₹{parseFloat(exp.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td style={{ ...tdStyle, color: "#64748b" }}>{exp.frequency}</td>
+                      <td style={{ ...tdStyle, color: "#64748b" }}>Day {exp.due_day}</td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          background: statusColor.bg, color: statusColor.text,
+                          padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "6px"
+                        }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "currentColor" }}></span>
+                          {exp.status}
+                        </span>
+                      </td>
+                      <td style={tdStyle}>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button onClick={() => handleOpenEdit(exp)} style={actionBtn}>Edit</button>
+                          
+                          {exp.status === "Active" && (
+                            <button onClick={() => handleStatusUpdate(exp.id, "pause")} style={{ ...actionBtn, color: "#b45309", borderColor: "#fef08a", background: "#fef9c3" }}>Pause</button>
+                          )}
+                          {exp.status === "Paused" && (
+                            <button onClick={() => handleStatusUpdate(exp.id, "resume")} style={{ ...actionBtn, color: "#15803d", borderColor: "#bbf7d0", background: "#dcfce7" }}>Resume</button>
+                          )}
+                          {(exp.status === "Active" || exp.status === "Paused") && (
+                            <button onClick={() => handleStatusUpdate(exp.id, "stop")} style={{ ...actionBtn, color: "#b91c1c", borderColor: "#fecaca", background: "#fee2e2" }}>Stop</button>
+                          )}
 
-                        <button onClick={() => handleDelete(exp.id)} style={{ ...actionBtn, color: "#dc2626" }}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          <button onClick={() => handleDelete(exp.id)} style={{ ...actionBtn, color: "#b91c1c", background: "none", border: "none", padding: "6px", marginLeft: "4px" }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {showModal && (
         <div style={modalOverlay}>
           <div style={modalContent}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h3>{isEditing ? "Edit Recurring Expense" : "Add Recurring Expense"}</h3>
-              <button onClick={handleCloseModal} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }}>×</button>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", borderBottom: "1px solid #f1f5f9", paddingBottom: "16px" }}>
+              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "#0f172a" }}>
+                {isEditing ? "Edit Recurring Expense" : "New Recurring Expense"}
+              </h3>
+              <button onClick={handleCloseModal} style={{ background: "#f8fafc", border: "none", fontSize: "18px", color: "#64748b", cursor: "pointer", width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} onMouseEnter={(e)=>e.currentTarget.style.background="#f1f5f9"} onMouseLeave={(e)=>e.currentTarget.style.background="#f8fafc"}>✕</button>
             </div>
             
             <form onSubmit={handleSubmit} style={{ display: "grid", gap: "15px", gridTemplateColumns: "1fr 1fr" }}>
@@ -303,15 +327,15 @@ function RecurringExpenses() {
   );
 }
 
-const thStyle = { padding: "12px", color: "#475569", fontWeight: "600", fontSize: "14px" };
-const tdStyle = { padding: "12px", color: "#334155", fontSize: "14px" };
-const primaryBtn = { background: "#2563eb", color: "#fff", padding: "8px 16px", borderRadius: "6px", border: "none", fontWeight: "500", cursor: "pointer" };
-const secondaryBtn = { background: "#fff", color: "#334155", padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", fontWeight: "500", cursor: "pointer" };
-const actionBtn = { background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontWeight: "500", fontSize: "13px" };
-const inputStyle = { width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box" };
-const labelStyle = { display: "block", marginBottom: "5px", fontSize: "13px", fontWeight: "500", color: "#334155" };
+const thStyle = { padding: "12px 16px", color: "#64748b", fontWeight: "600", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #e2e8f0" };
+const tdStyle = { padding: "16px", color: "#334155", fontSize: "14px", borderBottom: "1px solid #f1f5f9" };
+const primaryBtn = { background: "#006ee6", color: "#fff", padding: "10px 20px", borderRadius: "8px", border: "none", fontWeight: "600", fontSize: "14px", cursor: "pointer", transition: "all 0.2s", boxShadow: "0 1px 2px rgba(0, 110, 230, 0.2)" };
+const secondaryBtn = { background: "#fff", color: "#334155", padding: "10px 20px", borderRadius: "8px", border: "1px solid #cbd5e1", fontWeight: "600", fontSize: "14px", cursor: "pointer", transition: "all 0.2s" };
+const actionBtn = { background: "#f8fafc", border: "1px solid #e2e8f0", padding: "6px 12px", borderRadius: "6px", color: "#475569", cursor: "pointer", fontWeight: "500", fontSize: "13px", transition: "all 0.2s" };
+const inputStyle = { width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box", fontSize: "14px", transition: "border-color 0.2s" };
+const labelStyle = { display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#475569" };
 
-const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 };
-const modalContent = { background: "#fff", padding: "30px", borderRadius: "8px", width: "100%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" };
+const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 };
+const modalContent = { background: "#fff", padding: "32px", borderRadius: "16px", width: "100%", maxWidth: "640px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 40px rgba(0,0,0,0.1)" };
 
 export default RecurringExpenses;
