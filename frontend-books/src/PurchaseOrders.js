@@ -23,8 +23,6 @@ const tdStyle = {
   verticalAlign: "middle",
 };
 
-import { useAuth } from "./AuthContext";
-
 const STATUS_COLORS = {
   draft:     { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
   issued:    { bg: "#dcfce7", color: "#166534", label: "ISSUED" },
@@ -51,7 +49,8 @@ function PurchaseOrders() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const searchParamsUrl = new URLSearchParams(location.search);
+  const searchQuery = searchParamsUrl.get("search") || "";
 
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [vendors, setVendors] = useState([]);

@@ -18,8 +18,6 @@ const thStyle = {
   letterSpacing: "0.03em",
 };
 
-import { useAuth } from "./AuthContext";
-
 const STATUS_COLORS = {
   draft:     { bg: "#f1f5f9", color: "#475569", label: "DRAFT" },
   open:      { bg: "#eff6ff", color: "#1d4ed8", label: "OPEN" },
@@ -42,7 +40,8 @@ function VendorCredits() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const searchParamsUrl = new URLSearchParams(location.search);
+  const searchQuery = searchParamsUrl.get("search") || "";
 
   const [vendorCredits, setVendorCredits] = useState([]);
   const [vendors, setVendors] = useState([]);
