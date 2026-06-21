@@ -211,6 +211,55 @@ function QuoteDetail() {
     setShowEmailModal(true);
   };
 
+  const cleanPhone = (phoneNum) => {
+    if (!phoneNum) return "";
+    const cleaned = phoneNum.toString().replace(/\D/g, "");
+    if (cleaned.length === 10) {
+      return "91" + cleaned;
+    }
+    return cleaned;
+  };
+
+  const getCondensedMessage = () => {
+    const custName = customer?.display_name || "Customer";
+    const docNumber = quote?.quote_number || "";
+    const totalAmt = parseFloat(quote?.total_amount || 0).toFixed(2);
+    const businessName = orgInfo?.name || "our business";
+    return `Dear ${custName}, please find your Quote ${docNumber} from ${businessName}. Total: ₹${totalAmt}. Thank you. Regards, ${businessName}.`;
+  };
+
+  const sendWhatsApp = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const phoneVal = customer?.mobile || customer?.phone || customer?.work_phone;
+    const cleanedPhone = cleanPhone(phoneVal);
+    if (!cleanedPhone) {
+      toast.error("Phone number not available");
+      return;
+    }
+    const message = getCondensedMessage();
+    window.location.href = `whatsapp://send?phone=${cleanedPhone}&text=${encodeURIComponent(message)}`;
+    
+    setTimeout(() => {
+      if (document.hasFocus()) {
+        window.open(`https://wa.me/${cleanedPhone}?text=${encodeURIComponent(message)}`, "_blank");
+      }
+    }, 1500);
+  };
+
+  const sendSMS = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const phoneVal = customer?.mobile || customer?.phone || customer?.work_phone;
+    const cleanedPhone = cleanPhone(phoneVal);
+    if (!cleanedPhone) {
+      toast.error("Phone number not available");
+      return;
+    }
+    const message = getCondensedMessage();
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? "&" : "?";
+    window.location.href = `sms:${cleanedPhone}${separator}body=${encodeURIComponent(message)}`;
+  };
+
   const sendEmailAndMarkSent = async () => {
     try {
       await apiRequest(`/quotes/${id}/send`, {
@@ -925,6 +974,14 @@ function QuoteDetail() {
                     <polyline points="22,6 12,13 2,6"></polyline>
                   </svg>
                   Send
+                </button>
+
+                <button onClick={sendWhatsApp} style={toolbarBtnStyle} title="Send WhatsApp">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> WhatsApp
+                </button>
+
+                <button onClick={sendSMS} style={toolbarBtnStyle} title="Send SMS">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> SMS
                 </button>
 
                 {/* Print action */}

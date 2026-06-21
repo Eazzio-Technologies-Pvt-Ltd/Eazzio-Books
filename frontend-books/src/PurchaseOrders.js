@@ -327,6 +327,58 @@ function PurchaseOrders() {
     setShowEmailModal(true);
   };
 
+  const cleanPhone = (phoneNum) => {
+    if (!phoneNum) return "";
+    const cleaned = phoneNum.toString().replace(/\D/g, "");
+    if (cleaned.length === 10) {
+      return "91" + cleaned;
+    }
+    return cleaned;
+  };
+
+  const getCondensedPOMessage = (po) => {
+    const vend = getVendorById(po.vendor_id);
+    const vendName = vend.display_name || vend.company_name || "Vendor";
+    const docNumber = po.purchase_order_number || "";
+    const totalAmt = parseFloat(po.total_amount || 0).toFixed(2);
+    const orgName = user?.organization_name || "My Organization";
+    return `Dear ${vendName}, please find our Purchase Order ${docNumber}. Total: ₹${totalAmt}. Thank you. Regards, ${orgName}.`;
+  };
+
+  const sendWhatsApp = (po, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const vend = getVendorById(po.vendor_id);
+    const phoneVal = vend?.mobile || vend?.phone || vend?.work_phone;
+    const cleanedPhone = cleanPhone(phoneVal);
+    if (!cleanedPhone) {
+      toast.error("Phone number not available");
+      return;
+    }
+    const message = getCondensedPOMessage(po);
+    window.location.href = `whatsapp://send?phone=${cleanedPhone}&text=${encodeURIComponent(message)}`;
+    
+    setTimeout(() => {
+      if (document.hasFocus()) {
+        window.open(`https://wa.me/${cleanedPhone}?text=${encodeURIComponent(message)}`, "_blank");
+      }
+    }, 1500);
+  };
+
+  const sendSMS = (po, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const vend = getVendorById(po.vendor_id);
+    const phoneVal = vend?.mobile || vend?.phone || vend?.work_phone;
+    const cleanedPhone = cleanPhone(phoneVal);
+    if (!cleanedPhone) {
+      toast.error("Phone number not available");
+      return;
+    }
+    const message = getCondensedPOMessage(po);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? "&" : "?";
+    window.location.href = `sms:${cleanedPhone}${separator}body=${encodeURIComponent(message)}`;
+  };
+
   const sendEmailAndMarkSent = async () => {
     const po = expandedPO;
     if (!po) return;
@@ -699,6 +751,12 @@ function PurchaseOrders() {
                     </button>
                     
                     <button onClick={() => openEmailModal(expandedPO)} className="action-icon-btn" title="Send Email">✉️</button>
+                    <button onClick={(e) => sendWhatsApp(expandedPO, e)} className="action-icon-btn" title="Send WhatsApp">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    </button>
+                    <button onClick={(e) => sendSMS(expandedPO, e)} className="action-icon-btn" title="Send SMS">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    </button>
                     <button onClick={() => navigate(`/purchase-orders/${expandedPO.id}/document`)} className="action-icon-btn" title="View Document">📄</button>
                     
                     {expandedPO.status !== "Issued" && expandedPO.status !== "Billed" && <button onClick={() => changeStatus(expandedPO.id, "Issued")} style={{ padding: "8px 14px", background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#047857", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Issue</button>}
