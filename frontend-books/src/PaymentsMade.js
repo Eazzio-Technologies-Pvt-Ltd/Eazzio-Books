@@ -219,6 +219,77 @@ function PaymentsMade() {
     setShowEmailModal(true);
   };
 
+  const cleanPhone = (phoneNum) => {
+    if (!phoneNum) return "";
+    const cleaned = phoneNum.toString().replace(/\D/g, "");
+    if (cleaned.length === 10) {
+      return "91" + cleaned;
+    }
+    return cleaned;
+  };
+
+  const getCondensedPaymentMessage = (payment) => {
+    const totalAmt = parseFloat(payment.amount || 0).toFixed(2);
+    const payDate = new Date(payment.payment_date).toLocaleDateString();
+    const refNum = payment.reference_number || "—";
+    const payMode = payment.payment_mode || "—";
+    return `Dear Partner, we have recorded a payment of ₹${totalAmt} on ${payDate}. Reference: ${refNum}, Payment Mode: ${payMode}. Thank you. Regards, ${ORG_NAME}.`;
+  };
+
+  const sendWhatsApp = async (payment, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    let phoneVal = "";
+    const loadId = toast.loading("Fetching vendor phone...");
+    try {
+      if (payment.vendor_id) {
+        const res = await apiRequest(`/vendors/${payment.vendor_id}`);
+        phoneVal = res?.vendor?.mobile || res?.vendor?.phone || res?.vendor?.work_phone;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    toast.dismiss(loadId);
+
+    const cleanedPhone = cleanPhone(phoneVal);
+    if (!cleanedPhone) {
+      toast.error("Phone number not available");
+      return;
+    }
+    const message = getCondensedPaymentMessage(payment);
+    window.location.href = `whatsapp://send?phone=${cleanedPhone}&text=${encodeURIComponent(message)}`;
+    
+    setTimeout(() => {
+      if (document.hasFocus()) {
+        window.open(`https://wa.me/${cleanedPhone}?text=${encodeURIComponent(message)}`, "_blank");
+      }
+    }, 1500);
+  };
+
+  const sendSMS = async (payment, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    let phoneVal = "";
+    const loadId = toast.loading("Fetching vendor phone...");
+    try {
+      if (payment.vendor_id) {
+        const res = await apiRequest(`/vendors/${payment.vendor_id}`);
+        phoneVal = res?.vendor?.mobile || res?.vendor?.phone || res?.vendor?.work_phone;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    toast.dismiss(loadId);
+
+    const cleanedPhone = cleanPhone(phoneVal);
+    if (!cleanedPhone) {
+      toast.error("Phone number not available");
+      return;
+    }
+    const message = getCondensedPaymentMessage(payment);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? "&" : "?";
+    window.location.href = `sms:${cleanedPhone}${separator}body=${encodeURIComponent(message)}`;
+  };
+
   const sendEmailAndMarkSent = async () => {
     const payment = expandedPayment;
     if (!payment) return;
@@ -900,6 +971,12 @@ function PaymentsMade() {
                   </div>
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                     <button onClick={() => openEmailModal(expandedPayment)} style={{ background: "#ffffff", border: "1px solid #d0d5dd", color: "#344054", padding: "8px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Email Receipt</button>
+                    <button onClick={(e) => sendWhatsApp(expandedPayment, e)} style={{ background: "#ffffff", border: "1px solid #d0d5dd", color: "#344054", padding: "8px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }} title="Send WhatsApp">
+                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> WhatsApp
+                     </button>
+                     <button onClick={(e) => sendSMS(expandedPayment, e)} style={{ background: "#ffffff", border: "1px solid #d0d5dd", color: "#344054", padding: "8px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }} title="Send SMS">
+                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> SMS
+                     </button>
                     <button onClick={() => handleDeleteSingle(expandedPayment.id)} style={{ background: "#ffffff", border: "1px solid #fda29b", color: "#d92d20", padding: "8px 12px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Delete</button>
                   </div>
                 </div>
