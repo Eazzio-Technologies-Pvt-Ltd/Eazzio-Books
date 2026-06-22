@@ -12,8 +12,8 @@ const PLANS = {
 
 // Initialize Razorpay client safely
 const getRazorpayInstance = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_T30ux1vLXgkLFL';
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'OolUbfvItr07ZLATzKGCjmyg';
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
   
   if (!keyId || !keySecret) {
     console.warn("WARNING: Razorpay keys are not fully configured in environment.");
@@ -92,7 +92,7 @@ const createRegisterOrder = async (req, res) => {
     res.json({
       success: true,
       order,
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_live_T30ux1vLXgkLFL'
+      keyId: process.env.RAZORPAY_KEY_ID
     });
   } catch (err) {
     console.error("CREATE REGISTER ORDER ERROR:", err);
@@ -129,7 +129,7 @@ const createRenewOrder = async (req, res) => {
     res.json({
       success: true,
       order,
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_live_T30ux1vLXgkLFL'
+      keyId: process.env.RAZORPAY_KEY_ID
     });
   } catch (err) {
     console.error("CREATE RENEW ORDER ERROR:", err);
@@ -153,7 +153,7 @@ const renewSubscription = async (req, res) => {
   }
 
   // Verify payment signature
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'OolUbfvItr07ZLATzKGCjmyg';
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
   const generated_signature = crypto
     .createHmac("sha256", keySecret)
     .update(razorpay_order_id + "|" + razorpay_payment_id)
