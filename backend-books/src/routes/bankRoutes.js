@@ -6,7 +6,8 @@ const { MODULES, ACTIONS } = require('../config/permissions');
 const {
   getAccounts, createAccount, deleteAccount,
   getTransactions, addTransaction,
-  getReconciliations, createReconciliation, reconcileBulkTransactions
+  getReconciliations, createReconciliation, reconcileBulkTransactions,
+  createTransfer
 } = require("../controllers/bankController");
 
 router.get("/bank/accounts", authMiddleware, requirePermission(MODULES.BANKING, ACTIONS.VIEW), getAccounts);
@@ -15,6 +16,9 @@ router.delete("/bank/accounts/:id", authMiddleware, requirePermission(MODULES.BA
 
 router.get("/bank/accounts/:accountId/transactions", authMiddleware, requirePermission(MODULES.BANKING, ACTIONS.VIEW), getTransactions);
 router.post("/bank/accounts/:accountId/transactions", authMiddleware, requirePermission(MODULES.BANKING, ACTIONS.CREATE), addTransaction);
+
+// Transfers Route
+router.post("/bank/transfers", authMiddleware, requirePermission(MODULES.BANKING, ACTIONS.CREATE), createTransfer);
 
 // Reconciliation Routes
 router.get("/bank/reconciliation/:bankAccountId", authMiddleware, requirePermission(MODULES.BANKING, ACTIONS.VIEW), getReconciliations);
