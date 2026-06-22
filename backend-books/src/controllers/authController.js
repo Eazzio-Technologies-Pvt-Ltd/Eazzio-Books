@@ -16,10 +16,35 @@ const register = async (req, res) => {
     });
   }
 
-  const { email, password, companyName, fullName } = req.body;
+  const { 
+    email, 
+    password, 
+    companyName, 
+    fullName,
+    plan_id = 'free',
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature
+  } = req.body;
 
   if (!email || !password || !companyName) {
     return res.status(400).json({ message: "Email, password, and company name are required." });
+  }
+
+  // Verify payment for paid plans
+  const planPrices = { premium: 749, professional: 1499, enterprise: 1999 };
+  if (plan_id !== 'free') {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ message: "Missing Razorpay payment details." });
+    }
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'OolUbfvItr07ZLATzKGCjmyg';
+    const generated_signature = crypto
+      .createHmac('sha256', keySecret)
+      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .digest('hex');
+    if (generated_signature !== razorpay_signature) {
+      return res.status(400).json({ message: "Invalid payment signature verification failed." });
+    }
   }
 
   const client = await pool.connect();
@@ -27,12 +52,15 @@ const register = async (req, res) => {
   try {
     await client.query("BEGIN");
 
+    // Calculate subscription expiry (30 days from now) for paid plans
+    const expiresAt = plan_id !== 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
+
     // 1. Create the organization
     const orgResult = await client.query(
-      `INSERT INTO organizations (name, is_active, created_at)
-       VALUES ($1, true, CURRENT_TIMESTAMP)
+      `INSERT INTO organizations (name, is_active, created_at, plan_id, subscription_expires_at)
+       VALUES ($1, true, CURRENT_TIMESTAMP, $2, $3)
        RETURNING *`,
-      [companyName.trim()]
+      [companyName.trim(), plan_id, expiresAt]
     );
     const newOrg = orgResult.rows[0];
 
@@ -50,11 +78,24 @@ const register = async (req, res) => {
     // 4. Set owner_id for the organization
     await client.query("UPDATE organizations SET owner_id = $1 WHERE id = $2", [userResult.rows[0].id, newOrg.id]);
 
+    // 5. Insert transaction log if paid plan
+    if (plan_id !== 'free') {
+      await client.query(
+        `INSERT INTO payment_transactions (organization_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, plan_id, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'paid')`,
+        [newOrg.id, razorpay_order_id, razorpay_payment_id, razorpay_signature, planPrices[plan_id] || 0, plan_id]
+      );
+    }
+
     await client.query("COMMIT");
 
     res.status(201).json({
       message: "Registration successful! Organization and Admin account created.",
-      user: userResult.rows[0],
+      user: {
+        ...userResult.rows[0],
+        plan_id: newOrg.plan_id,
+        subscription_expires_at: newOrg.subscription_expires_at
+      },
       organization: newOrg
     });
   } catch (error) {
@@ -92,7 +133,7 @@ const login = async (req, res) => {
 
   try {
     const result = await pool.query(`
-      SELECT u.*, o.name AS organization_name, o.business_type AS org_business_type 
+      SELECT u.*, o.name AS organization_name, o.business_type AS org_business_type, o.plan_id, o.subscription_expires_at 
       FROM users u 
       LEFT JOIN organizations o ON u.organization_id = o.id 
       WHERE u.email = $1
@@ -137,7 +178,9 @@ const login = async (req, res) => {
         business_type: user.org_business_type || user.business_type || "Other",
         role: user.role || "Admin",
         organization_id: user.organization_id,
-        organization_name: user.organization_name
+        organization_name: user.organization_name,
+        plan_id: user.plan_id,
+        subscription_expires_at: user.subscription_expires_at
       },
     });
 
@@ -157,7 +200,7 @@ const getProfile = async (req, res) => {
     }
 
     const result = await pool.query(`
-      SELECT u.id, u.email, o.business_type, u.role, u.organization_id, o.name AS organization_name 
+      SELECT u.id, u.email, o.business_type, u.role, u.organization_id, o.name AS organization_name, o.plan_id, o.subscription_expires_at 
       FROM users u
       LEFT JOIN organizations o ON u.organization_id = o.id
       WHERE u.id = $1
@@ -225,13 +268,13 @@ const forgotPassword = async (req, res) => {
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9fafb; padding: 30px; border-radius: 8px;">
         <div style="background: #1e3a5f; padding: 20px; border-radius: 6px 6px 0 0; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 24px;">RUPP Books</h1>
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Eazzio Books</h1>
           <p style="color: #93c5fd; margin: 5px 0 0 0; font-size: 14px;">Accounting &amp; Finance</p>
         </div>
         <div style="background: #ffffff; padding: 30px; border-radius: 0 0 6px 6px; border: 1px solid #e5e7eb; border-top: none;">
           <h2 style="color: #111827; font-size: 20px; margin-top: 0;">Password Reset Request</h2>
           <p style="color: #6b7280; font-size: 15px; line-height: 1.6;">
-            We received a request to reset the password for your RUPP Books account associated with this email address.
+            We received a request to reset the password for your Eazzio Books account associated with this email address.
           </p>
           <p style="color: #6b7280; font-size: 15px; line-height: 1.6;">
             Click the button below to set a new password. This link is valid for <strong>15 minutes</strong>.
@@ -255,7 +298,7 @@ const forgotPassword = async (req, res) => {
 
     await sendEmail(
       email.trim(),
-      "Reset Your RUPP Books Password",
+      "Reset Your Eazzio Books Password",
       `You requested a password reset. Click here to reset your password: ${resetLink}\n\nThis link expires in 15 minutes. If you did not request this, ignore this email.`,
       htmlBody
     );

@@ -287,12 +287,14 @@ body {
 /* ================= REGISTER PAGE ================= */
 
 .register-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #1b2337;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding: 48px 20px 60px;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .register-wrapper {
@@ -761,6 +763,10 @@ body {
 
   /* Register Page Responsive */
   .register-page {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+    align-items: flex-start;
     padding: 20px 15px;
   }
   
