@@ -1,0 +1,11 @@
+)
+* **Code Line**:
+  ```dart
+  String baseUrl = 'http://10.0.2.2:5001/api';
+  ```
+* **Description**:
+  The application utilizes a plain HTTP scheme for the network client's base URL. This transmits all requests, cookie values, and credentials in plaintext, making it vulnerable to Man-in-the-Middle (MITM) attacks in production.
+  > [!NOTE]
+  > **Production Readiness Gate**: This finding must be re-checked and resolved before any production or staging deployment — the production base URL must use https://. This is currently a non-issue because the app only targets a local dev backend, but this note exists so it isn't forgotten when the app is eventually pointed at a real server.
+* **Recommended Fix**:
+  Move base URL schemes to secure protocols (`https://`) and inject the base URL dynamically using environment variables (`flutter_dotenv` is already configured in the project).

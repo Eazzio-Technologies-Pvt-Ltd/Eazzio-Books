@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Allows the app to connect to a profile instance of the Flutter shell. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+</manifest>
