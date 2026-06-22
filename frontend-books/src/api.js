@@ -30,6 +30,10 @@ export async function apiRequest(path, options = {}) {
       if (res.status === 401) {
         return null; // no redirect
       }
+      if (res.status === 402) {
+        window.dispatchEvent(new CustomEvent("subscription-expired"));
+        throw new Error(data.message || 'Subscription expired');
+      }
       throw new Error(data.message || 'API error');
     }
 

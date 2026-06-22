@@ -61,6 +61,7 @@ const creditNoteRoutes = require("./routes/creditNoteRoutes");
 const vendorCreditRoutes = require("./routes/vendorCreditRoutes");
 const globalSearchRoutes = require("./routes/globalSearchRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const { initCronJobs } = require("./utils/cronJobs");
 
 // ✅ INIT APP
@@ -97,6 +98,7 @@ app.use('/api/login', loginLimiter);
 
 // ✅ ROUTES
 app.use('/api', authRoutes);
+app.use('/api', subscriptionRoutes);
 app.use('/api', dataRoutes);
 app.use('/api', contactRoutes);
 app.use('/api', commentRoutes);

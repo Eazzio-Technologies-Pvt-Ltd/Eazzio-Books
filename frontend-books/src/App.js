@@ -94,13 +94,46 @@ import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import AccessDenied from "./AccessDenied";
 import { MODULES, ACTIONS } from "./utils/permissions";
+import { useState, useEffect } from "react";
+import { useAuth } from "./AuthContext";
+import SubscriptionExpiredOverlay from "./SubscriptionExpiredOverlay";
 
 function App() {
+  const { user } = useAuth();
+  const [isExpired, setIsExpired] = useState(false);
+
+  // 1. Listen for API 402 subscription expired events
+  useEffect(() => {
+    const handleExpired = () => {
+      setIsExpired(true);
+    };
+    window.addEventListener("subscription-expired", handleExpired);
+    return () => {
+      window.removeEventListener("subscription-expired", handleExpired);
+    };
+  }, []);
+
+  // 2. Check if the active organization is expired on load/user login
+  useEffect(() => {
+    if (user && user.plan_id !== 'free') {
+      const expiresAt = user.subscription_expires_at;
+      if (!expiresAt || new Date(expiresAt) < new Date()) {
+        setIsExpired(true);
+      } else {
+        setIsExpired(false);
+      }
+    } else {
+      setIsExpired(false);
+    }
+  }, [user]);
+
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public pages – NO sidebar, NO topbar */}
-        <Route path="/" element={<LandingPage />} />
+    <>
+      {isExpired && <SubscriptionExpiredOverlay onRenewed={() => setIsExpired(false)} />}
+      <BrowserRouter>
+        <Routes>
+          {/* Public pages – NO sidebar, NO topbar */}
+          <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -237,7 +270,8 @@ function App() {
           <Route path="/price-lists" element={<PlaceholderPage title="Price Lists" description="Manage custom pricing for different customers." />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </>
   );
 }
 

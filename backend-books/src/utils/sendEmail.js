@@ -19,7 +19,7 @@ const sendEmail = async (to, subject, text, html = "") => {
   });
 
   const mailOptions = {
-    from: `"RUPP Books" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
+    from: `"Eazzio Books" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
     to,
     subject,
     text,
