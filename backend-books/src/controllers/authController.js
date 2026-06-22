@@ -37,7 +37,7 @@ const register = async (req, res) => {
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ message: "Missing Razorpay payment details." });
     }
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'OolUbfvItr07ZLATzKGCjmyg';
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
     const generated_signature = crypto
       .createHmac('sha256', keySecret)
       .update(razorpay_order_id + "|" + razorpay_payment_id)
