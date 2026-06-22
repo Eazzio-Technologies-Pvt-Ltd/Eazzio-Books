@@ -16,10 +16,10 @@ const register = async (req, res) => {
     });
   }
 
-  const { 
-    email, 
-    password, 
-    companyName, 
+  const {
+    email,
+    password,
+    companyName,
     fullName,
     plan_id = 'free',
     razorpay_order_id,
