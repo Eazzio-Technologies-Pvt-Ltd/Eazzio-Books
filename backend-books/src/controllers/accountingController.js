@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { checkTransactionLock } = require("../utils/lockHelper");
 
 // ---- Ensure chart_of_accounts table exists (safe to re-run) ----
 const ensureCOATable = async () => {
@@ -228,6 +229,9 @@ const createJournal = async (req, res) => {
   try {
     await client.query("BEGIN");
 
+    // Enforce accounting period lock validation
+    await checkTransactionLock(req.user.id, "Manual Journals", journal_date);
+
     // Validations
     if (!lines || lines.length < 2) throw new Error("At least 2 lines required.");
     let totalDebit = 0;
@@ -282,9 +286,14 @@ const updateJournal = async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Check ownership
-    const checkRes = await client.query("SELECT id FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false", [id, req.user.id]);
+    // Check ownership and load old journal date
+    const checkRes = await client.query("SELECT id, journal_date FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false", [id, req.user.id]);
     if (checkRes.rows.length === 0) throw new Error("Journal not found.");
+
+    const oldDate = checkRes.rows[0].journal_date;
+    // Check locks for both old and new dates
+    await checkTransactionLock(req.user.id, "Manual Journals", oldDate);
+    await checkTransactionLock(req.user.id, "Manual Journals", journal_date);
 
     // Validations
     if (!lines || lines.length < 2) throw new Error("At least 2 lines required.");
@@ -337,6 +346,14 @@ const updateJournal = async (req, res) => {
 const deleteJournal = async (req, res) => {
   const { id } = req.params;
   try {
+    const checkRes = await pool.query(
+      "SELECT journal_date FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false",
+      [id, req.user.id]
+    );
+    if (checkRes.rows.length > 0) {
+      await checkTransactionLock(req.user.id, "Manual Journals", checkRes.rows[0].journal_date);
+    }
+
     const result = await pool.query(
       `UPDATE journal_entries SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 RETURNING *`,
       [id, req.user.id]
@@ -486,4 +503,82 @@ const getProjectedExpenses = async (req, res) => {
   }
 };
 
-module.exports = { getAccounts, getAccountById, createAccount, updateAccount, deleteAccount, getJournals, getJournalById, createJournal, updateJournal, deleteJournal, getProjectedPayments, getProjectedExpenses };
+// GET General Ledger Statement for an Account
+const getGeneralLedger = async (req, res) => {
+  const { accountId } = req.params;
+  try {
+    // 1. Verify account ownership
+    const accCheck = await pool.query(
+      "SELECT account_name, account_type, opening_balance FROM chart_of_accounts WHERE id = $1 AND user_id = $2 AND is_deleted = false",
+      [accountId, req.user.id]
+    );
+    if (accCheck.rows.length === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    const { account_name, account_type, opening_balance } = accCheck.rows[0];
+
+    // 2. Fetch journal lines and bank transactions (if it's cash/bank) to construct ledger
+    // First retrieve manual journals
+    const journalLinesRes = await pool.query(
+      `SELECT je.journal_date as date, je.journal_number as reference, jl.description, jl.debit, jl.credit, je.created_at
+       FROM journal_entry_lines jl
+       JOIN journal_entries je ON jl.journal_entry_id = je.id
+       WHERE jl.account_id = $1 AND je.user_id = $2 AND je.is_deleted = false
+       ORDER BY je.journal_date ASC, je.created_at ASC`,
+      [accountId, req.user.id]
+    );
+
+    let runningBalance = parseFloat(opening_balance) || 0;
+    
+    // Sort transactions chronologically
+    const ledger = journalLinesRes.rows.map(line => {
+      const debit = parseFloat(line.debit) || 0;
+      const credit = parseFloat(line.credit) || 0;
+
+      // Asset & Expense increase with Debit, decrease with Credit
+      // Liability, Equity & Income increase with Credit, decrease with Debit
+      if (['Asset', 'Expense'].includes(account_type)) {
+        runningBalance += (debit - credit);
+      } else {
+        runningBalance += (credit - debit);
+      }
+
+      return {
+        date: line.date,
+        reference: line.reference,
+        description: line.description,
+        debit,
+        credit,
+        running_balance: runningBalance
+      };
+    });
+
+    res.json({
+      account_name,
+      account_type,
+      opening_balance: parseFloat(opening_balance) || 0,
+      closing_balance: runningBalance,
+      ledger
+    });
+  } catch (err) {
+    console.error("GET GENERAL LEDGER ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { 
+  getAccounts, 
+  getAccountById, 
+  createAccount, 
+  updateAccount, 
+  deleteAccount, 
+  getJournals, 
+  getJournalById, 
+  createJournal, 
+  updateJournal, 
+  deleteJournal, 
+  getProjectedPayments, 
+  getProjectedExpenses,
+  getGeneralLedger
+};

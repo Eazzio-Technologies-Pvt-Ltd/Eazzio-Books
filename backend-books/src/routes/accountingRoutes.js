@@ -1,7 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
-const { getAccounts, getAccountById, createAccount, updateAccount, deleteAccount, getJournals, getJournalById, createJournal, updateJournal, deleteJournal, getProjectedPayments, getProjectedExpenses } = require("../controllers/accountingController");
+const { 
+  getAccounts, getAccountById, createAccount, updateAccount, deleteAccount, 
+  getJournals, getJournalById, createJournal, updateJournal, deleteJournal, 
+  getProjectedPayments, getProjectedExpenses, getGeneralLedger 
+} = require("../controllers/accountingController");
 
 router.get("/accounting/coa", authMiddleware, getAccounts);
 router.get("/accounting/coa/:id", authMiddleware, getAccountById);
@@ -17,5 +21,8 @@ router.delete("/accounting/journals/:id", authMiddleware, deleteJournal);
 
 router.get("/accounts/projected-payments", authMiddleware, getProjectedPayments);
 router.get("/accounts/projected-expenses", authMiddleware, getProjectedExpenses);
+
+// General Ledger route
+router.get("/accounting/ledger/:accountId", authMiddleware, getGeneralLedger);
 
 module.exports = router;
