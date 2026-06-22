@@ -287,8 +287,8 @@ body {
 /* ================= REGISTER PAGE ================= */
 
 .register-page {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-y: auto;
   background: #1b2337;
   display: flex;
   justify-content: center;
