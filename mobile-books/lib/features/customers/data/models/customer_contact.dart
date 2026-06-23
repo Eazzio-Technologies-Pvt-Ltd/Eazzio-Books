@@ -1,3 +1,13 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
 class CustomerContact {
   final int? id;
   final int? customerId;
@@ -21,8 +31,8 @@ class CustomerContact {
 
   factory CustomerContact.fromJson(Map<String, dynamic> json) {
     return CustomerContact(
-      id: json['id'] as int?,
-      customerId: json['customer_id'] as int?,
+      id: _parseInt(json['id']),
+      customerId: _parseInt(json['customer_id']),
       salutation: json['salutation'] as String?,
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,

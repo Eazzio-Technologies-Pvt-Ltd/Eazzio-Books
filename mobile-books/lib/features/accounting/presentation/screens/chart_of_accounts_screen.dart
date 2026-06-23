@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/accounting/data/models/chart_of_account.dart';
 import 'package:mobile_books/features/accounting/presentation/providers/accounting_provider.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
+import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 
 class ChartOfAccountsScreen extends ConsumerWidget {
   const ChartOfAccountsScreen({super.key});
@@ -60,7 +61,10 @@ class ChartOfAccountsScreen extends ConsumerWidget {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => ListView.builder(
+            itemCount: 6,
+            itemBuilder: (context, index) => LoadingSkeleton.skeletonListItem(),
+          ),
           error: (err, _) => Center(child: Text('Error loading COA: $err')),
         ),
       ),
@@ -99,7 +103,12 @@ class ChartOfAccountsScreen extends ConsumerWidget {
                 if (account.accountCode != null)
                   Text('Code: ${account.accountCode}', style: const TextStyle(fontSize: 12)),
                 if (account.description != null && account.description!.isNotEmpty)
-                  Text(account.description!, style: const TextStyle(fontSize: 12, overflow: TextOverflow.ellipsis)),
+                  Text(
+                    account.description!,
+                    style: const TextStyle(fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
             trailing: Row(

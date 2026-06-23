@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
+import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -382,27 +384,29 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                   data: (vendors) => Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<int>(
-                          initialValue: _vendorId,
-                          decoration: const InputDecoration(labelText: 'Vendor *'),
-                          items: vendors.map((v) {
-                            return DropdownMenuItem<int>(
-                              value: v.id,
-                              child: Text(v.displayName),
-                            );
-                          }).toList(),
+                        child: SearchableAutocompleteField<Vendor>(
+                          labelText: 'Vendor *',
+                          initialValue: vendors.where((v) => v.id == _vendorId).firstOrNull,
+                          items: vendors,
+                          itemLabelBuilder: (v) => v.displayName,
+                          searchMatcher: (v, query) {
+                            return v.displayName.toLowerCase().contains(query.toLowerCase()) ||
+                                (v.email ?? '').toLowerCase().contains(query.toLowerCase());
+                          },
                           onChanged: (val) {
                             setState(() {
-                              _vendorId = val;
+                              _vendorId = val?.id;
                               if (val != null) {
-                                final vendor = vendors.firstWhere((v) => v.id == val);
-                                final suggested = _suggestState(vendor.billingAddress);
+                                final suggested = _suggestState(val.billingAddress);
                                 if (suggested != null) {
                                   _vendorState = suggested;
                                 }
                               }
                             });
                           },
+                          validator: (val) => val == null ? 'Vendor is required' : null,
+                          onAddNew: _showAddVendorDialog,
+                          addNewLabel: 'Add New Vendor',
                         ),
                       ),
                       const SizedBox(width: AppSpacing.s),
@@ -531,29 +535,35 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                           itemsState.when(
                             loading: () => const LinearProgressIndicator(),
                             error: (e, s) => Text('Error: $e'),
-                            data: (items) => DropdownButtonFormField<int>(
-                              initialValue: li.itemId,
-                              decoration: InputDecoration(labelText: 'Item ${idx + 1} *'),
-                              items: items.map((item) {
-                                return DropdownMenuItem<int>(
-                                  value: item.id,
-                                  child: Text(item.name),
-                                );
-                              }).toList(),
+                            data: (items) => SearchableAutocompleteField<Item>(
+                              labelText: 'Item ${idx + 1} *',
+                              initialValue: items.where((i) => i.id == li.itemId).firstOrNull,
+                              items: items,
+                              itemLabelBuilder: (i) => i.name,
+                              searchMatcher: (i, query) {
+                                return i.name.toLowerCase().contains(query.toLowerCase());
+                              },
                               onChanged: (val) {
                                 setState(() {
-                                  li.itemId = val;
+                                  li.itemId = val?.id;
                                   if (val != null) {
-                                    final selected = items.firstWhere((i) => i.id == val);
-                                    li.itemName = selected.name;
-                                    li.unitPrice = selected.costPrice; // Bill uses costPrice
-                                    li.hsnCode = selected.hsnCode;
-                                    li.unit = selected.unit;
-                                    li.taxRate = selected.taxRate;
-                                    li.description = selected.purchaseDescription ?? selected.description;
+                                    li.itemName = val.name;
+                                    li.unitPrice = val.costPrice; // Bill uses costPrice
+                                    li.hsnCode = val.hsnCode;
+                                    li.unit = val.unit;
+                                    li.taxRate = val.taxRate;
+                                    li.description = val.purchaseDescription ?? val.description;
+                                  } else {
+                                    li.itemName = '';
+                                    li.unitPrice = 0.0;
+                                    li.hsnCode = null;
+                                    li.unit = null;
+                                    li.taxRate = 0.0;
+                                    li.description = null;
                                   }
                                 });
                               },
+                              validator: (val) => val == null ? 'Item is required' : null,
                             ),
                           ),
                           const SizedBox(height: 8),

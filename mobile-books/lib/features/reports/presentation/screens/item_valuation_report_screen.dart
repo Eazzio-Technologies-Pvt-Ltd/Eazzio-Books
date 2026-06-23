@@ -125,12 +125,16 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
                                       ),
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
-                                    Text(
-                                      _formatCurrency(totalValue),
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryBlue,
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        _formatCurrency(totalValue),
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primaryBlue,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -154,11 +158,15 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
                                       ),
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
-                                    Text(
-                                      totalQty.toStringAsFixed(0),
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        totalQty.toStringAsFixed(0),
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -179,9 +187,9 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
                       child: Table(
                         columnWidths: const {
                           0: FlexColumnWidth(2),
-                          1: FlexColumnWidth(1),
-                          2: FlexColumnWidth(1),
-                          3: FlexColumnWidth(1.2),
+                          1: FlexColumnWidth(0.8),
+                          2: FlexColumnWidth(1.2),
+                          3: FlexColumnWidth(1.6),
                         },
                         children: const [
                           TableRow(
@@ -223,9 +231,9 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
                           return Table(
                             columnWidths: const {
                               0: FlexColumnWidth(2),
-                              1: FlexColumnWidth(1),
-                              2: FlexColumnWidth(1),
-                              3: FlexColumnWidth(1.2),
+                              1: FlexColumnWidth(0.8),
+                              2: FlexColumnWidth(1.2),
+                              3: FlexColumnWidth(1.6),
                             },
                             children: [
                               TableRow(
@@ -252,18 +260,26 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 10.0),
-                                    child: Text(
-                                      _formatCurrency(item.costPrice),
-                                      style: const TextStyle(fontSize: 12),
-                                      textAlign: TextAlign.right,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        _formatCurrency(item.costPrice),
+                                        style: const TextStyle(fontSize: 12),
+                                        textAlign: TextAlign.right,
+                                      ),
                                     ),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 10.0),
-                                    child: Text(
-                                      _formatCurrency(val),
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                      textAlign: TextAlign.right,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        _formatCurrency(val),
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.right,
+                                      ),
                                     ),
                                   ),
                                 ],

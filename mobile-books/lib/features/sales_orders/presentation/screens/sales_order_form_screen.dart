@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
@@ -78,6 +79,7 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
   final _referenceNumberController = TextEditingController();
   final _notesController = TextEditingController();
   final _termsController = TextEditingController();
+  String _discountType = 'flat';
 
   // ─── Line items ────────────────────────────────────────────
   List<_LineItem> _lineItems = [_LineItem()];
@@ -120,6 +122,7 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
       _projectId = order.projectId;
       _notesController.text = order.notes ?? '';
       _termsController.text = order.terms ?? '';
+      _discountType = order.discountType ?? 'flat';
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
@@ -162,6 +165,7 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
       _projectId = q.projectId;
       _notesController.text = q.notes ?? '';
       _termsController.text = q.terms ?? '';
+      _discountType = q.discountType ?? 'flat';
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
@@ -203,7 +207,7 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
   double get _grandTotal => _subtotal - _totalDiscount + _totalTax;
 
   // ─── Save ──────────────────────────────────────────────────
-  Future<void> _saveForm() async {
+  Future<void> _saveForm({bool sendImmediately = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_customerId == null) {
@@ -239,6 +243,7 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
           'terms': _termsController.text.trim().isEmpty ? null : _termsController.text.trim(),
           'salesperson_id': _salespersonId,
           'project_id': _projectId,
+          'discount_type': _discountType,
           'items': _lineItems
               .map((i) => {
                     'item_id': i.itemId,
@@ -284,6 +289,7 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
           total: _grandTotal,
           salespersonId: _salespersonId,
           projectId: _projectId,
+          discountType: _discountType,
         );
 
         final itemsPayload = _lineItems
@@ -304,12 +310,25 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                 ))
             .toList();
 
-        await ref
+        final created = await ref
             .read(salesOrdersProvider.notifier)
             .createSalesOrder(salesOrderPayload, itemsPayload);
+
+        if (sendImmediately) {
+          final customersState = ref.read(customersProvider);
+          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final toEmail = customer?.email ?? '';
+          final emailPayload = {
+            'to': toEmail.isEmpty ? 'customer@example.com' : toEmail,
+            'subject': 'Sales Order ${created.salesOrderNumber}',
+            'body': 'Dear Customer,\n\nPlease find your Sales Order attached.\n\nSales Order Number: ${created.salesOrderNumber}\nTotal: ₹${created.total.toStringAsFixed(2)}\n\nThank you for your business.',
+          };
+          await ref.read(salesOrdersProvider.notifier).sendEmail(created.id, emailPayload);
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Sales order created successfully')),
+            SnackBar(content: Text(sendImmediately ? 'Sales order saved & sent successfully' : 'Sales order created successfully')),
           );
           context.pop();
         }
@@ -618,8 +637,14 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Sales Order' : 'New Sales Order'),
         actions: [
+          if (!_isEditMode)
+            TextButton.icon(
+              onPressed: _isLoading ? null : () => _saveForm(sendImmediately: true),
+              icon: const Icon(Icons.send_and_archive),
+              label: const Text('Save & Send'),
+            ),
           TextButton.icon(
-            onPressed: _isLoading ? null : _saveForm,
+            onPressed: _isLoading ? null : () => _saveForm(sendImmediately: false),
             icon: _isLoading
                 ? const SizedBox(
                     width: 18,
@@ -751,12 +776,29 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                               '- ₹${_totalDiscount.toStringAsFixed(2)}',
                               valueColor: AppColors.danger,
                             ),
-                            _summaryRow(
-                              'Total Tax',
-                              '+ ₹${_totalTax.toStringAsFixed(2)}',
-                              valueColor: AppColors.success,
-                            ),
-                            const Divider(),
+                             _summaryRow(
+                               'Total Tax',
+                               '+ ₹${_totalTax.toStringAsFixed(2)}',
+                               valueColor: AppColors.success,
+                             ),
+                             const SizedBox(height: AppSpacing.s),
+                             DropdownButtonFormField<String>(
+                               value: _discountType,
+                               decoration: const InputDecoration(labelText: 'Discount Type'),
+                               items: const [
+                                 DropdownMenuItem(value: 'percentage', child: Text('Percentage')),
+                                 DropdownMenuItem(value: 'flat', child: Text('Flat')),
+                               ],
+                               onChanged: (val) {
+                                 if (val != null) {
+                                   setState(() {
+                                     _discountType = val;
+                                   });
+                                 }
+                               },
+                             ),
+                             const SizedBox(height: AppSpacing.s),
+                             const Divider(),
                             _summaryRow(
                               'Grand Total',
                               '₹${_grandTotal.toStringAsFixed(2)}',
@@ -831,22 +873,27 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
     return Row(
       children: [
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _customerId,
-            decoration: const InputDecoration(labelText: 'Customer *'),
-            isExpanded: true,
-            items: customers.map((c) {
+          child: SearchableAutocompleteField<Customer>(
+            labelText: 'Customer *',
+            initialValue: customers.where((c) => c.id == _customerId).firstOrNull,
+            items: customers,
+            itemLabelBuilder: (c) {
               final name = c.displayName ??
                   [c.firstName, c.lastName]
                       .where((s) => s != null && s.isNotEmpty)
                       .join(' ');
-              return DropdownMenuItem(
-                value: c.id,
-                child: Text(name.isEmpty ? (c.email ?? 'Customer #${c.id}') : name),
-              );
-            }).toList(),
-            onChanged: (val) => setState(() => _customerId = val),
+              return name.isNotEmpty ? name : (c.email ?? '');
+            },
+            searchMatcher: (c, query) {
+              final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
+              final email = (c.email ?? '').toLowerCase();
+              final q = query.toLowerCase();
+              return name.contains(q) || email.contains(q);
+            },
+            onChanged: (val) => setState(() => _customerId = val?.id),
             validator: (val) => val == null ? 'Customer is required' : null,
+            onAddNew: _showAddCustomerDialog,
+            addNewLabel: 'Add New Customer',
           ),
         ),
         const SizedBox(width: AppSpacing.s),
@@ -887,21 +934,15 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
     return Row(
       children: [
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _salespersonId,
-            decoration: const InputDecoration(labelText: 'Salesperson'),
-            isExpanded: true,
-            items: [
-              const DropdownMenuItem<int>(
-                value: null,
-                child: Text('— None —'),
-              ),
-              ...list.map((sp) => DropdownMenuItem(
-                    value: sp.id,
-                    child: Text(sp.name),
-                  )),
-            ],
-            onChanged: (val) => setState(() => _salespersonId = val),
+          child: SearchableAutocompleteField<Salesperson>(
+            labelText: 'Salesperson',
+            initialValue: list.where((sp) => sp.id == _salespersonId).firstOrNull,
+            items: list,
+            itemLabelBuilder: (sp) => sp.name,
+            searchMatcher: (sp, query) => sp.name.toLowerCase().contains(query.toLowerCase()),
+            onChanged: (val) => setState(() => _salespersonId = val?.id),
+            onAddNew: _showAddSalespersonDialog,
+            addNewLabel: 'Add New Salesperson',
           ),
         ),
         const SizedBox(width: AppSpacing.s),
@@ -918,21 +959,15 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
     return Row(
       children: [
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _projectId,
-            decoration: const InputDecoration(labelText: 'Project'),
-            isExpanded: true,
-            items: [
-              const DropdownMenuItem<int>(
-                value: null,
-                child: Text('— None —'),
-              ),
-              ...list.map((p) => DropdownMenuItem(
-                    value: p.id,
-                    child: Text(p.projectName),
-                  )),
-            ],
-            onChanged: (val) => setState(() => _projectId = val),
+          child: SearchableAutocompleteField<Project>(
+            labelText: 'Project',
+            initialValue: list.where((p) => p.id == _projectId).firstOrNull,
+            items: list,
+            itemLabelBuilder: (p) => p.projectName,
+            searchMatcher: (p, query) => p.projectName.toLowerCase().contains(query.toLowerCase()),
+            onChanged: (val) => setState(() => _projectId = val?.id),
+            onAddNew: _showAddProjectDialog,
+            addNewLabel: 'Add New Project',
           ),
         ),
         const SizedBox(width: AppSpacing.s),
@@ -971,24 +1006,15 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.s),
-            DropdownButtonFormField<int>(
-              initialValue: li.itemId,
-              decoration: const InputDecoration(labelText: 'Select from Catalog'),
-              isExpanded: true,
-              items: [
-                const DropdownMenuItem<int>(
-                  value: null,
-                  child: Text('— Custom Item —'),
-                ),
-                ...catalogItems.map((item) => DropdownMenuItem(
-                      value: item.id,
-                      child: Text(item.name),
-                    )),
-              ],
+            SearchableAutocompleteField<Item>(
+              labelText: 'Select from Catalog',
+              initialValue: catalogItems.where((c) => c.id == li.itemId).firstOrNull,
+              items: catalogItems,
+              itemLabelBuilder: (item) => item.name,
+              searchMatcher: (item, query) => item.name.toLowerCase().contains(query.toLowerCase()),
               onChanged: (val) {
                 if (val != null) {
-                  final catalogItem = catalogItems.firstWhere((c) => c.id == val);
-                  _handleCatalogItemSelected(index, catalogItem);
+                  _handleCatalogItemSelected(index, val);
                 } else {
                   setState(() {
                     li.itemId = null;

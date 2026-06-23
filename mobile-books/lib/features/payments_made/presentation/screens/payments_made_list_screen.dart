@@ -6,19 +6,153 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/payments_made/data/models/payment_made.dart';
 import 'package:mobile_books/features/payments_made/presentation/providers/payment_made_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
+import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 
-class PaymentsMadeListScreen extends ConsumerWidget {
+class PaymentsMadeListScreen extends ConsumerStatefulWidget {
   const PaymentsMadeListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PaymentsMadeListScreen> createState() => _PaymentsMadeListScreenState();
+}
+
+class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen> {
+  String _sortBy = 'date';
+  String _sortOrder = 'desc';
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(paymentMadeSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<PaymentMade> _sortPaymentsMade(List<PaymentMade> list, Map<int, String> vendorMap) {
+    final sorted = List<PaymentMade>.from(list);
+    sorted.sort((a, b) {
+      int cmp = 0;
+      switch (_sortBy) {
+        case 'amount':
+          cmp = a.amount.compareTo(b.amount);
+          break;
+        case 'status':
+          // Sort by payment mode
+          final modeA = a.paymentMode ?? '';
+          final modeB = b.paymentMode ?? '';
+          cmp = modeA.toLowerCase().compareTo(modeB.toLowerCase());
+          break;
+        case 'name':
+          final nameA = a.vendorName ?? (a.vendorId != null ? vendorMap[a.vendorId] : null) ?? '';
+          final nameB = b.vendorName ?? (b.vendorId != null ? vendorMap[b.vendorId] : null) ?? '';
+          cmp = nameA.toLowerCase().compareTo(nameB.toLowerCase());
+          break;
+        case 'date':
+        default:
+          cmp = a.paymentDate.compareTo(b.paymentDate);
+          break;
+      }
+      return _sortOrder == 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }
+
+  void _showSortBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    children: [
+                      _sortOptionChip(setModalState, 'date', 'Date'),
+                      _sortOptionChip(setModalState, 'amount', 'Amount'),
+                      _sortOptionChip(setModalState, 'status', 'Payment Mode'),
+                      _sortOptionChip(setModalState, 'name', 'Vendor Name'),
+                    ],
+                  ),
+                  const Divider(),
+                  const Text('Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Ascending'),
+                        selected: _sortOrder == 'asc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'asc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      ChoiceChip(
+                        label: const Text('Descending'),
+                        selected: _sortOrder == 'desc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'desc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sortOptionChip(StateSetter setModalState, String val, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _sortBy == val,
+      onSelected: (selected) {
+        if (selected) {
+          setModalState(() => _sortBy = val);
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final paymentsState = ref.watch(filteredPaymentsMadeProvider);
-    final searchController = TextEditingController(text: ref.read(paymentMadeSearchQueryProvider));
+    final searchController = _searchController;
+    final vendorsState = ref.watch(vendorsProvider);
+
+    final vendors = vendorsState.value ?? [];
+    final vendorMap = {for (var v in vendors) v.id: v.displayName};
 
     return ResponsiveScaffold(
       currentRoute: '/payments-made',
       appBar: AppBar(
         title: const Text('Payments Made'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: () => _showSortBottomSheet(context),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -54,7 +188,9 @@ class PaymentsMadeListScreen extends ConsumerWidget {
               onRefresh: () => ref.read(paymentsMadeProvider.notifier).refresh(),
               child: paymentsState.when(
                 data: (list) {
-                  if (list.isEmpty) {
+                  final sortedList = _sortPaymentsMade(list, vendorMap);
+
+                  if (sortedList.isEmpty) {
                     return ListView(
                       children: const [
                         SizedBox(height: 100),
@@ -75,15 +211,17 @@ class PaymentsMadeListScreen extends ConsumerWidget {
                   }
                   return ListView.builder(
                     padding: const EdgeInsets.all(AppSpacing.m),
-                    itemCount: list.length,
+                    itemCount: sortedList.length,
                     itemBuilder: (context, index) {
-                      final pm = list[index];
+                      final pm = sortedList[index];
                       return _PaymentMadeCard(pm: pm);
                     },
                   );
                 },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
+                loading: () => ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.m),
+                  itemCount: 5,
+                  itemBuilder: (context, index) => LoadingSkeleton.skeletonListItem(),
                 ),
                 error: (error, _) => Center(
                   child: Padding(

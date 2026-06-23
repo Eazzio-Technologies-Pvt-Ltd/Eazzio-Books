@@ -28,13 +28,32 @@ _StatusStyle _getStatusStyle(String status) {
       const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
 }
 
-class VendorCreditsListScreen extends ConsumerWidget {
+class VendorCreditsListScreen extends ConsumerStatefulWidget {
   const VendorCreditsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VendorCreditsListScreen> createState() => _VendorCreditsListScreenState();
+}
+
+class _VendorCreditsListScreenState extends ConsumerState<VendorCreditsListScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(vendorCreditSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final vendorCreditsState = ref.watch(filteredVendorCreditsProvider);
-    final searchController = TextEditingController(text: ref.read(vendorCreditSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/vendor-credits',

@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_books/core/theme/theme.dart';
+import 'package:mobile_books/core/theme/app_assets.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/permissions/permission_helper.dart';
 import 'package:mobile_books/core/network/network_client.dart';
@@ -116,11 +118,11 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Reports',
-    icon: Icons.bar_chart_outlined,
+    icon: Icons.assessment_outlined,
     children: [
-      SidebarSubmenuItem(label: 'Profit and Loss', path: '/reports/profit-loss'),
+      SidebarSubmenuItem(label: 'Profit & Loss', path: '/reports/profit-loss'),
       SidebarSubmenuItem(label: 'Balance Sheet', path: '/reports/balance-sheet'),
-      SidebarSubmenuItem(label: 'Cash Flow Statement', path: '/reports/cash-flow'),
+      SidebarSubmenuItem(label: 'Cash Flow', path: '/reports/cash-flow'),
       SidebarSubmenuItem(label: 'Trial Balance', path: '/reports/trial-balance'),
     ],
   ),
@@ -129,11 +131,10 @@ const List<SidebarMenuItem> sidebarMenus = [
     icon: Icons.description_outlined,
     children: [
       SidebarSubmenuItem(label: 'All Documents', path: '/documents'),
-      SidebarSubmenuItem(label: 'Upload Document', path: '/documents/upload'),
+      SidebarSubmenuItem(label: 'Upload Documents', path: '/documents/upload'),
     ],
   ),
 ];
-
 class ResponsiveScaffold extends ConsumerStatefulWidget {
   final Widget body;
   final PreferredSizeWidget? appBar;
@@ -381,7 +382,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
     );
   }
 
-  Widget _buildOrgSwitcherButton(BuildContext context) {
+  Widget _buildOrgSwitcherButton(BuildContext context, bool isMobile) {
     final authState = ref.watch(authNotifierProvider);
     final orgState = ref.watch(organizationsProvider);
     
@@ -465,22 +466,24 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                currentOrgName,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+        child: isMobile
+            ? const Icon(Icons.business_outlined, size: 22)
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      currentOrgName,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down),
+                ],
               ),
-            ),
-            const Icon(Icons.arrow_drop_down),
-          ],
-        ),
       ),
     );
   }
@@ -661,12 +664,12 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
+                                  color: isDark ? Colors.white12 : Colors.grey.shade200,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   'Role: $userRole',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                  style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.grey.shade700),
                                 ),
                               ),
                             ],
@@ -731,37 +734,54 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
     );
   }
 
+
+
   PreferredSizeWidget? _buildAppBar(BuildContext context, bool isMobile) {
     if (widget.appBar != null) {
       if (widget.appBar is AppBar) {
         final originalAppBar = widget.appBar as AppBar;
         
         final mergedActions = <Widget>[
-          ...?originalAppBar.actions,
+          if (isMobile && context.canPop())
+            IconButton(
+              key: const Key('backButton'),
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.pop(),
+            ),
+          
+          if (!isMobile)
+            ...?originalAppBar.actions,
+          
           IconButton(
             key: const Key('globalSearchButton'),
             icon: const Icon(Icons.search),
             onPressed: () => _showSearchDialog(context),
           ),
-          _buildOrgSwitcherButton(context),
-          _buildQuickActionButton(context),
+          
+          if (isMobile && originalAppBar.actions != null && originalAppBar.actions!.isNotEmpty)
+            ...?originalAppBar.actions,
+          
+          _buildOrgSwitcherButton(context, isMobile),
           _buildProfileAvatarButton(context),
         ];
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final titleWidget = FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: originalAppBar.title ?? const Text('Eazzio Books'),
+        );
+
         return AppBar(
           key: originalAppBar.key,
-          leading: isMobile ? (originalAppBar.leading ?? (context.canPop() ? IconButton(
-            key: const Key('backButton'),
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.pop(),
-          ) : IconButton(
+          leading: isMobile ? IconButton(
             key: const Key('drawerOpenButton'),
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          ))) : originalAppBar.leading,
-          title: originalAppBar.title,
+          ) : originalAppBar.leading,
+          title: titleWidget,
           actions: mergedActions,
-          automaticallyImplyLeading: originalAppBar.automaticallyImplyLeading,
+          automaticallyImplyLeading: isMobile ? false : originalAppBar.automaticallyImplyLeading,
           flexibleSpace: originalAppBar.flexibleSpace,
           bottom: originalAppBar.bottom,
           elevation: originalAppBar.elevation,
@@ -789,42 +809,53 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
       }
     } else {
       return AppBar(
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              height: 32,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.account_balance_wallet_rounded,
-                size: 32,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text('Eazzio Books'),
-          ],
-        ),
-        leading: isMobile ? (context.canPop() ? IconButton(
-          key: const Key('backButton'),
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ) : IconButton(
+        title: const Text('Eazzio Books'),
+        leading: isMobile ? IconButton(
           key: const Key('drawerOpenButton'),
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        )) : null,
+        ) : null,
         actions: [
+          if (isMobile && context.canPop())
+            IconButton(
+              key: const Key('backButton'),
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.pop(),
+            ),
           IconButton(
             key: const Key('globalSearchButton'),
             icon: const Icon(Icons.search),
             onPressed: () => _showSearchDialog(context),
           ),
-          _buildOrgSwitcherButton(context),
-          _buildQuickActionButton(context),
+          _buildOrgSwitcherButton(context, isMobile),
           _buildProfileAvatarButton(context),
         ],
       );
     }
+  }
+
+  Widget _buildAnimatedBody(Widget body) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.04, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey<String>(widget.currentRoute),
+        child: body,
+      ),
+    );
   }
 
   @override
@@ -833,58 +864,66 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
     // Set breakpoint slightly higher to accommodate 800px width test environment as mobile if needed,
     // or keep 768px but ensure it behaves robustly. Let's use 768px to align with web.
     final isMobile = width <= 768;
+    
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark ||
+        (themeMode == ThemeMode.system && MediaQuery.of(context).platformBrightness == Brightness.dark);
+    final baseTheme = isDark ? AppTheme.darkTheme : AppTheme.lightTheme;
+    final theme = baseTheme.copyWith(
+      textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
+      primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
+    );
 
-    if (isMobile) {
-      // Mobile View: Standard Scaffold with Drawer
-      return Scaffold(
-        key: _scaffoldKey,
-        appBar: _buildAppBar(context, true),
-        drawer: AppNavigationDrawer(currentRoute: widget.currentRoute),
-        floatingActionButton: widget.floatingActionButton,
-        body: widget.body,
-      );
-    } else {
-      // Desktop/Tablet View: Row with Side Navigation + Page Content
-      return Scaffold(
-        body: Row(
-          children: [
-            CustomSidebar(
-              currentRoute: widget.currentRoute,
-              isCollapsed: _isCollapsed,
-              expandedMenus: _expandedMenus,
-              onCollapseToggle: () {
-                setState(() {
-                  _isCollapsed = !_isCollapsed;
-                });
-              },
-              onMenuToggle: (menuLabel) {
-                setState(() {
-                  if (_expandedMenus.contains(menuLabel)) {
-                    _expandedMenus.remove(menuLabel);
-                  } else {
-                    _expandedMenus.add(menuLabel);
-                  }
-                });
-              },
-              onForceExpandMenu: (menuLabel) {
-                setState(() {
-                  _isCollapsed = false;
-                  _expandedMenus.add(menuLabel);
-                });
-              },
-            ),
-            const VerticalDivider(width: 1, thickness: 1, color: Color(0xFF283352)),
-            Expanded(
-              child: Scaffold(
-                appBar: _buildAppBar(context, false),
-                floatingActionButton: widget.floatingActionButton,
-                body: widget.body,
+    return Theme(
+      data: theme,
+      child: isMobile
+          ? Scaffold(
+              key: _scaffoldKey,
+              appBar: _buildAppBar(context, true),
+              drawer: AppNavigationDrawer(currentRoute: widget.currentRoute),
+              floatingActionButton: widget.floatingActionButton,
+              body: _buildAnimatedBody(widget.body),
+            )
+          : Scaffold(
+              body: Row(
+                children: [
+                  CustomSidebar(
+                    currentRoute: widget.currentRoute,
+                    isCollapsed: _isCollapsed,
+                    expandedMenus: _expandedMenus,
+                    onCollapseToggle: () {
+                      setState(() {
+                        _isCollapsed = !_isCollapsed;
+                      });
+                    },
+                    onMenuToggle: (menuLabel) {
+                      setState(() {
+                        if (_expandedMenus.contains(menuLabel)) {
+                          _expandedMenus.remove(menuLabel);
+                        } else {
+                          _expandedMenus.add(menuLabel);
+                        }
+                      });
+                    },
+                    onForceExpandMenu: (menuLabel) {
+                      setState(() {
+                        _isCollapsed = false;
+                        _expandedMenus.add(menuLabel);
+                      });
+                    },
+                  ),
+                  const VerticalDivider(width: 1, thickness: 1, color: Color(0xFF283352)),
+                  Expanded(
+                    child: Scaffold(
+                      appBar: _buildAppBar(context, false),
+                      floatingActionButton: widget.floatingActionButton,
+                      body: _buildAnimatedBody(widget.body),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      );
-    }
+    );
   }
 }
 
@@ -964,15 +1003,10 @@ class CustomSidebar extends ConsumerWidget {
                   Expanded(
                     child: Row(
                       children: [
-                        Image.asset(
-                          'assets/images/logo.png',
+                        AppAssets.walletLogo(
                           width: 32,
                           height: 32,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                            Icons.account_balance_wallet_rounded,
-                            size: 32,
-                            color: AppColors.primaryBlue,
-                          ),
+                          color: AppColors.primaryBlue,
                         ),
                         const SizedBox(width: 10),
                         const Expanded(
@@ -991,15 +1025,10 @@ class CustomSidebar extends ConsumerWidget {
                     ),
                   ),
                 ] else ...[
-                  Image.asset(
-                    'assets/images/logo.png',
+                  AppAssets.walletLogo(
                     width: 36,
                     height: 36,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      size: 36,
-                      color: AppColors.primaryBlue,
-                    ),
+                    color: AppColors.primaryBlue,
                   ),
                 ],
               ],
@@ -1199,28 +1228,15 @@ class CustomSidebar extends ConsumerWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 8),
                 ],
-                Row(
-                  mainAxisAlignment: isCollapsed
-                      ? MainAxisAlignment.center
-                      : MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        isCollapsed ? Icons.chevron_right : Icons.chevron_left,
-                        color: textUnselected,
-                      ),
-                      onPressed: onCollapseToggle,
+                Center(
+                  child: IconButton(
+                    icon: Icon(
+                      isCollapsed ? Icons.chevron_right : Icons.chevron_left,
+                      color: textUnselected,
                     ),
-                    if (!isCollapsed)
-                      IconButton(
-                        icon: const Icon(Icons.logout, color: Colors.redAccent),
-                        onPressed: () {
-                          ref.read(authNotifierProvider.notifier).logout();
-                        },
-                      ),
-                  ],
+                    onPressed: onCollapseToggle,
+                  ),
                 ),
               ],
             ),
@@ -1283,14 +1299,9 @@ class AppNavigationDrawer extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Image.asset(
-                      'assets/images/logo.png',
+                    AppAssets.walletLogo(
                       height: 36,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        size: 36,
-                        color: Colors.white,
-                      ),
+                      color: Colors.white,
                     ),
                     const SizedBox(width: 8),
                     const Text(
@@ -1374,15 +1385,6 @@ class AppNavigationDrawer extends ConsumerWidget {
                 );
               }).toList(),
             ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
-            onTap: () {
-              Navigator.pop(context);
-              ref.read(authNotifierProvider.notifier).logout();
-            },
           ),
           const SizedBox(height: 16),
         ],

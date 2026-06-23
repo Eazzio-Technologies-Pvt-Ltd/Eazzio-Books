@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/delivery_challans/presentation/providers/delivery_challan_provider.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
+import 'package:mobile_books/core/network/network_client.dart';
 
 class DeliveryChallanDetailScreen extends ConsumerStatefulWidget {
   final int challanId;
@@ -154,65 +155,85 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Send Delivery Challan'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: toController,
-                decoration: const InputDecoration(labelText: 'To Email *'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          bool isSending = false;
+
+          return AlertDialog(
+            title: const Text('Send Delivery Challan'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: toController,
+                    decoration: const InputDecoration(labelText: 'To Email *'),
+                    enabled: !isSending,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: subjectController,
+                    decoration: const InputDecoration(labelText: 'Subject'),
+                    enabled: !isSending,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: bodyController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(labelText: 'Body Text'),
+                    enabled: !isSending,
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: subjectController,
-                decoration: const InputDecoration(labelText: 'Subject'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSending ? null : () => Navigator.pop(context),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: bodyController,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Body Text'),
+              ElevatedButton(
+                onPressed: isSending
+                    ? null
+                    : () async {
+                        if (toController.text.trim().isEmpty) return;
+                        setModalState(() {
+                          isSending = true;
+                        });
+                        try {
+                          await ref.read(deliveryChallansProvider.notifier).sendEmail(widget.challanId,
+                            to: toController.text.trim(),
+                            subject: subjectController.text.trim(),
+                            body: bodyController.text.trim(),
+                          );
+                          if (!mounted) return;
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(content: Text('Email dispatched successfully.')),
+                          );
+                        } catch (e) {
+                          setModalState(() {
+                            isSending = false;
+                          });
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      },
+                child: isSending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Send'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (toController.text.trim().isEmpty) return;
-              Navigator.pop(context);
-              setState(() {
-                _actionLoading = true;
-              });
-              try {
-                await ref.read(deliveryChallansProvider.notifier).sendEmail(widget.challanId, {
-                  'to': toController.text.trim(),
-                  'subject': subjectController.text.trim(),
-                  'body': bodyController.text.trim(),
-                });
-                if (!mounted) return;
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('Email dispatched successfully.')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  SnackBar(content: Text(e.toString())),
-                );
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    _actionLoading = false;
-                  });
-                }
-              }
-            },
-            child: const Text('Send'),
-          ),
-        ],
+          );
+        }
       ),
     );
   }
@@ -225,6 +246,28 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delivery Challan Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: 'Export PDF',
+            onPressed: () {
+              final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delivery Challan PDF Link'),
+                  content: SelectableText('$baseUrl/delivery-challans/${widget.challanId}/pdf'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _actionLoading
           ? const Center(child: CircularProgressIndicator())
@@ -278,6 +321,39 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
                                 label: const Text('Delete'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
                                 onPressed: _deleteChallan,
+                              ),
+                              const SizedBox(width: AppSpacing.s),
+                            ],
+                            if (dc.status.toLowerCase() == 'draft') ...[
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.mark_email_read_outlined),
+                                label: const Text('Mark as Sent'),
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
+                                onPressed: () async {
+                                  setState(() {
+                                    _actionLoading = true;
+                                  });
+                                  try {
+                                    await ref.read(deliveryChallansProvider.notifier).markAsSent(widget.challanId);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Delivery Challan marked as sent successfully.')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(e.toString()), backgroundColor: AppColors.danger),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _actionLoading = false;
+                                      });
+                                    }
+                                  }
+                                },
                               ),
                               const SizedBox(width: AppSpacing.s),
                             ],

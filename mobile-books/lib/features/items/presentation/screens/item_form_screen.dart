@@ -420,6 +420,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                                       Expanded(
                                         child: Text(
                                           _imageUrl!,
+                                          maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(fontWeight: FontWeight.w500),
                                         ),
@@ -464,22 +465,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                     ),
                     const SizedBox(height: AppSpacing.s),
 
-                    TextFormField(
-                      controller: _skuController,
-                      decoration: const InputDecoration(
-                        labelText: 'SKU',
-                        hintText: 'e.g. PEN-001',
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s),
-                    TextFormField(
-                      controller: _hsnController,
-                      decoration: const InputDecoration(
-                        labelText: 'HSN Code',
-                        hintText: 'e.g. 9608',
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s),
+
 
                     if (_itemType == 'Goods') ...[
                       DropdownButtonFormField<String>(
@@ -639,6 +625,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
                                       initialValue: _purchaseAccount,
                                       decoration: const InputDecoration(labelText: 'Purchase Account'),
                                       items: _purchaseAccountsList

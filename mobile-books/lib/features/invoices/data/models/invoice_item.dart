@@ -1,3 +1,23 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class InvoiceItem {
   final int id;
   final int invoiceId;
@@ -45,26 +65,26 @@ class InvoiceItem {
 
   factory InvoiceItem.fromJson(Map<String, dynamic> json) {
     return InvoiceItem(
-      id: json['id'] as int,
-      invoiceId: json['invoice_id'] as int? ?? json['invoiceId'] as int? ?? 0,
-      itemId: json['item_id'] as int? ?? json['itemId'] as int?,
+      id: _parseInt(json['id']) ?? 0,
+      invoiceId: _parseInt(json['invoice_id']) ?? _parseInt(json['invoiceId']) ?? 0,
+      itemId: _parseInt(json['item_id']) ?? _parseInt(json['itemId']),
       itemName: json['item_name'] as String? ?? json['itemName'] as String?,
       hsnCode: json['hsn_code'] as String? ?? json['hsnCode'] as String?,
       unit: json['unit'] as String?,
       description: json['description'] as String?,
-      quantity: (json['quantity'] as num? ?? 1.0).toDouble(),
-      unitPrice: (json['unit_price'] as num? ?? json['unitPrice'] as num? ?? 0.0).toDouble(),
-      taxRate: (json['tax_rate'] as num? ?? json['taxRate'] as num? ?? 0.0).toDouble(),
-      discount: (json['discount'] as num? ?? 0.0).toDouble(),
+      quantity: _parseDouble(json['quantity']),
+      unitPrice: _parseDouble(json['unit_price'] ?? json['unitPrice']),
+      taxRate: _parseDouble(json['tax_rate'] ?? json['taxRate']),
+      discount: _parseDouble(json['discount']),
       discountType: json['discount_type'] as String? ?? json['discountType'] as String? ?? 'flat',
-      total: (json['total'] as num? ?? 0.0).toDouble(),
-      taxableValue: (json['taxable_value'] as num? ?? json['taxableValue'] as num? ?? 0.0).toDouble(),
-      cgstRate: (json['cgst_rate'] as num? ?? json['cgstRate'] as num? ?? 0.0).toDouble(),
-      cgstAmount: (json['cgst_amount'] as num? ?? json['cgstAmount'] as num? ?? 0.0).toDouble(),
-      sgstRate: (json['sgst_rate'] as num? ?? json['sgstRate'] as num? ?? 0.0).toDouble(),
-      sgstAmount: (json['sgst_amount'] as num? ?? json['sgstAmount'] as num? ?? 0.0).toDouble(),
-      igstRate: (json['igst_rate'] as num? ?? json['igstRate'] as num? ?? 0.0).toDouble(),
-      igstAmount: (json['igst_amount'] as num? ?? json['igstAmount'] as num? ?? 0.0).toDouble(),
+      total: _parseDouble(json['total']),
+      taxableValue: _parseDouble(json['taxable_value'] ?? json['taxableValue']),
+      cgstRate: _parseDouble(json['cgst_rate'] ?? json['cgstRate']),
+      cgstAmount: _parseDouble(json['cgst_amount'] ?? json['cgstAmount']),
+      sgstRate: _parseDouble(json['sgst_rate'] ?? json['sgstRate']),
+      sgstAmount: _parseDouble(json['sgst_amount'] ?? json['sgstAmount']),
+      igstRate: _parseDouble(json['igst_rate'] ?? json['igstRate']),
+      igstAmount: _parseDouble(json['igst_amount'] ?? json['igstAmount']),
     );
   }
 

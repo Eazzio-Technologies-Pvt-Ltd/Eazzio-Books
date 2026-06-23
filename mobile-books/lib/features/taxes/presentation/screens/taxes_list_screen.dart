@@ -6,14 +6,33 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/taxes/data/models/tax_rate.dart';
 import 'package:mobile_books/features/taxes/presentation/providers/tax_provider.dart';
 
-class TaxesListScreen extends ConsumerWidget {
+class TaxesListScreen extends ConsumerStatefulWidget {
   const TaxesListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TaxesListScreen> createState() => _TaxesListScreenState();
+}
+
+class _TaxesListScreenState extends ConsumerState<TaxesListScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(taxSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final taxesList = ref.watch(filteredTaxesProvider);
     final taxesState = ref.watch(taxesProvider);
-    final searchController = TextEditingController(text: ref.read(taxSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/taxes',
@@ -144,7 +163,7 @@ class TaxesListScreen extends ConsumerWidget {
                                 const SizedBox(height: 2),
                                 Text(
                                   tax.description!,
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
                                 ),

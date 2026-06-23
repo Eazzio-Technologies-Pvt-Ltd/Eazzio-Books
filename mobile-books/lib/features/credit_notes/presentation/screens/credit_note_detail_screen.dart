@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/credit_notes/presentation/providers/credit_note_provider.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
+import 'package:mobile_books/core/network/network_client.dart';
 
 class CreditNoteDetailScreen extends ConsumerStatefulWidget {
   final int creditNoteId;
@@ -284,6 +285,28 @@ class _CreditNoteDetailScreenState extends ConsumerState<CreditNoteDetailScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Credit Note Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: 'Export PDF',
+            onPressed: () {
+              final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Credit Note PDF Link'),
+                  content: SelectableText('$baseUrl/credit-notes/${widget.creditNoteId}/pdf'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _actionLoading
           ? const Center(child: CircularProgressIndicator())
@@ -338,6 +361,39 @@ class _CreditNoteDetailScreenState extends ConsumerState<CreditNoteDetailScreen>
                                 label: const Text('Delete'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
                                 onPressed: _deleteCreditNote,
+                              ),
+                              const SizedBox(width: AppSpacing.s),
+                            ],
+                            if (cn.status.toLowerCase() == 'draft' || cn.status.toLowerCase() == 'open') ...[
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.mark_email_read_outlined),
+                                label: const Text('Mark as Sent'),
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
+                                onPressed: () async {
+                                  setState(() {
+                                    _actionLoading = true;
+                                  });
+                                  try {
+                                    await ref.read(creditNotesProvider.notifier).markAsSent(widget.creditNoteId);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Credit Note marked as sent successfully.')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(e.toString()), backgroundColor: AppColors.danger),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _actionLoading = false;
+                                      });
+                                    }
+                                  }
+                                },
                               ),
                               const SizedBox(width: AppSpacing.s),
                             ],

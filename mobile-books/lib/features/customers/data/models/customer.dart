@@ -1,6 +1,26 @@
 import 'package:mobile_books/features/customers/data/models/customer_address.dart';
 import 'package:mobile_books/features/customers/data/models/customer_contact.dart';
 
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class Customer {
   final int id;
   final String customerType;
@@ -58,7 +78,7 @@ class Customer {
 
   factory Customer.fromJson(Map<String, dynamic> json) {
     return Customer(
-      id: json['id'] as int,
+      id: _parseInt(json['id']) ?? 0,
       customerType: json['customer_type'] as String? ?? 'Business',
       customerSubType: json['customer_sub_type'] as String?,
       salutation: json['salutation'] as String?,
@@ -73,12 +93,12 @@ class Customer {
       remarks: json['remarks'] as String?,
       pan: json['pan'] as String?,
       currency: json['currency'] as String? ?? 'INR',
-      openingBalance: (json['opening_balance'] as num? ?? 0).toDouble(),
+      openingBalance: _parseDouble(json['opening_balance']),
       paymentTerms: json['payment_terms'] as String?,
       enablePortal: json['enable_portal'] as bool? ?? false,
       portalLanguage: json['portal_language'] as String? ?? 'en',
       isActive: json['is_active'] as bool? ?? true,
-      organizationId: json['organization_id'] as int? ?? 0,
+      organizationId: _parseInt(json['organization_id']) ?? 0,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
       addresses: json['addresses'] != null

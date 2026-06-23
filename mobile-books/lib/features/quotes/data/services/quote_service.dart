@@ -137,9 +137,16 @@ class QuoteService {
   }
 
   /// Sends the quote statement/PDF via email SMTP relay
-  Future<void> sendQuoteEmail(int id, Map<String, dynamic> emailPayload) async {
+  Future<void> sendEmail(int id, {
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
     try {
-      await _networkClient.post('/quotes/$id/send', data: emailPayload);
+      await _networkClient.post(
+        '/quotes/$id/send',
+        data: {'to': to, 'subject': subject, 'body': body},
+      );
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to send quote email.';
       throw QuoteException(message);
@@ -221,6 +228,18 @@ class QuoteService {
       }
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to create project.';
+      throw QuoteException(message);
+    } catch (e) {
+      throw QuoteException(e.toString());
+    }
+  }
+
+  /// Marks a quote as sent in the backend
+  Future<void> markQuoteAsSent(int id) async {
+    try {
+      await _networkClient.patch('/quotes/$id/mark-sent');
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to mark quote as sent.';
       throw QuoteException(message);
     } catch (e) {
       throw QuoteException(e.toString());

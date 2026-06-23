@@ -54,6 +54,16 @@ class CreditNotesNotifier extends AsyncNotifier<List<CreditNote>> {
   Future<void> sendEmail(int id, Map<String, dynamic> emailPayload) async {
     final service = ref.read(creditNoteServiceProvider);
     await service.sendCreditNoteEmail(id, emailPayload);
+    ref.invalidateSelf();
+    ref.invalidate(creditNoteDetailsProvider(id));
+  }
+
+  /// Marks a credit note as sent explicitly
+  Future<void> markAsSent(int id) async {
+    final service = ref.read(creditNoteServiceProvider);
+    await service.markCreditNoteAsSent(id);
+    ref.invalidateSelf();
+    ref.invalidate(creditNoteDetailsProvider(id));
   }
 }
 

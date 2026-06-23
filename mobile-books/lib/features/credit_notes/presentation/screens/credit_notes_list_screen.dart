@@ -28,72 +28,283 @@ _StatusStyle _getStatusStyle(String status) {
       const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
 }
 
-class CreditNotesListScreen extends ConsumerWidget {
+class CreditNotesListScreen extends ConsumerStatefulWidget {
   const CreditNotesListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CreditNotesListScreen> createState() => _CreditNotesListScreenState();
+}
+
+class _CreditNotesListScreenState extends ConsumerState<CreditNotesListScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _sortBy = 'date';
+  String _sortOrder = 'desc';
+  String _statusFilter = 'all'; // 'all', 'draft', 'open', 'applied', 'cancelled'
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<CreditNote> _filterAndSort(List<CreditNote> list, Map<int, String> customerMap) {
+    // 1. Search & Filter
+    var result = list;
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      result = result.where((cn) {
+        final numMatch = cn.creditNoteNumber.toLowerCase().contains(q);
+        final custName = customerMap[cn.customerId]?.toLowerCase() ?? '';
+        final custMatch = custName.contains(q);
+        return numMatch || custMatch;
+      }).toList();
+    }
+
+    if (_statusFilter != 'all') {
+      result = result.where((cn) => cn.status.toLowerCase() == _statusFilter).toList();
+    }
+
+    // 2. Sort
+    final sorted = List<CreditNote>.from(result);
+    sorted.sort((a, b) {
+      int cmp = 0;
+      switch (_sortBy) {
+        case 'amount':
+          cmp = a.total.compareTo(b.total);
+          break;
+        case 'status':
+          cmp = a.status.toLowerCase().compareTo(b.status.toLowerCase());
+          break;
+        case 'name':
+          final nameA = customerMap[a.customerId]?.toLowerCase() ?? '';
+          final nameB = customerMap[b.customerId]?.toLowerCase() ?? '';
+          cmp = nameA.compareTo(nameB);
+          break;
+        case 'date':
+        default:
+          cmp = a.creditNoteDate.compareTo(b.creditNoteDate);
+          break;
+      }
+      return _sortOrder == 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }
+
+  void _showSortBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    children: [
+                      _sortOptionChip(setModalState, 'date', 'Date'),
+                      _sortOptionChip(setModalState, 'amount', 'Amount'),
+                      _sortOptionChip(setModalState, 'status', 'Status'),
+                      _sortOptionChip(setModalState, 'name', 'Customer Name'),
+                    ],
+                  ),
+                  const Divider(),
+                  const Text('Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Ascending'),
+                        selected: _sortOrder == 'asc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'asc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      ChoiceChip(
+                        label: const Text('Descending'),
+                        selected: _sortOrder == 'desc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'desc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sortOptionChip(StateSetter setModalState, String val, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _sortBy == val,
+      onSelected: (selected) {
+        if (selected) {
+          setModalState(() => _sortBy = val);
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  Widget _filterChip(String val, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _statusFilter == val,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _statusFilter = val;
+          });
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final creditNotesState = ref.watch(creditNotesProvider);
+    final customersState = ref.watch(customersProvider);
+
+    final customers = customersState.value ?? [];
+    final customerMap = {
+      for (var c in customers)
+        c.id: (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}'.trim())
+    };
 
     return ResponsiveScaffold(
       currentRoute: '/credit-notes',
       appBar: AppBar(
         title: const Text('Credit Notes'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: () => _showSortBottomSheet(context),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/credit-notes/new'),
         child: const Icon(Icons.add),
       ),
-      body: creditNotesState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(
-          child: Text(
-            err.toString(),
-            style: const TextStyle(color: AppColors.danger),
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.s,
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+              decoration: InputDecoration(
+                hintText: 'Search credit notes...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+              ),
+            ),
           ),
-        ),
-        data: (list) {
-          if (list.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: () => ref.read(creditNotesProvider.notifier).refresh(),
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 100),
-                  Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.money_off, size: 64, color: AppColors.textSecondaryLight),
-                        SizedBox(height: AppSpacing.m),
-                        Text(
-                          'No Credit Notes found',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: AppSpacing.xs),
-                        Text(
-                          'Tap "+" to issue a new Credit Note',
-                          style: TextStyle(color: AppColors.textSecondaryLight),
+
+          // Status Filter Chips
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _filterChip('all', 'All'),
+                  const SizedBox(width: AppSpacing.s),
+                  _filterChip('draft', 'Draft'),
+                  const SizedBox(width: AppSpacing.s),
+                  _filterChip('open', 'Open'),
+                  const SizedBox(width: AppSpacing.s),
+                  _filterChip('applied', 'Applied'),
+                  const SizedBox(width: AppSpacing.s),
+                  _filterChip('cancelled', 'Cancelled'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+
+          // List Content
+          Expanded(
+            child: creditNotesState.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(
+                child: Text(
+                  err.toString(),
+                  style: const TextStyle(color: AppColors.danger),
+                ),
+              ),
+              data: (list) {
+                final filteredAndSorted = _filterAndSort(list, customerMap);
+
+                if (filteredAndSorted.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: () => ref.read(creditNotesProvider.notifier).refresh(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 100),
+                        Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.money_off, size: 64, color: AppColors.textSecondaryLight),
+                              SizedBox(height: AppSpacing.m),
+                              Text(
+                                'No Credit Notes found',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
+                  );
+                }
 
-          return RefreshIndicator(
-            onRefresh: () => ref.read(creditNotesProvider.notifier).refresh(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final cn = list[index];
-                return _CreditNoteCard(cn: cn);
+                return RefreshIndicator(
+                  onRefresh: () => ref.read(creditNotesProvider.notifier).refresh(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(AppSpacing.m),
+                    itemCount: filteredAndSorted.length,
+                    itemBuilder: (context, index) {
+                      final cn = filteredAndSorted[index];
+                      return _CreditNoteCard(cn: cn);
+                    },
+                  ),
+                );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

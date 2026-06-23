@@ -6,14 +6,33 @@ import 'package:mobile_books/features/items/presentation/providers/item_provider
 
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 
-class ItemsScreen extends ConsumerWidget {
+class ItemsScreen extends ConsumerStatefulWidget {
   const ItemsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ItemsScreen> createState() => _ItemsScreenState();
+}
+
+class _ItemsScreenState extends ConsumerState<ItemsScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(itemSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final itemsState = ref.watch(filteredItemsProvider);
     final filter = ref.watch(itemsListFilterProvider);
-    final searchController = TextEditingController(text: ref.read(itemSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/items',

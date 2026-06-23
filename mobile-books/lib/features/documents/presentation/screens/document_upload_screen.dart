@@ -11,7 +11,8 @@ class DocumentUploadScreen extends ConsumerStatefulWidget {
   const DocumentUploadScreen({super.key});
 
   @override
-  ConsumerState<DocumentUploadScreen> createState() => _DocumentUploadScreenState();
+  ConsumerState<DocumentUploadScreen> createState() =>
+      _DocumentUploadScreenState();
 }
 
 class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
@@ -81,7 +82,17 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
       } else if (source == 'file') {
         final result = await FilePicker.pickFiles(
           type: FileType.custom,
-          allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'txt'],
+          allowedExtensions: [
+            'pdf',
+            'doc',
+            'docx',
+            'xls',
+            'xlsx',
+            'jpg',
+            'jpeg',
+            'png',
+            'txt',
+          ],
         );
         if (result != null && result.files.single.path != null) {
           filePath = result.files.single.path;
@@ -91,9 +102,9 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
 
       if (filePath == null || fileName == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No file selected.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('No file selected.')));
         }
         return;
       }
@@ -108,8 +119,10 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
     } on PlatformException catch (e) {
       if (mounted) {
         String errMsg = 'Permission denied or picker error.';
-        if (e.code == 'photo_access_denied' || e.code == 'camera_access_denied') {
-          errMsg = 'Access denied. Please enable camera/storage permissions in settings.';
+        if (e.code == 'photo_access_denied' ||
+            e.code == 'camera_access_denied') {
+          errMsg =
+              'Access denied. Please enable camera/storage permissions in settings.';
         } else if (e.message != null) {
           errMsg = e.message!;
         }
@@ -135,26 +148,36 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
     try {
       final recordIdVal = int.tryParse(_relatedRecordIdController.text.trim());
 
-      await ref.read(documentsProvider.notifier).uploadDocument(
-        filePath: _selectedFilePath!,
-        fileName: _selectedFileName!,
-        documentName: _nameController.text.trim(),
-        category: _category,
-        relatedModule: _relatedModule,
-        relatedRecordId: recordIdVal,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      );
+      await ref
+          .read(documentsProvider.notifier)
+          .uploadDocument(
+            filePath: _selectedFilePath!,
+            fileName: _selectedFileName!,
+            documentName: _nameController.text.trim(),
+            category: _category,
+            relatedModule: _relatedModule,
+            relatedRecordId: recordIdVal,
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Document uploaded successfully'), backgroundColor: AppColors.success),
+          const SnackBar(
+            content: Text('Document uploaded successfully'),
+            backgroundColor: AppColors.success,
+          ),
         );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload document: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Failed to upload document: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -165,9 +188,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Upload Document'),
-      ),
+      appBar: AppBar(title: const Text('Upload Document')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -180,18 +201,28 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Select File Button
-                    const Text('Select File *', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Select File *',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: AppSpacing.s),
                     ElevatedButton.icon(
                       onPressed: _saving ? null : _pickFile,
                       icon: const Icon(Icons.attach_file),
-                      label: Text(_selectedFileName == null ? 'Choose File' : 'Change File'),
+                      label: Text(
+                        _selectedFileName == null
+                            ? 'Choose File'
+                            : 'Change File',
+                      ),
                     ),
                     if (_selectedFileName != null) ...[
                       const SizedBox(height: AppSpacing.s),
                       Text(
                         'Selected: $_selectedFileName',
-                        style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                     const SizedBox(height: AppSpacing.m),
@@ -202,7 +233,9 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Document Name *',
                       ),
-                      validator: (val) => val == null || val.trim().isEmpty ? 'Document name is required' : null,
+                      validator: (val) => val == null || val.trim().isEmpty
+                          ? 'Document name is required'
+                          : null,
                     ),
                     const SizedBox(height: AppSpacing.m),
 
@@ -213,12 +246,27 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                         labelText: 'Category *',
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Invoice', child: Text('Invoice')),
+                        DropdownMenuItem(
+                          value: 'Invoice',
+                          child: Text('Invoice'),
+                        ),
                         DropdownMenuItem(value: 'Bill', child: Text('Bill')),
-                        DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                        DropdownMenuItem(value: 'Receipt', child: Text('Receipt')),
-                        DropdownMenuItem(value: 'Customer', child: Text('Customer')),
-                        DropdownMenuItem(value: 'Vendor', child: Text('Vendor')),
+                        DropdownMenuItem(
+                          value: 'Expense',
+                          child: Text('Expense'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Receipt',
+                          child: Text('Receipt'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Customer',
+                          child: Text('Customer'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Vendor',
+                          child: Text('Vendor'),
+                        ),
                         DropdownMenuItem(value: 'Other', child: Text('Other')),
                       ],
                       onChanged: (val) {
@@ -234,11 +282,23 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                         labelText: 'Related Module *',
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'invoices', child: Text('Invoices')),
+                        DropdownMenuItem(
+                          value: 'invoices',
+                          child: Text('Invoices'),
+                        ),
                         DropdownMenuItem(value: 'bills', child: Text('Bills')),
-                        DropdownMenuItem(value: 'expenses', child: Text('Expenses')),
-                        DropdownMenuItem(value: 'customers', child: Text('Customers')),
-                        DropdownMenuItem(value: 'vendors', child: Text('Vendors')),
+                        DropdownMenuItem(
+                          value: 'expenses',
+                          child: Text('Expenses'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'customers',
+                          child: Text('Customers'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'vendors',
+                          child: Text('Vendors'),
+                        ),
                         DropdownMenuItem(value: 'items', child: Text('Items')),
                         DropdownMenuItem(value: 'other', child: Text('Other')),
                       ],
@@ -282,7 +342,10 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
               ),
               child: _saving
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Upload Document', style: TextStyle(fontSize: 16)),
+                  : const Text(
+                      'Upload Document',
+                      style: TextStyle(fontSize: 16),
+                    ),
             ),
           ],
         ),

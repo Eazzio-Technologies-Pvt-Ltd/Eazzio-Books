@@ -80,6 +80,14 @@ class SalesOrdersNotifier extends AsyncNotifier<List<SalesOrder>> {
     ref.invalidateSelf();
     ref.invalidate(salesOrderDetailsProvider(id));
   }
+
+  /// Marks a sales order as sent/confirmed explicitly
+  Future<void> markAsSent(int id) async {
+    final service = ref.read(salesOrderServiceProvider);
+    await service.markSalesOrderAsSent(id);
+    ref.invalidateSelf();
+    ref.invalidate(salesOrderDetailsProvider(id));
+  }
 }
 
 final salesOrdersProvider =

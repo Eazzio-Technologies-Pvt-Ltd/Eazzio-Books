@@ -92,10 +92,22 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   }
 
   /// Sends a quote email via backend SMTP relay.
-  Future<void> sendEmail(int id, Map<String, dynamic> emailPayload) async {
+  Future<void> sendEmail(int id, {
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
     final service = ref.read(quoteServiceProvider);
-    await service.sendQuoteEmail(id, emailPayload);
+    await service.sendEmail(id, to: to, subject: subject, body: body);
     // After sending, the quote status may change to 'sent' on the backend
+    ref.invalidateSelf();
+    ref.invalidate(quoteDetailsProvider(id));
+  }
+
+  /// Marks a quote as sent explicitly
+  Future<void> markAsSent(int id) async {
+    final service = ref.read(quoteServiceProvider);
+    await service.markQuoteAsSent(id);
     ref.invalidateSelf();
     ref.invalidate(quoteDetailsProvider(id));
   }

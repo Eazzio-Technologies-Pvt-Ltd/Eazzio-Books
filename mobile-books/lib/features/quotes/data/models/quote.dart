@@ -1,3 +1,23 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class Quote {
   final int id;
   final int customerId;
@@ -12,6 +32,8 @@ class Quote {
   final int? salespersonId;
   final int? projectId;
   final int? organizationId;
+  final double? adjustment;
+  final String? discountType;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -29,15 +51,17 @@ class Quote {
     this.salespersonId,
     this.projectId,
     this.organizationId,
+    this.adjustment,
+    this.discountType,
     this.createdAt,
     this.updatedAt,
   });
 
   factory Quote.fromJson(Map<String, dynamic> json) {
     return Quote(
-      id: json['id'] as int,
-      customerId: json['customer_id'] as int? ?? json['customerId'] as int? ?? 0,
-      userId: json['user_id'] as int? ?? json['userId'] as int? ?? 0,
+      id: _parseInt(json['id']) ?? 0,
+      customerId: _parseInt(json['customer_id']) ?? _parseInt(json['customerId']) ?? 0,
+      userId: _parseInt(json['user_id']) ?? _parseInt(json['userId']) ?? 0,
       quoteNumber: json['quote_number'] as String? ?? json['quoteNumber'] as String? ?? 'DRAFT',
       quoteDate: json['quote_date'] != null
           ? DateTime.tryParse(json['quote_date'] as String) ?? DateTime.now()
@@ -46,10 +70,12 @@ class Quote {
       status: json['status'] as String? ?? 'draft',
       notes: json['notes'] as String?,
       terms: json['terms'] as String?,
-      totalAmount: (json['total_amount'] as num? ?? json['totalAmount'] as num? ?? 0.0).toDouble(),
-      salespersonId: json['salesperson_id'] as int? ?? json['salespersonId'] as int?,
-      projectId: json['project_id'] as int? ?? json['projectId'] as int?,
-      organizationId: json['organization_id'] as int? ?? json['organizationId'] as int?,
+      totalAmount: _parseDouble(json['total_amount'] ?? json['totalAmount']),
+      salespersonId: _parseInt(json['salesperson_id']) ?? _parseInt(json['salespersonId']),
+      projectId: _parseInt(json['project_id']) ?? _parseInt(json['projectId']),
+      organizationId: _parseInt(json['organization_id']) ?? _parseInt(json['organizationId']),
+      adjustment: json['adjustment'] != null ? _parseDouble(json['adjustment']) : null,
+      discountType: json['discount_type'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
     );
@@ -70,6 +96,8 @@ class Quote {
       'salesperson_id': salespersonId,
       'project_id': projectId,
       'organization_id': organizationId,
+      'adjustment': adjustment,
+      'discount_type': discountType,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -89,6 +117,8 @@ class Quote {
     int? salespersonId,
     int? projectId,
     int? organizationId,
+    double? adjustment,
+    String? discountType,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -106,6 +136,8 @@ class Quote {
       salespersonId: salespersonId ?? this.salespersonId,
       projectId: projectId ?? this.projectId,
       organizationId: organizationId ?? this.organizationId,
+      adjustment: adjustment ?? this.adjustment,
+      discountType: discountType ?? this.discountType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -1,3 +1,23 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class Payment {
   final int id;
   final int userId;
@@ -33,11 +53,11 @@ class Payment {
 
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
-      id: json['id'] as int,
-      userId: json['user_id'] as int? ?? json['userId'] as int? ?? 0,
-      invoiceId: json['invoice_id'] as int? ?? json['invoiceId'] as int? ?? 0,
-      customerId: json['customer_id'] as int? ?? json['customerId'] as int?,
-      amount: (json['amount'] as num? ?? 0.0).toDouble(),
+      id: _parseInt(json['id']) ?? 0,
+      userId: _parseInt(json['user_id']) ?? _parseInt(json['userId']) ?? 0,
+      invoiceId: _parseInt(json['invoice_id']) ?? _parseInt(json['invoiceId']) ?? 0,
+      customerId: _parseInt(json['customer_id']) ?? _parseInt(json['customerId']),
+      amount: _parseDouble(json['amount']),
       paymentDate: json['payment_date'] != null
           ? DateTime.tryParse(json['payment_date'] as String) ?? DateTime.now()
           : DateTime.now(),

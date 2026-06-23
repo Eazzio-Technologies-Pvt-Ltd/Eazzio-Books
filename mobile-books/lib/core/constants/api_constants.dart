@@ -1,6 +1,8 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConstants {
-  // Base URL: Use 10.0.2.2 for Android Emulator, localhost for iOS / Web
-  static const String baseUrl = 'http://10.0.2.2:5001';
+  // Base URL loaded dynamically from flutter_dotenv
+  static final String baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5001';
 
   // Auth endpoints
   static const String login = '/api/login';

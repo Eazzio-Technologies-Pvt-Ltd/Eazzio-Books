@@ -5,6 +5,9 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 
+import 'package:mobile_books/core/network/network_client.dart';
+import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+
 class VendorAgingScreen extends ConsumerStatefulWidget {
   const VendorAgingScreen({super.key});
 
@@ -37,6 +40,31 @@ class _VendorAgingScreenState extends ConsumerState<VendorAgingScreen> {
     }
   }
 
+  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTime? asOfDate) {
+    final df = DateFormat('yyyy-MM-dd');
+    final queryParams = <String>[];
+    if (asOfDate != null) {
+      queryParams.add('asOfDate=${df.format(asOfDate)}');
+    }
+    queryParams.add('format=${format.toLowerCase()}');
+    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+    final url = '$baseUrl/reports/vendor-aging?${queryParams.join('&')}';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Vendor Aging Export ${format.toUpperCase()} Link'),
+        content: SelectableText(url),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final reportState = ref.watch(vendorAgingReportProvider);
@@ -49,9 +77,22 @@ class _VendorAgingScreenState extends ConsumerState<VendorAgingScreen> {
       currentRoute: '/reports/vendor-aging',
       appBar: AppBar(
         title: const Text('Vendor Aging Summary'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.table_chart),
+            tooltip: "Export CSV",
+            onPressed: () => _showExportDialog(context, ref, 'CSV', asOfDate),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: "Export PDF",
+            onPressed: () => _showExportDialog(context, ref, 'PDF', asOfDate),
+          ),
+        ],
       ),
       body: Column(
         children: [
+          const ReportNavBar(currentRoute: '/reports/vendor-aging'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),

@@ -7,6 +7,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/accounting/data/models/journal_entry.dart';
 import 'package:mobile_books/features/accounting/presentation/providers/accounting_provider.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
+import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 
 class ManualJournalsScreen extends ConsumerWidget {
   const ManualJournalsScreen({super.key});
@@ -118,8 +119,9 @@ class ManualJournalsScreen extends ConsumerWidget {
                       if (journal.notes != null && journal.notes!.isNotEmpty)
                         Text(
                           journal.notes!,
-                          style: const TextStyle(fontSize: 12, overflow: TextOverflow.ellipsis),
-                          maxLines: 1,
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),
@@ -153,7 +155,10 @@ class ManualJournalsScreen extends ConsumerWidget {
               },
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => ListView.builder(
+            itemCount: 6,
+            itemBuilder: (context, index) => LoadingSkeleton.skeletonListItem(),
+          ),
           error: (err, _) => Center(child: Text('Error: $err')),
         ),
       ),

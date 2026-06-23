@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/sales_orders/presentation/providers/sales_order_provider.dart';
+import 'package:mobile_books/features/sales_orders/data/models/sales_order.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
@@ -26,19 +27,143 @@ _StatusStyle _getStatusStyle(String status) {
       const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
 }
 
-class SalesOrdersListScreen extends ConsumerWidget {
+class SalesOrdersListScreen extends ConsumerStatefulWidget {
   const SalesOrdersListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SalesOrdersListScreen> createState() => _SalesOrdersListScreenState();
+}
+
+class _SalesOrdersListScreenState extends ConsumerState<SalesOrdersListScreen> {
+  String _sortBy = 'date';
+  String _sortOrder = 'desc';
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(salesOrderSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<SalesOrder> _sortOrders(List<SalesOrder> list) {
+    final sorted = List<SalesOrder>.from(list);
+    sorted.sort((a, b) {
+      int cmp = 0;
+      switch (_sortBy) {
+        case 'number':
+          cmp = a.salesOrderNumber.toLowerCase().compareTo(b.salesOrderNumber.toLowerCase());
+          break;
+        case 'total':
+          cmp = a.total.compareTo(b.total);
+          break;
+        case 'status':
+          cmp = a.status.toLowerCase().compareTo(b.status.toLowerCase());
+          break;
+        case 'date':
+        default:
+          cmp = a.salesOrderDate.compareTo(b.salesOrderDate);
+          break;
+      }
+      return _sortOrder == 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }
+
+  void _showSortBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    children: [
+                      _sortOptionChip(setModalState, 'date', 'Date'),
+                      _sortOptionChip(setModalState, 'number', 'Order Number'),
+                      _sortOptionChip(setModalState, 'total', 'Total Amount'),
+                      _sortOptionChip(setModalState, 'status', 'Status'),
+                    ],
+                  ),
+                  const Divider(),
+                  const Text('Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Ascending'),
+                        selected: _sortOrder == 'asc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'asc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      ChoiceChip(
+                        label: const Text('Descending'),
+                        selected: _sortOrder == 'desc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'desc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sortOptionChip(StateSetter setModalState, String val, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _sortBy == val,
+      onSelected: (selected) {
+        if (selected) {
+          setModalState(() => _sortBy = val);
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final salesOrdersState = ref.watch(filteredSalesOrdersProvider);
     final filter = ref.watch(salesOrdersListFilterProvider);
-    final searchController = TextEditingController(text: ref.read(salesOrderSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/sales-orders',
       appBar: AppBar(
         title: const Text('Sales Orders'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: () => _showSortBottomSheet(context),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/sales-orders/new'),
@@ -101,7 +226,8 @@ class SalesOrdersListScreen extends ConsumerWidget {
               onRefresh: () => ref.read(salesOrdersProvider.notifier).refresh(),
               child: salesOrdersState.when(
                 data: (orders) {
-                  if (orders.isEmpty) {
+                  final sortedOrders = _sortOrders(orders);
+                  if (sortedOrders.isEmpty) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: const [
@@ -118,9 +244,9 @@ class SalesOrdersListScreen extends ConsumerWidget {
                   return ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-                    itemCount: orders.length,
+                    itemCount: sortedOrders.length,
                     itemBuilder: (context, index) {
-                      final order = orders[index];
+                      final order = sortedOrders[index];
                       final statusStyle = _getStatusStyle(order.status);
                       final formattedDate = DateFormat('dd MMM yyyy').format(order.salesOrderDate);
                       final formattedTotal = NumberFormat.currency(

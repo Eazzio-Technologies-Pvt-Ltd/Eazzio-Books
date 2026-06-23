@@ -90,9 +90,21 @@ class InvoicesNotifier extends AsyncNotifier<List<Invoice>> {
   }
 
   /// Sends an invoice email via backend SMTP relay.
-  Future<void> sendEmail(int id, Map<String, dynamic> emailPayload) async {
+  Future<void> sendEmail(int id, {
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
     final service = ref.read(invoiceServiceProvider);
-    await service.sendInvoiceEmail(id, emailPayload);
+    await service.sendEmail(id, to: to, subject: subject, body: body);
+    ref.invalidateSelf();
+    ref.invalidate(invoiceDetailsProvider(id));
+  }
+
+  /// Marks an invoice as sent explicitly
+  Future<void> markAsSent(int id) async {
+    final service = ref.read(invoiceServiceProvider);
+    await service.markInvoiceAsSent(id);
     ref.invalidateSelf();
     ref.invalidate(invoiceDetailsProvider(id));
   }

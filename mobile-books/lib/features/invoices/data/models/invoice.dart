@@ -1,3 +1,23 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class Invoice {
   final int id;
   final int customerId;
@@ -47,9 +67,9 @@ class Invoice {
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
     return Invoice(
-      id: json['id'] as int,
-      customerId: json['customer_id'] as int? ?? json['customerId'] as int? ?? 0,
-      userId: json['user_id'] as int? ?? json['userId'] as int? ?? 0,
+      id: _parseInt(json['id']) ?? 0,
+      customerId: _parseInt(json['customer_id']) ?? _parseInt(json['customerId']) ?? 0,
+      userId: _parseInt(json['user_id']) ?? _parseInt(json['userId']) ?? 0,
       invoiceNumber: json['invoice_number'] as String? ?? json['invoiceNumber'] as String? ?? 'DRAFT',
       invoiceDate: json['invoice_date'] != null
           ? DateTime.tryParse(json['invoice_date'] as String) ?? DateTime.now()
@@ -58,12 +78,12 @@ class Invoice {
       status: json['status'] as String? ?? 'draft',
       notes: json['notes'] as String?,
       terms: json['terms'] as String?,
-      totalAmount: (json['total_amount'] as num? ?? json['totalAmount'] as num? ?? 0.0).toDouble(),
-      balanceDue: (json['balance_due'] as num? ?? json['balanceDue'] as num? ?? 0.0).toDouble(),
-      salespersonId: json['salesperson_id'] as int? ?? json['salespersonId'] as int?,
-      projectId: json['project_id'] as int? ?? json['projectId'] as int?,
-      organizationId: json['organization_id'] as int? ?? json['organizationId'] as int?,
-      quoteId: json['quote_id'] as int? ?? json['quoteId'] as int?,
+      totalAmount: _parseDouble(json['total_amount'] ?? json['totalAmount']),
+      balanceDue: _parseDouble(json['balance_due'] ?? json['balanceDue']),
+      salespersonId: _parseInt(json['salesperson_id']) ?? _parseInt(json['salespersonId']),
+      projectId: _parseInt(json['project_id']) ?? _parseInt(json['projectId']),
+      organizationId: _parseInt(json['organization_id']) ?? _parseInt(json['organizationId']),
+      quoteId: _parseInt(json['quote_id']) ?? _parseInt(json['quoteId']),
       supplierState: json['supplier_state'] as String? ?? json['supplierState'] as String?,
       placeOfSupply: json['place_of_supply'] as String? ?? json['placeOfSupply'] as String?,
       customerGstin: json['customer_gstin'] as String? ?? json['customerGstin'] as String?,

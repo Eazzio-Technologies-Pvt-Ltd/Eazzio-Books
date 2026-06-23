@@ -7,8 +7,15 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/documents/data/models/document_model.dart';
 import 'package:mobile_books/features/documents/presentation/providers/document_provider.dart';
 
-class DocumentsListScreen extends ConsumerWidget {
+class DocumentsListScreen extends ConsumerStatefulWidget {
   const DocumentsListScreen({super.key});
+
+  @override
+  ConsumerState<DocumentsListScreen> createState() => _DocumentsListScreenState();
+}
+
+class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
+  late final TextEditingController _searchController;
 
   String _formatBytes(int? bytes) {
     if (bytes == null) return '0 B';
@@ -18,10 +25,22 @@ class DocumentsListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(documentSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final docsList = ref.watch(filteredDocumentsProvider);
     final docsState = ref.watch(documentsProvider);
-    final searchController = TextEditingController(text: ref.read(documentSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/documents',

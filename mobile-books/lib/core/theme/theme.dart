@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   // 60% Dominant: Backgrounds and neutral surfaces
@@ -40,10 +41,10 @@ class AppSpacing {
 
 class AppTheme {
   // Typography scale rules: max 4 sizes, 2 weights (Normal and Bold)
-  static const String fontFamily = 'Roboto';
+  static final String? fontFamily = GoogleFonts.inter().fontFamily;
 
   static TextTheme _buildTextTheme(Color primaryColor, Color secondaryColor) {
-    return TextTheme(
+    final base = TextTheme(
       // 1. Heading Large (e.g. Screen Title)
       headlineLarge: TextStyle(
         fontSize: 24.0,
@@ -52,31 +53,44 @@ class AppTheme {
       ),
       // 2. Title Medium (e.g. Card Title, Subsection Heading)
       titleMedium: TextStyle(
-        fontSize: 18.0,
+        fontSize: 16.0,
         fontWeight: FontWeight.bold,
         color: primaryColor,
       ),
       // 3. Body Large (e.g. Standard primary text)
       bodyLarge: TextStyle(
-        fontSize: 16.0,
+        fontSize: 14.0,
         fontWeight: FontWeight.normal,
         color: primaryColor,
       ),
       // 4. Body Small (e.g. Subtitles, metadata)
       bodySmall: TextStyle(
-        fontSize: 13.0,
+        fontSize: 12.0,
         fontWeight: FontWeight.normal,
         color: secondaryColor,
       ),
     );
+    return GoogleFonts.interTextTheme(base);
   }
+
+  static const _pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _FadeSlidePageTransitionsBuilder(),
+      TargetPlatform.iOS: _FadeSlidePageTransitionsBuilder(),
+      TargetPlatform.macOS: _FadeSlidePageTransitionsBuilder(),
+      TargetPlatform.windows: _FadeSlidePageTransitionsBuilder(),
+      TargetPlatform.linux: _FadeSlidePageTransitionsBuilder(),
+    },
+  );
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: fontFamily,
       primaryColor: AppColors.primaryBlue,
       scaffoldBackgroundColor: AppColors.backgroundLight,
+      pageTransitionsTheme: _pageTransitionsTheme,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primaryBlue,
         secondary: AppColors.textSecondaryLight,
@@ -115,11 +129,11 @@ class AppTheme {
           borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surfaceLight,
         elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.textPrimaryLight),
-        titleTextStyle: TextStyle(
+        iconTheme: const IconThemeData(color: AppColors.textPrimaryLight),
+        titleTextStyle: GoogleFonts.inter(
           fontSize: 18.0,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimaryLight,
@@ -132,8 +146,10 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamily: fontFamily,
       primaryColor: AppColors.primaryBlueDark,
       scaffoldBackgroundColor: AppColors.backgroundDark,
+      pageTransitionsTheme: _pageTransitionsTheme,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryBlueDark,
         secondary: AppColors.textSecondaryDark,
@@ -172,11 +188,11 @@ class AppTheme {
           borderSide: BorderSide(color: AppColors.primaryBlueDark, width: 2),
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surfaceDark,
         elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.textPrimaryDark),
-        titleTextStyle: TextStyle(
+        iconTheme: const IconThemeData(color: AppColors.textPrimaryDark),
+        titleTextStyle: GoogleFonts.inter(
           fontSize: 18.0,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimaryDark,
@@ -200,3 +216,27 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(() {
   return ThemeModeNotifier();
 });
+
+class _FadeSlidePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadeSlidePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.0, 0.05), // Subtle 5% slide up
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: child,
+      ),
+    );
+  }
+}

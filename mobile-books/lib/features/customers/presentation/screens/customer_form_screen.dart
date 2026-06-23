@@ -8,6 +8,7 @@ import 'package:mobile_books/features/customers/data/models/customer_address.dar
 import 'package:mobile_books/features/customers/data/models/customer_contact.dart';
 import 'package:mobile_books/features/customers/data/services/customer_service.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
+import 'package:mobile_books/widgets/common/unsaved_changes_dialog.dart';
 
 class CustomerFormScreen extends ConsumerStatefulWidget {
   final int? customerId;
@@ -63,6 +64,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
   bool get isEdit => widget.customerId != null;
   bool _isLoading = false;
   bool _isSaving = false;
+  bool _isSubmitted = false;
 
   // ---------- Basic fields ----------
   String _customerType = 'Business';
@@ -434,15 +436,16 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
         await ref.read(customersProvider.notifier).createCustomer(mockCustomer);
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isEdit ? 'Customer updated successfully' : 'Customer created successfully'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        context.pop();
-      }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isEdit ? 'Customer updated successfully' : 'Customer created successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          setState(() => _isSubmitted = true);
+          context.pop();
+        }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -468,10 +471,20 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        appBar: AppBar(
+    final hasUnsavedChanges = !_isSubmitted && (
+      _firstNameController.text.isNotEmpty ||
+      _lastNameController.text.isNotEmpty ||
+      _companyNameController.text.isNotEmpty ||
+      _displayNameController.text.isNotEmpty ||
+      _emailController.text.isNotEmpty
+    );
+
+    return UnsavedChangesWrapper(
+      hasChanges: hasUnsavedChanges,
+      child: DefaultTabController(
+        length: 4,
+        child: Scaffold(
+          appBar: AppBar(
           title: Text(isEdit ? 'Edit Customer' : 'New Customer'),
           bottom: const TabBar(
             isScrollable: true,
@@ -496,7 +509,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
         ),
         bottomNavigationBar: _buildBottomActions(context),
       ),
-    );
+    ));
   }
 
   Widget _buildBasicInfoTab() {

@@ -1,3 +1,13 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
 class AgingEntry {
   final int id;
   final String name;
@@ -21,7 +31,7 @@ class AgingEntry {
 
   factory AgingEntry.fromJson(Map<String, dynamic> json) {
     return AgingEntry(
-      id: json['customer_id'] as int? ?? json['vendor_id'] as int? ?? 0,
+      id: _parseInt(json['customer_id']) ?? _parseInt(json['vendor_id']) ?? 0,
       name: json['customer_name'] as String? ?? json['vendor_name'] as String? ?? '',
       current: (json['current'] as num?)?.toDouble() ?? 0.0,
       days1To30: (json['days_1_30'] as num?)?.toDouble() ?? 0.0,

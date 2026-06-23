@@ -8,18 +8,138 @@ import 'package:mobile_books/features/purchase_orders/data/models/purchase_order
 import 'package:mobile_books/features/purchase_orders/presentation/providers/purchase_order_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 
-class PurchaseOrdersListScreen extends ConsumerWidget {
+class PurchaseOrdersListScreen extends ConsumerStatefulWidget {
   const PurchaseOrdersListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PurchaseOrdersListScreen> createState() => _PurchaseOrdersListScreenState();
+}
+
+class _PurchaseOrdersListScreenState extends ConsumerState<PurchaseOrdersListScreen> {
+  String _sortBy = 'date';
+  String _sortOrder = 'desc';
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(purchaseOrderSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<PurchaseOrder> _sortPOs(List<PurchaseOrder> list) {
+    final sorted = List<PurchaseOrder>.from(list);
+    sorted.sort((a, b) {
+      int cmp = 0;
+      switch (_sortBy) {
+        case 'amount':
+          cmp = a.totalAmount.compareTo(b.totalAmount);
+          break;
+        case 'status':
+          cmp = a.status.toLowerCase().compareTo(b.status.toLowerCase());
+          break;
+        case 'date':
+        default:
+          cmp = a.purchaseOrderDate.compareTo(b.purchaseOrderDate);
+          break;
+      }
+      return _sortOrder == 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }
+
+  void _showSortBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    children: [
+                      _sortOptionChip(setModalState, 'date', 'Date'),
+                      _sortOptionChip(setModalState, 'amount', 'Amount'),
+                      _sortOptionChip(setModalState, 'status', 'Status'),
+                    ],
+                  ),
+                  const Divider(),
+                  const Text('Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Ascending'),
+                        selected: _sortOrder == 'asc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'asc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      ChoiceChip(
+                        label: const Text('Descending'),
+                        selected: _sortOrder == 'desc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'desc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sortOptionChip(StateSetter setModalState, String val, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _sortBy == val,
+      onSelected: (selected) {
+        if (selected) {
+          setModalState(() => _sortBy = val);
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final purchaseOrdersState = ref.watch(filteredPurchaseOrdersProvider);
-    final searchController = TextEditingController(text: ref.read(purchaseOrderSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/purchase-orders',
       appBar: AppBar(
         title: const Text('Purchase Orders'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: () => _showSortBottomSheet(context),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/purchase-orders/new'),
@@ -78,11 +198,12 @@ class PurchaseOrdersListScreen extends ConsumerWidget {
                       ],
                     );
                   }
+                  final sortedList = _sortPOs(list);
                   return ListView.builder(
                     padding: const EdgeInsets.all(AppSpacing.m),
-                    itemCount: list.length,
+                    itemCount: sortedList.length,
                     itemBuilder: (context, index) {
-                      final po = list[index];
+                      final po = sortedList[index];
                       return _PurchaseOrderCard(po: po);
                     },
                   );

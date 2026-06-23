@@ -7,6 +7,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/banking/data/models/bank_account.dart';
 import 'package:mobile_books/features/banking/data/services/banking_service.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
+import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 
 class BankAccountsScreen extends ConsumerWidget {
   const BankAccountsScreen({super.key});
@@ -37,35 +38,51 @@ class BankAccountsScreen extends ConsumerWidget {
                 children: [
                   TextFormField(
                     controller: accountNameController,
-                    decoration: const InputDecoration(labelText: 'Account Name *'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Account Name *',
+                    ),
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: AppSpacing.s),
                   TextFormField(
                     controller: bankNameController,
                     decoration: const InputDecoration(labelText: 'Bank Name *'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: AppSpacing.s),
                   TextFormField(
                     controller: accountNumberController,
-                    decoration: const InputDecoration(labelText: 'Account Number *'),
+                    decoration: const InputDecoration(
+                      labelText: 'Account Number *',
+                    ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: AppSpacing.s),
                   TextFormField(
                     controller: ifscCodeController,
                     decoration: const InputDecoration(labelText: 'IFSC Code *'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: AppSpacing.s),
                   TextFormField(
                     controller: openingBalanceController,
-                    decoration: const InputDecoration(labelText: 'Opening Balance'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))],
+                    decoration: const InputDecoration(
+                      labelText: 'Opening Balance',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -79,7 +96,8 @@ class BankAccountsScreen extends ConsumerWidget {
             ElevatedButton(
               onPressed: () async {
                 if (formKey.currentState?.validate() ?? false) {
-                  final openingBal = double.tryParse(openingBalanceController.text) ?? 0.0;
+                  final openingBal =
+                      double.tryParse(openingBalanceController.text) ?? 0.0;
                   final newAccount = BankAccount(
                     id: 0,
                     userId: 0,
@@ -92,18 +110,22 @@ class BankAccountsScreen extends ConsumerWidget {
                   );
 
                   try {
-                    await ref.read(bankAccountsProvider.notifier).createAccount(newAccount);
+                    await ref
+                        .read(bankAccountsProvider.notifier)
+                        .createAccount(newAccount);
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Bank account created successfully.')),
+                        const SnackBar(
+                          content: Text('Bank account created successfully.'),
+                        ),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   }
                 }
@@ -116,7 +138,11 @@ class BankAccountsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleDeleteAccount(BuildContext context, WidgetRef ref, BankAccount account) async {
+  Future<void> _handleDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+    BankAccount account,
+  ) async {
     // Show a loading dialog during transactions checking
     showDialog(
       context: context,
@@ -125,8 +151,13 @@ class BankAccountsScreen extends ConsumerWidget {
     );
 
     try {
-      final transactions = await ref.read(bankingServiceProvider).getTransactions(account.id);
-      if (context.mounted) Navigator.pop(context); // Dismiss loading spinner
+      final transactions = await ref
+          .read(bankingServiceProvider)
+          .getTransactions(account.id);
+      if (!context.mounted) return;
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // Dismiss loading spinner
+      }
 
       final hasReconciled = transactions.any((tx) => tx.isReconciled);
 
@@ -168,14 +199,20 @@ class BankAccountsScreen extends ConsumerWidget {
                     child: const Text('Cancel'),
                   ),
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                    ),
                     onPressed: () async {
                       Navigator.pop(context); // Close warning dialog
                       try {
-                        await ref.read(bankAccountsProvider.notifier).deleteAccount(account.id);
+                        await ref
+                            .read(bankAccountsProvider.notifier)
+                            .deleteAccount(account.id);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Bank account deleted.')),
+                            const SnackBar(
+                              content: Text('Bank account deleted.'),
+                            ),
                           );
                         }
                       } catch (e) {
@@ -186,7 +223,10 @@ class BankAccountsScreen extends ConsumerWidget {
                         }
                       }
                     },
-                    child: const Text('Permanently Delete', style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Permanently Delete',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               );
@@ -195,12 +235,13 @@ class BankAccountsScreen extends ConsumerWidget {
         }
       }
     } catch (e) {
-      if (context.mounted) {
+      if (!context.mounted) return;
+      if (Navigator.canPop(context)) {
         Navigator.pop(context); // Dismiss loading spinner
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to check account state: $e')),
-        );
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to check account state: $e')),
+      );
     }
   }
 
@@ -244,17 +285,28 @@ class BankAccountsScreen extends ConsumerWidget {
                     contentPadding: const EdgeInsets.all(AppSpacing.m),
                     title: Text(
                       account.accountName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: AppSpacing.xs),
-                        Text(account.bankName, style: const TextStyle(fontSize: 14)),
-                        Text('IFSC: ${account.ifscCode}', style: const TextStyle(fontSize: 12)),
+                        Text(
+                          account.bankName,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        Text(
+                          'IFSC: ${account.ifscCode}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         Text(
                           'A/C: ${_maskAccountNumber(account.accountNumber)}',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -262,7 +314,13 @@ class BankAccountsScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('Balance', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
+                        const Text(
+                          'Balance',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondaryLight,
+                          ),
+                        ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           privacyMode
@@ -277,14 +335,23 @@ class BankAccountsScreen extends ConsumerWidget {
                       ],
                     ),
                     onTap: () => context.push('/banking/${account.id}'),
-                    onLongPress: () => _handleDeleteAccount(context, ref, account),
+                    onLongPress: () =>
+                        _handleDeleteAccount(context, ref, account),
                   ),
                 );
               },
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('Error loading accounts: $err')),
+          loading: () => ListView.builder(
+            itemCount: 4,
+            padding: const EdgeInsets.all(AppSpacing.m),
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.m),
+              child: LoadingSkeleton.skeletonCard(height: 120),
+            ),
+          ),
+          error: (err, _) =>
+              Center(child: Text('Error loading accounts: $err')),
         ),
       ),
     );

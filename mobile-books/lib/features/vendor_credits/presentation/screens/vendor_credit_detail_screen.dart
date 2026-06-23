@@ -7,6 +7,7 @@ import 'package:mobile_books/features/vendor_credits/presentation/providers/vend
 import 'package:mobile_books/features/vendor_credits/data/services/vendor_credit_service.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/features/bills/presentation/providers/bill_provider.dart';
+import 'package:mobile_books/core/network/network_client.dart';
 
 class VendorCreditDetailScreen extends ConsumerStatefulWidget {
   final int vendorCreditId;
@@ -258,6 +259,28 @@ class _VendorCreditDetailScreenState extends ConsumerState<VendorCreditDetailScr
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vendor Credit Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: 'Export PDF',
+            onPressed: () {
+              final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Vendor Credit PDF Link'),
+                  content: SelectableText('$baseUrl/vendor-credits/${widget.vendorCreditId}/pdf'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _actionLoading
           ? const Center(child: CircularProgressIndicator())

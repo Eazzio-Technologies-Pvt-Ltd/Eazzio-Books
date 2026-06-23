@@ -65,9 +65,23 @@ class DeliveryChallansNotifier extends AsyncNotifier<List<DeliveryChallan>> {
     return invoiceId;
   }
 
-  Future<void> sendEmail(int id, Map<String, dynamic> emailPayload) async {
+  Future<void> sendEmail(int id, {
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
     final service = ref.read(deliveryChallanServiceProvider);
-    await service.sendDeliveryChallanEmail(id, emailPayload);
+    await service.sendEmail(id, to: to, subject: subject, body: body);
+    ref.invalidateSelf();
+    ref.invalidate(deliveryChallanDetailsProvider(id));
+  }
+
+  /// Marks a delivery challan as sent explicitly
+  Future<void> markAsSent(int id) async {
+    final service = ref.read(deliveryChallanServiceProvider);
+    await service.markDeliveryChallanAsSent(id);
+    ref.invalidateSelf();
+    ref.invalidate(deliveryChallanDetailsProvider(id));
   }
 }
 

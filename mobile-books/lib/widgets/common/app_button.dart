@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
 
 enum AppButtonVariant { primary, secondary, ghost }
@@ -50,6 +51,7 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
   void _handleTapDown(TapDownDetails details) {
     if (widget.onPressed != null && !widget.isLoading) {
       _animationController.forward();
+      HapticFeedback.lightImpact();
     }
   }
 

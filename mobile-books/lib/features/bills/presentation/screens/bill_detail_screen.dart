@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/bills/presentation/providers/bill_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
+import 'package:mobile_books/core/network/network_client.dart';
 
 class BillDetailScreen extends ConsumerWidget {
   final int billId;
@@ -20,6 +21,43 @@ class BillDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Bill Details'),
         actions: [
+          detailState.when(
+            data: (details) => Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  tooltip: 'Export PDF',
+                  onPressed: () {
+                    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Bill PDF Link'),
+                        content: SelectableText('$baseUrl/bills/$billId/pdf'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.email_outlined),
+                  tooltip: 'Email Statement',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Email coming soon for Bills')),
+                    );
+                  },
+                ),
+              ],
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
           detailState.when(
             data: (details) => IconButton(
               icon: const Icon(Icons.edit),

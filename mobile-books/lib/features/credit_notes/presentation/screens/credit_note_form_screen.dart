@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
+import 'package:mobile_books/features/items/data/models/item.dart';
+import 'package:mobile_books/features/invoices/data/models/invoice.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +14,7 @@ import 'package:mobile_books/features/credit_notes/data/models/credit_note.dart'
 import 'package:mobile_books/features/credit_notes/data/models/credit_note_item.dart';
 import 'package:mobile_books/features/credit_notes/presentation/providers/credit_note_provider.dart';
 import 'package:mobile_books/features/credit_notes/data/services/credit_note_service.dart';
+import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
@@ -52,11 +56,13 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
   bool _isInit = false;
 
   int? _customerId;
+  int? _invoiceId;
   DateTime _creditNoteDate = DateTime.now();
   final _refController = TextEditingController();
   final _reasonController = TextEditingController();
   final _notesController = TextEditingController();
   final _termsController = TextEditingController();
+  final _adjustmentController = TextEditingController(text: '0.0');
 
   String get _supplierState => ref.watch(organizationSettingsProvider).value?.state ?? 'Jharkhand';
   String _placeOfSupply = 'Jharkhand';
@@ -71,6 +77,7 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
     _reasonController.dispose();
     _notesController.dispose();
     _termsController.dispose();
+    _adjustmentController.dispose();
     super.dispose();
   }
 
@@ -88,11 +95,13 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
       final details = await ref.read(creditNoteServiceProvider).getCreditNoteById(widget.creditNoteId!);
       final cn = details.creditNote;
       _customerId = cn.customerId;
+      _invoiceId = cn.invoiceId;
       _creditNoteDate = cn.creditNoteDate;
       _refController.text = cn.referenceNumber ?? '';
       _reasonController.text = cn.reason ?? '';
       _notesController.text = cn.notes ?? '';
       _termsController.text = cn.termsConditions ?? '';
+      _adjustmentController.text = cn.adjustment?.toString() ?? '0.0';
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
@@ -138,7 +147,7 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
     );
   }
 
-  Future<void> _saveCreditNote() async {
+  Future<void> _saveCreditNote({bool sendImmediately = false}) async {
     if (!_formKey.currentState!.validate()) return;
     if (_customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -185,10 +194,12 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
       );
     }).toList();
 
+    final adj = double.tryParse(_adjustmentController.text) ?? 0.0;
     final cn = CreditNote(
       id: widget.creditNoteId ?? 0,
       userId: 0,
       customerId: _customerId,
+      invoiceId: _invoiceId,
       creditNoteNumber: '',
       creditNoteDate: _creditNoteDate,
       referenceNumber: _refController.text.trim().isEmpty ? null : _refController.text.trim(),
@@ -197,9 +208,10 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
       subtotal: calc.subtotal,
       discountTotal: calc.discountAmount,
       taxTotal: calc.totalTax,
-      total: calc.totalAmount,
+      total: calc.totalAmount + adj,
+      adjustment: adj,
       appliedAmount: 0.0,
-      remainingAmount: calc.totalAmount,
+      remainingAmount: calc.totalAmount + adj,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       termsConditions: _termsController.text.trim().isEmpty ? null : _termsController.text.trim(),
     );
@@ -210,12 +222,23 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
         updates['items'] = cnItems.map((i) => i.toJson()).toList();
         await ref.read(creditNotesProvider.notifier).updateCreditNote(widget.creditNoteId!, updates);
       } else {
-        await ref.read(creditNotesProvider.notifier).createCreditNote(cn, cnItems);
+        final created = await ref.read(creditNotesProvider.notifier).createCreditNote(cn, cnItems);
+        if (sendImmediately) {
+          final customersState = ref.read(customersProvider);
+          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final toEmail = customer?.email ?? '';
+          final emailPayload = {
+            'to': toEmail.isEmpty ? 'customer@example.com' : toEmail,
+            'subject': 'Credit Note #${created.creditNoteNumber} - issued',
+            'body': 'Dear Customer,\n\nPlease find your credit note statement attached in PDF.\n\nCredit Note Number: ${created.creditNoteNumber}\nTotal Amount: ₹${created.total.toStringAsFixed(2)}\n\nBest regards,',
+          };
+          await ref.read(creditNotesProvider.notifier).sendEmail(created.id, emailPayload);
+        }
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_isEditMode ? 'Credit Note updated successfully.' : 'Credit Note issued successfully.')),
+          SnackBar(content: Text(sendImmediately ? 'Credit Note saved & sent successfully.' : (_isEditMode ? 'Credit Note updated successfully.' : 'Credit Note issued successfully.'))),
         );
         context.pop();
       }
@@ -244,10 +267,17 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Credit Note' : 'New Credit Note'),
         actions: [
-          IconButton(
+          if (!_isEditMode)
+            TextButton.icon(
+              onPressed: (_isLoading || isLocked) ? null : () => _saveCreditNote(sendImmediately: true),
+              icon: const Icon(Icons.send_and_archive),
+              label: const Text('Save & Send'),
+            ),
+          TextButton.icon(
+            onPressed: (_isLoading || isLocked) ? null : () => _saveCreditNote(sendImmediately: false),
             icon: const Icon(Icons.check),
-            onPressed: (_isLoading || isLocked) ? null : _saveCreditNote,
-          )
+            label: Text(_isEditMode ? 'Save' : 'Save as Draft'),
+          ),
         ],
       ),
       body: _isLoading
@@ -268,26 +298,32 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                     data: (customers) => Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<int>(
-                            initialValue: _customerId,
-                            decoration: const InputDecoration(labelText: 'Customer *'),
-                            isExpanded: true,
-                            items: customers.map((c) {
+                          child: SearchableAutocompleteField<Customer>(
+                            labelText: 'Customer *',
+                            initialValue: customers.where((c) => c.id == _customerId).firstOrNull,
+                            items: customers,
+                            itemLabelBuilder: (c) {
                               final name = c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}'.trim();
-                              return DropdownMenuItem<int>(
-                                value: c.id,
-                                child: Text(name.isEmpty ? (c.email ?? 'Customer #${c.id}') : name),
-                              );
-                            }).toList(),
+                              return name.isNotEmpty ? name : (c.email ?? '');
+                            },
+                            searchMatcher: (c, query) {
+                              final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
+                              final email = (c.email ?? '').toLowerCase();
+                              final q = query.toLowerCase();
+                              return name.contains(q) || email.contains(q);
+                            },
                             onChanged: (val) {
                               setState(() {
-                                _customerId = val;
+                                _customerId = val?.id;
+                                _invoiceId = null;
                                 if (val != null) {
-                                  final cust = customers.firstWhere((c) => c.id == val);
-                                  _placeOfSupply = cust.billingState ?? 'Jharkhand';
+                                  _placeOfSupply = val.billingState ?? 'Jharkhand';
                                 }
                               });
                             },
+                            validator: (val) => val == null ? 'Customer is required' : null,
+                            onAddNew: _showAddCustomerDialog,
+                            addNewLabel: 'Add New Customer',
                           ),
                         ),
                         const SizedBox(width: AppSpacing.s),
@@ -299,6 +335,30 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.m),
+                  ref.watch(invoicesProvider).when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, s) => Text('Error loading invoices: $e'),
+                        data: (invoices) {
+                          final filteredInvoices = _customerId == null
+                              ? invoices
+                              : invoices.where((inv) => inv.customerId == _customerId).toList();
+                          return SearchableAutocompleteField<Invoice>(
+                            labelText: 'Invoice',
+                            initialValue: invoices.where((i) => i.id == _invoiceId).firstOrNull,
+                            items: filteredInvoices,
+                            itemLabelBuilder: (inv) => inv.invoiceNumber,
+                            searchMatcher: (inv, query) {
+                              return inv.invoiceNumber.toLowerCase().contains(query.toLowerCase());
+                            },
+                            onChanged: (val) {
+                              setState(() {
+                                _invoiceId = val?.id;
+                              });
+                            },
+                          );
+                        },
+                      ),
                   const SizedBox(height: AppSpacing.m),
                   // Date Picker
                   InkWell(
@@ -363,25 +423,28 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                             itemsState.when(
                               loading: () => const LinearProgressIndicator(),
                               error: (e, s) => Text('Error items: $e'),
-                              data: (items) => DropdownButtonFormField<int>(
-                                initialValue: li.itemId,
-                                decoration: InputDecoration(labelText: 'Select Item ${idx + 1}'),
-                                items: items.map((item) {
-                                  return DropdownMenuItem<int>(
-                                    value: item.id,
-                                    child: Text(item.name),
-                                  );
-                                }).toList(),
+                              data: (items) => SearchableAutocompleteField<Item>(
+                                labelText: 'Select Item ${idx + 1}',
+                                initialValue: items.where((i) => i.id == li.itemId).firstOrNull,
+                                items: items,
+                                itemLabelBuilder: (item) => item.name,
+                                searchMatcher: (item, query) {
+                                  return item.name.toLowerCase().contains(query.toLowerCase());
+                                },
                                 onChanged: (val) {
                                   setState(() {
-                                    li.itemId = val;
+                                    li.itemId = val?.id;
                                     if (val != null) {
-                                      final selected = items.firstWhere((i) => i.id == val);
+                                      final selected = items.firstWhere((i) => i.id == val.id);
                                       li.itemName = selected.name;
                                       li.rate = selected.sellingPrice;
+                                    } else {
+                                      li.itemName = '';
+                                      li.rate = 0.0;
                                     }
                                   });
                                 },
+                                validator: (val) => val == null ? 'Item is required' : null,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -478,8 +541,31 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                         Text('Subtotal: ₹${_calculations.subtotal.toStringAsFixed(2)}'),
                         Text('Discount: ₹${_calculations.discountAmount.toStringAsFixed(2)}'),
                         Text('GST Tax: ₹${_calculations.totalTax.toStringAsFixed(2)}'),
+                        const SizedBox(height: AppSpacing.s),
+                        SizedBox(
+                          width: 200,
+                          child: TextFormField(
+                            controller: _adjustmentController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Adjustment',
+                              hintText: 'e.g. +10.00 or -10.00',
+                            ),
+                            textAlign: TextAlign.end,
+                            onChanged: (_) => setState(() {}),
+                            validator: (val) {
+                              if (val != null && val.isNotEmpty) {
+                                if (double.tryParse(val) == null) {
+                                  return 'Invalid number';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.s),
                         Text(
-                          'Total Credit: ₹${_calculations.totalAmount.toStringAsFixed(2)}',
+                          'Total Credit: ₹${(_calculations.totalAmount + (double.tryParse(_adjustmentController.text) ?? 0.0)).toStringAsFixed(2)}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ],
@@ -496,10 +582,23 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                     decoration: const InputDecoration(labelText: 'Terms & Conditions'),
                   ),
                   const SizedBox(height: AppSpacing.xl),
+                  if (!_isEditMode) ...[
+                    ElevatedButton.icon(
+                      onPressed: (_isLoading || isLocked) ? null : () => _saveCreditNote(sendImmediately: true),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: AppColors.primaryBlue,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.send_and_archive),
+                      label: const Text('Save & Send'),
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                  ],
                   ElevatedButton(
-                    onPressed: _isLoading ? null : _saveCreditNote,
+                    onPressed: (_isLoading || isLocked) ? null : () => _saveCreditNote(sendImmediately: false),
                     style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-                    child: const Text('Save Credit Note'),
+                    child: Text(_isEditMode ? 'Update Credit Note' : 'Save as Draft'),
                   ),
                 ],
               ),

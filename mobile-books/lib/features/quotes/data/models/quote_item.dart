@@ -1,3 +1,23 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class QuoteItem {
   final int id;
   final int quoteId;
@@ -31,19 +51,19 @@ class QuoteItem {
 
   factory QuoteItem.fromJson(Map<String, dynamic> json) {
     return QuoteItem(
-      id: json['id'] as int,
-      quoteId: json['quote_id'] as int? ?? json['quoteId'] as int? ?? 0,
-      itemId: json['item_id'] as int? ?? json['itemId'] as int?,
+      id: _parseInt(json['id']) ?? 0,
+      quoteId: _parseInt(json['quote_id']) ?? _parseInt(json['quoteId']) ?? 0,
+      itemId: _parseInt(json['item_id']) ?? _parseInt(json['itemId']),
       itemName: json['item_name'] as String? ?? json['itemName'] as String?,
       hsnCode: json['hsn_code'] as String? ?? json['hsnCode'] as String?,
       unit: json['unit'] as String?,
       description: json['description'] as String?,
-      quantity: (json['quantity'] as num? ?? 1.0).toDouble(),
-      unitPrice: (json['unit_price'] as num? ?? json['unitPrice'] as num? ?? 0.0).toDouble(),
-      taxRate: (json['tax_rate'] as num? ?? json['taxRate'] as num? ?? 0.0).toDouble(),
-      discount: (json['discount'] as num? ?? 0.0).toDouble(),
+      quantity: _parseDouble(json['quantity']),
+      unitPrice: _parseDouble(json['unit_price'] ?? json['unitPrice']),
+      taxRate: _parseDouble(json['tax_rate'] ?? json['taxRate']),
+      discount: _parseDouble(json['discount']),
       discountType: json['discount_type'] as String? ?? json['discountType'] as String? ?? 'flat',
-      total: (json['total'] as num? ?? 0.0).toDouble(),
+      total: _parseDouble(json['total']),
     );
   }
 

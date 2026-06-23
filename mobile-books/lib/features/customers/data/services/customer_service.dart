@@ -22,7 +22,7 @@ class CustomerService {
   Future<List<Customer>> getCustomers({String? status}) async {
     try {
       final queryParams = <String, dynamic>{
-        'status': ?status,
+        'status': status,
       };
 
       final response = await _networkClient.get(

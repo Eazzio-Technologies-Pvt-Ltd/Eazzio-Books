@@ -283,6 +283,27 @@ class SalesOrderDetailScreen extends ConsumerWidget {
             appBar: AppBar(
               title: Text(order.salesOrderNumber),
               actions: [
+                if (order.status.toLowerCase() == 'draft')
+                  IconButton(
+                    icon: const Icon(Icons.mark_email_read_outlined),
+                    tooltip: 'Mark as Sent',
+                    onPressed: () async {
+                      try {
+                        await ref.read(salesOrdersProvider.notifier).markAsSent(salesOrderId);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Sales Order confirmed/marked as sent successfully.')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString()), backgroundColor: AppColors.danger),
+                          );
+                        }
+                      }
+                    },
+                  ),
                 IconButton(
                   icon: const Icon(Icons.email_outlined),
                   tooltip: 'Send Sales Order via Email',

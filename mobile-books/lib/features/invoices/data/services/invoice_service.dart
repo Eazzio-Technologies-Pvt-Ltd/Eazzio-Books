@@ -117,9 +117,16 @@ class InvoiceService {
   }
 
   /// Sends the invoice statement/PDF via email SMTP relay
-  Future<void> sendInvoiceEmail(int id, Map<String, dynamic> emailPayload) async {
+  Future<void> sendEmail(int id, {
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
     try {
-      await _networkClient.post('/invoices/$id/send', data: emailPayload);
+      await _networkClient.post(
+        '/invoices/$id/send',
+        data: {'to': to, 'subject': subject, 'body': body},
+      );
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to send invoice email.';
       throw InvoiceException(message);
@@ -188,6 +195,18 @@ class InvoiceService {
       return list.map((e) => Payment.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to fetch all payments.';
+      throw InvoiceException(message);
+    } catch (e) {
+      throw InvoiceException(e.toString());
+    }
+  }
+
+  /// Marks an invoice as sent in backend
+  Future<void> markInvoiceAsSent(int id) async {
+    try {
+      await _networkClient.patch('/invoices/$id/mark-sent');
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to mark invoice as sent.';
       throw InvoiceException(message);
     } catch (e) {
       throw InvoiceException(e.toString());

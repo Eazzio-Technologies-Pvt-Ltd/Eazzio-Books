@@ -1,3 +1,23 @@
+int? _parseInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    return int.tryParse(value) ?? double.tryParse(value)?.toInt();
+  }
+  return null;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class SalesOrder {
   final int id;
   final int customerId;
@@ -13,6 +33,7 @@ class SalesOrder {
   final double total;
   final int? salespersonId;
   final int? projectId;
+  final String? discountType;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -31,16 +52,17 @@ class SalesOrder {
     required this.total,
     this.salespersonId,
     this.projectId,
+    this.discountType,
     this.createdAt,
     this.updatedAt,
   });
 
   factory SalesOrder.fromJson(Map<String, dynamic> json) {
     return SalesOrder(
-      id: json['id'] as int,
-      customerId: json['customer_id'] as int? ?? json['customerId'] as int? ?? 0,
-      userId: json['user_id'] as int? ?? json['userId'] as int? ?? 0,
-      quoteId: json['quote_id'] as int? ?? json['quoteId'] as int?,
+      id: _parseInt(json['id']) ?? 0,
+      customerId: _parseInt(json['customer_id']) ?? _parseInt(json['customerId']) ?? 0,
+      userId: _parseInt(json['user_id']) ?? _parseInt(json['userId']) ?? 0,
+      quoteId: _parseInt(json['quote_id']) ?? _parseInt(json['quoteId']),
       salesOrderNumber: json['sales_order_number'] as String? ?? json['salesOrderNumber'] as String? ?? 'DRAFT',
       salesOrderDate: json['sales_order_date'] != null
           ? DateTime.tryParse(json['sales_order_date'] as String) ?? DateTime.now()
@@ -52,9 +74,10 @@ class SalesOrder {
       status: json['status'] as String? ?? 'draft',
       notes: json['notes'] as String?,
       terms: json['terms'] as String?,
-      total: (json['total'] as num? ?? 0.0).toDouble(),
-      salespersonId: json['salesperson_id'] as int? ?? json['salespersonId'] as int?,
-      projectId: json['project_id'] as int? ?? json['projectId'] as int?,
+      total: _parseDouble(json['total']),
+      salespersonId: _parseInt(json['salesperson_id']) ?? _parseInt(json['salespersonId']),
+      projectId: _parseInt(json['project_id']) ?? _parseInt(json['projectId']),
+      discountType: json['discount_type'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
     );
@@ -76,6 +99,7 @@ class SalesOrder {
       'total': total,
       'salesperson_id': salespersonId,
       'project_id': projectId,
+      'discount_type': discountType,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -96,6 +120,7 @@ class SalesOrder {
     double? total,
     int? salespersonId,
     int? projectId,
+    String? discountType,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -114,6 +139,7 @@ class SalesOrder {
       total: total ?? this.total,
       salespersonId: salespersonId ?? this.salespersonId,
       projectId: projectId ?? this.projectId,
+      discountType: discountType ?? this.discountType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

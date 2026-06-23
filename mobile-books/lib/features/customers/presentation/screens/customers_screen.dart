@@ -3,17 +3,140 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
-
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/features/customers/data/models/customer.dart';
+import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 
-class CustomersScreen extends ConsumerWidget {
+class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CustomersScreen> createState() => _CustomersScreenState();
+}
+
+class _CustomersScreenState extends ConsumerState<CustomersScreen> {
+  String _sortBy = 'date';
+  String _sortOrder = 'desc';
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(customerSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Customer> _sortCustomers(List<Customer> list) {
+    final sorted = List<Customer>.from(list);
+    sorted.sort((a, b) {
+      int cmp = 0;
+      switch (_sortBy) {
+        case 'amount':
+          cmp = a.openingBalance.compareTo(b.openingBalance);
+          break;
+        case 'status':
+          final statusA = a.isActive ? 'active' : 'inactive';
+          final statusB = b.isActive ? 'active' : 'inactive';
+          cmp = statusA.compareTo(statusB);
+          break;
+        case 'name':
+          cmp = a.formattedName.toLowerCase().compareTo(b.formattedName.toLowerCase());
+          break;
+        case 'date':
+        default:
+          final dateA = a.createdAt ?? DateTime(1970);
+          final dateB = b.createdAt ?? DateTime(1970);
+          cmp = dateA.compareTo(dateB);
+          break;
+      }
+      return _sortOrder == 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }
+
+  void _showSortBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    children: [
+                      _sortOptionChip(setModalState, 'date', 'Date'),
+                      _sortOptionChip(setModalState, 'amount', 'Amount'),
+                      _sortOptionChip(setModalState, 'status', 'Status'),
+                      _sortOptionChip(setModalState, 'name', 'Customer Name'),
+                    ],
+                  ),
+                  const Divider(),
+                  const Text('Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Ascending'),
+                        selected: _sortOrder == 'asc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'asc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      ChoiceChip(
+                        label: const Text('Descending'),
+                        selected: _sortOrder == 'desc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'desc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sortOptionChip(StateSetter setModalState, String val, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _sortBy == val,
+      onSelected: (selected) {
+        if (selected) {
+          setModalState(() => _sortBy = val);
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final customersState = ref.watch(filteredCustomersProvider);
     final filter = ref.watch(customersListFilterProvider);
-    final searchController = TextEditingController(text: ref.read(customerSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/customers',
@@ -47,6 +170,75 @@ class CustomersScreen extends ConsumerWidget {
                         },
                       )
                     : null,
+              ),
+            ),
+          ),
+
+          // Inline Sorting Chips
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.xs,
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  const Text(
+                    'Sort by: ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  ChoiceChip(
+                    label: const Text('Date'),
+                    selected: _sortBy == 'date',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'date');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ChoiceChip(
+                    label: const Text('Amount'),
+                    selected: _sortBy == 'amount',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'amount');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ChoiceChip(
+                    label: const Text('Status'),
+                    selected: _sortBy == 'status',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'status');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ChoiceChip(
+                    label: const Text('Name'),
+                    selected: _sortBy == 'name',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'name');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  IconButton(
+                    icon: Icon(
+                      _sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
+                      size: 18,
+                      color: AppColors.primaryBlue,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _sortOrder = _sortOrder == 'asc' ? 'desc' : 'asc';
+                      });
+                    },
+                    tooltip: _sortOrder == 'asc' ? 'Ascending' : 'Descending',
+                  ),
+                ],
               ),
             ),
           ),
@@ -90,17 +282,19 @@ class CustomersScreen extends ConsumerWidget {
               onRefresh: () => ref.read(customersProvider.notifier).refresh(),
               child: customersState.when(
                 data: (customers) {
-                  if (customers.isEmpty) {
+                  final sortedCustomers = _sortCustomers(customers);
+
+                  if (sortedCustomers.isEmpty) {
                     return const Center(
                       child: Text('No customers found.'),
                     );
                   }
                   return ListView.separated(
                     padding: const EdgeInsets.all(AppSpacing.m),
-                    itemCount: customers.length,
+                    itemCount: sortedCustomers.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final customer = customers[index];
+                      final customer = sortedCustomers[index];
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
                           vertical: AppSpacing.xs,
@@ -143,8 +337,9 @@ class CustomersScreen extends ConsumerWidget {
                     },
                   );
                 },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
+                loading: () => ListView.builder(
+                  itemCount: 6,
+                  itemBuilder: (context, index) => LoadingSkeleton.skeletonListItem(),
                 ),
                 error: (error, _) => Center(
                   child: Padding(

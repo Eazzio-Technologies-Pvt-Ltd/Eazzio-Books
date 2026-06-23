@@ -179,11 +179,30 @@ class DeliveryChallanService {
     }
   }
 
-  Future<void> sendDeliveryChallanEmail(int id, Map<String, dynamic> emailPayload) async {
+  Future<void> sendEmail(int id, {
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
     try {
-      await _networkClient.post('/delivery-challans/$id/send', data: emailPayload);
+      await _networkClient.post(
+        '/delivery-challans/$id/send',
+        data: {'to': to, 'subject': subject, 'body': body},
+      );
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to send delivery challan email.';
+      throw DeliveryChallanException(message);
+    } catch (e) {
+      throw DeliveryChallanException(e.toString());
+    }
+  }
+
+  /// Marks a delivery challan as sent in backend
+  Future<void> markDeliveryChallanAsSent(int id) async {
+    try {
+      await _networkClient.patch('/delivery-challans/$id/mark-sent');
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to mark delivery challan as sent.';
       throw DeliveryChallanException(message);
     } catch (e) {
       throw DeliveryChallanException(e.toString());

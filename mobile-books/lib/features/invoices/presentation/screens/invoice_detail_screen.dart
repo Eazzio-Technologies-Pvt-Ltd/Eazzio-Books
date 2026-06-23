@@ -279,94 +279,119 @@ class InvoiceDetailScreen extends ConsumerWidget {
             right: AppSpacing.m,
             top: AppSpacing.m,
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Send Invoice via Email',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: AppSpacing.m),
-                TextField(
-                  controller: toController,
-                  decoration: const InputDecoration(
-                    labelText: 'To *',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.m),
-                TextField(
-                  controller: subjectController,
-                  decoration: const InputDecoration(
-                    labelText: 'Subject *',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.m),
-                TextField(
-                  controller: bodyController,
-                  maxLines: 5,
-                  decoration: const InputDecoration(
-                    labelText: 'Message Body',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.l),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (toController.text.trim().isEmpty ||
-                            subjectController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please fill out recipient email and subject.'),
-                              backgroundColor: AppColors.danger,
-                            ),
-                          );
-                          return;
-                        }
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              bool isSending = false;
 
-                        try {
-                          await ref.read(invoicesProvider.notifier).sendEmail(
-                            invoiceId,
-                            {
-                              'to': toController.text,
-                              'subject': subjectController.text,
-                              'body': bodyController.text,
-                            },
-                          );
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Invoice email sent successfully!')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(e.toString()),
-                                  backgroundColor: AppColors.danger),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('Send Email'),
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Send Invoice via Email',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: AppSpacing.m),
+                    TextField(
+                      controller: toController,
+                      decoration: const InputDecoration(
+                        labelText: 'To *',
+                        border: OutlineInputBorder(),
+                      ),
+                      enabled: !isSending,
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    TextField(
+                      controller: subjectController,
+                      decoration: const InputDecoration(
+                        labelText: 'Subject *',
+                        border: OutlineInputBorder(),
+                      ),
+                      enabled: !isSending,
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                    TextField(
+                      controller: bodyController,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Message Body',
+                        border: OutlineInputBorder(),
+                      ),
+                      enabled: !isSending,
+                    ),
+                    const SizedBox(height: AppSpacing.l),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: isSending ? null : () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: AppSpacing.s),
+                        ElevatedButton(
+                          onPressed: isSending
+                              ? null
+                              : () async {
+                                  if (toController.text.trim().isEmpty ||
+                                      subjectController.text.trim().isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Please fill out recipient email and subject.'),
+                                        backgroundColor: AppColors.danger,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  setModalState(() {
+                                    isSending = true;
+                                  });
+
+                                  try {
+                                    await ref.read(invoicesProvider.notifier).sendEmail(
+                                      invoiceId,
+                                      to: toController.text.trim(),
+                                      subject: subjectController.text.trim(),
+                                      body: bodyController.text.trim(),
+                                    );
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Invoice email sent successfully!')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    setModalState(() {
+                                      isSending = false;
+                                    });
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                            content: Text(e.toString()),
+                                            backgroundColor: AppColors.danger),
+                                      );
+                                    }
+                                  }
+                                },
+                          child: isSending
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Send Email'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.l),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.l),
-              ],
-            ),
+              );
+            },
           ),
         );
       },
@@ -389,6 +414,27 @@ class InvoiceDetailScreen extends ConsumerWidget {
               final invoice = details.invoice;
               return Row(
                 children: [
+                  if (invoice.status.toLowerCase() == 'draft')
+                    IconButton(
+                      icon: const Icon(Icons.mark_email_read_outlined),
+                      tooltip: 'Mark as Sent',
+                      onPressed: () async {
+                        try {
+                          await ref.read(invoicesProvider.notifier).markAsSent(invoiceId);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Invoice marked as sent successfully.')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString()), backgroundColor: AppColors.danger),
+                            );
+                          }
+                        }
+                      },
+                    ),
                   IconButton(
                     icon: const Icon(Icons.email_outlined),
                     tooltip: 'Email Statement',

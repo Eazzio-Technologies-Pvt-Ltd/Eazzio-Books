@@ -5,8 +5,27 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/projects/presentation/providers/project_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 
-class ProjectsListScreen extends ConsumerWidget {
+class ProjectsListScreen extends ConsumerStatefulWidget {
   const ProjectsListScreen({super.key});
+
+  @override
+  ConsumerState<ProjectsListScreen> createState() => _ProjectsListScreenState();
+}
+
+class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(projectSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Color _statusColor(String status) {
     switch (status) {
@@ -24,9 +43,9 @@ class ProjectsListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final projectsState = ref.watch(filteredProjectsProvider);
-    final searchController = TextEditingController(text: ref.read(projectSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/projects',

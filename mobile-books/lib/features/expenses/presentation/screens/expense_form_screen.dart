@@ -59,9 +59,13 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   Future<void> _loadExpenseData() async {
     setState(() => _isLoading = true);
     try {
-      final expense = await ref.read(expenseDetailsProvider(widget.expenseId!).future);
+      final expense = await ref.read(
+        expenseDetailsProvider(widget.expenseId!).future,
+      );
       _vendorId = expense.vendorId;
-      _category = _categories.contains(expense.category) ? expense.category : 'Other Expenses';
+      _category = _categories.contains(expense.category)
+          ? expense.category
+          : 'Other Expenses';
       _amountController.text = expense.amount.toString();
       _descriptionController.text = expense.description ?? '';
       _refController.text = expense.reference ?? '';
@@ -71,7 +75,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading expense: $e'), backgroundColor: AppColors.danger),
+        SnackBar(
+          content: Text('Error loading expense: $e'),
+          backgroundColor: AppColors.danger,
+        ),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -151,10 +158,9 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
 
       setState(() => _isLoading = true);
 
-      final serverPath = await ref.read(expensesProvider.notifier).uploadReceipt(
-        filePath,
-        fileName,
-      );
+      final serverPath = await ref
+          .read(expensesProvider.notifier)
+          .uploadReceipt(filePath, fileName);
 
       setState(() {
         _attachmentUrlController.text = serverPath;
@@ -168,8 +174,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     } on PlatformException catch (e) {
       if (mounted) {
         String errMsg = 'Permission denied or picker error.';
-        if (e.code == 'photo_access_denied' || e.code == 'camera_access_denied') {
-          errMsg = 'Access denied. Please enable camera/storage permissions in settings.';
+        if (e.code == 'photo_access_denied' ||
+            e.code == 'camera_access_denied') {
+          errMsg =
+              'Access denied. Please enable camera/storage permissions in settings.';
         } else if (e.message != null) {
           errMsg = e.message!;
         }
@@ -180,7 +188,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -201,18 +212,23 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       category: _category,
       amount: double.tryParse(_amountController.text.trim()) ?? 0.0,
       expenseDate: _expenseDate,
-      description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
-      reference: _refController.text.trim().isEmpty ? null : _refController.text.trim(),
-      attachmentUrl: _attachmentUrlController.text.trim().isEmpty ? null : _attachmentUrlController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      reference: _refController.text.trim().isEmpty
+          ? null
+          : _refController.text.trim(),
+      attachmentUrl: _attachmentUrlController.text.trim().isEmpty
+          ? null
+          : _attachmentUrlController.text.trim(),
       status: _status,
     );
 
     try {
       if (_isEdit) {
-        await ref.read(expensesProvider.notifier).updateExpense(
-          widget.expenseId!,
-          expense.toJson(),
-        );
+        await ref
+            .read(expensesProvider.notifier)
+            .updateExpense(widget.expenseId!, expense.toJson());
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Expense updated successfully.')),
@@ -229,7 +245,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving expense: $e'), backgroundColor: AppColors.danger),
+        SnackBar(
+          content: Text('Error saving expense: $e'),
+          backgroundColor: AppColors.danger,
+        ),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -240,14 +259,15 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   Widget build(BuildContext context) {
     final vendorsState = ref.watch(vendorsProvider);
 
-    final isLocked = ref.watch(transactionLockValidatorProvider).isLocked(
-          module: TransactionLockModule.expenses,
-          date: _expenseDate,
-        );
+    final isLocked = ref
+        .watch(transactionLockValidatorProvider)
+        .isLocked(module: TransactionLockModule.expenses, date: _expenseDate);
 
     if (_isLoading && _isEdit) {
       return Scaffold(
-        appBar: AppBar(title: Text(_isEdit ? 'Edit Expense' : 'Record Expense')),
+        appBar: AppBar(
+          title: Text(_isEdit ? 'Edit Expense' : 'Record Expense'),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -282,14 +302,21 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                       Expanded(
                         child: DropdownButtonFormField<int>(
                           initialValue: _vendorId,
-                          decoration: const InputDecoration(labelText: 'Vendor'),
+                          decoration: const InputDecoration(
+                            labelText: 'Vendor',
+                          ),
                           isExpanded: true,
                           items: [
-                            const DropdownMenuItem<int>(value: null, child: Text('No Vendor')),
-                            ...vendors.map((v) => DropdownMenuItem<int>(
-                                  value: v.id,
-                                  child: Text(v.displayName),
-                                )),
+                            const DropdownMenuItem<int>(
+                              value: null,
+                              child: Text('No Vendor'),
+                            ),
+                            ...vendors.map(
+                              (v) => DropdownMenuItem<int>(
+                                value: v.id,
+                                child: Text(v.displayName),
+                              ),
+                            ),
                           ],
                           onChanged: (val) {
                             setState(() => _vendorId = val);
@@ -299,7 +326,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                       const SizedBox(width: AppSpacing.s),
                       IconButton(
                         onPressed: _showAddVendorDialog,
-                        icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                        icon: const Icon(
+                          Icons.person_add,
+                          color: AppColors.primaryBlue,
+                        ),
                         tooltip: 'Add Vendor',
                       ),
                     ],
@@ -310,12 +340,11 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                 // Category Dropdown
                 DropdownButtonFormField<String>(
                   initialValue: _category,
-                  decoration: const InputDecoration(labelText: 'Expense Category *'),
+                  decoration: const InputDecoration(
+                    labelText: 'Expense Category *',
+                  ),
                   items: _categories.map((c) {
-                    return DropdownMenuItem<String>(
-                      value: c,
-                      child: Text(c),
-                    );
+                    return DropdownMenuItem<String>(value: c, child: Text(c));
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
@@ -328,10 +357,16 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                 // Amount
                 TextFormField(
                   controller: _amountController,
-                  decoration: const InputDecoration(labelText: 'Amount *', prefixText: '₹ '),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Amount *',
+                    prefixText: '₹ ',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Amount is required';
+                    if (value == null || value.trim().isEmpty)
+                      return 'Amount is required';
                     final amt = double.tryParse(value);
                     if (amt == null || amt <= 0) return 'Enter a valid amount';
                     return null;
@@ -353,7 +388,9 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                     }
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Expense Date'),
+                    decoration: const InputDecoration(
+                      labelText: 'Expense Date',
+                    ),
                     child: Text(DateFormat('dd MMM yyyy').format(_expenseDate)),
                   ),
                 ),
@@ -377,7 +414,9 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
 
                 TextFormField(
                   controller: _refController,
-                  decoration: const InputDecoration(labelText: 'Reference Number'),
+                  decoration: const InputDecoration(
+                    labelText: 'Reference Number',
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.m),
 
@@ -413,8 +452,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               ],
             ),
           ),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );
@@ -480,9 +518,15 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   id: 0,
                   userId: 0,
                   displayName: nameCtrl.text.trim(),
-                  companyName: companyCtrl.text.trim().isEmpty ? null : companyCtrl.text.trim(),
-                  email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
+                  companyName: companyCtrl.text.trim().isEmpty
+                      ? null
+                      : companyCtrl.text.trim(),
+                  email: emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim().isEmpty
+                      ? null
+                      : phoneCtrl.text.trim(),
                   openingBalance: 0.0,
                   status: 'active',
                 );

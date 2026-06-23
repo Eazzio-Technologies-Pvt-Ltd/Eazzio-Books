@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+
+import 'package:mobile_books/core/network/network_client.dart';
 
 class BalanceSheetScreen extends ConsumerWidget {
   const BalanceSheetScreen({super.key});
@@ -30,6 +33,31 @@ class BalanceSheetScreen extends ConsumerWidget {
     }
   }
 
+  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTime? endDate) {
+    final df = DateFormat('yyyy-MM-dd');
+    final queryParams = <String>[];
+    if (endDate != null) {
+      queryParams.add('endDate=${df.format(endDate)}');
+    }
+    queryParams.add('format=${format.toLowerCase()}');
+    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+    final url = '$baseUrl/reports/balance-sheet?${queryParams.join('&')}';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Balance Sheet Export ${format.toUpperCase()} Link'),
+        content: SelectableText(url),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportState = ref.watch(balanceSheetReportProvider);
@@ -42,9 +70,22 @@ class BalanceSheetScreen extends ConsumerWidget {
       currentRoute: '/reports/balance-sheet',
       appBar: AppBar(
         title: const Text('Balance Sheet'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.table_chart),
+            tooltip: "Export CSV",
+            onPressed: () => _showExportDialog(context, ref, 'CSV', endDate),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: "Export PDF",
+            onPressed: () => _showExportDialog(context, ref, 'PDF', endDate),
+          ),
+        ],
       ),
       body: Column(
         children: [
+          const ReportNavBar(currentRoute: '/reports/balance-sheet'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -89,10 +130,26 @@ class BalanceSheetScreen extends ConsumerWidget {
             ),
           ),
 
-          // Balance Sheet sections
           Expanded(
             child: reportState.when(
               data: (report) {
+                if (report.assets.accounts.isEmpty &&
+                    report.liabilities.accounts.isEmpty &&
+                    report.equity.accounts.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      child: Text(
+                        'No records',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textSecondaryLight,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  );
+                }
                 return ListView(
                   padding: const EdgeInsets.all(AppSpacing.m),
                   children: [

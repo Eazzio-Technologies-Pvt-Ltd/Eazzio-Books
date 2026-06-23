@@ -7,8 +7,9 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/dashboard/data/models/bank_account.dart';
 import 'package:mobile_books/features/dashboard/data/models/dashboard_summary.dart';
 import 'package:mobile_books/features/dashboard/presentation/providers/dashboard_provider.dart';
-
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/widgets/common/exit_confirmation_dialog.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -20,6 +21,96 @@ class DashboardScreen extends ConsumerWidget {
       decimalDigits: 2,
     );
     return format.format(amount);
+  }
+
+  Widget _buildDashboardSkeleton(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width <= 768;
+    final width = MediaQuery.of(context).size.width;
+    final double childAspectRatio = isMobile ? (width < 360 ? 1.05 : 1.3) : 1.5;
+    final double metricsAspectRatio = isMobile ? (width < 360 ? 1.35 : 1.7) : 2.0;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Stat cards grid skeleton
+          GridView.count(
+            crossAxisCount: isMobile ? 2 : 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: AppSpacing.s,
+            mainAxisSpacing: AppSpacing.s,
+            childAspectRatio: childAspectRatio,
+            children: List.generate(4, (index) => LoadingSkeleton.skeletonCard(height: 100)),
+          ),
+          const SizedBox(height: AppSpacing.l),
+
+          // 2. Month Overview Header skeleton
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 150,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              Container(
+                width: 120,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s),
+
+          // 3. Monthly Metrics grid skeleton
+          GridView.count(
+            crossAxisCount: isMobile ? 2 : 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: AppSpacing.s,
+            mainAxisSpacing: AppSpacing.s,
+            childAspectRatio: metricsAspectRatio,
+            children: List.generate(4, (index) => LoadingSkeleton.skeletonCard(height: 70)),
+          ),
+          const SizedBox(height: AppSpacing.l),
+
+          // 4. Projections skeleton
+          if (isMobile) ...[
+            LoadingSkeleton.skeletonCard(height: 110),
+            const SizedBox(height: AppSpacing.s),
+            LoadingSkeleton.skeletonCard(height: 110),
+            const SizedBox(height: AppSpacing.s),
+            LoadingSkeleton.skeletonCard(height: 140),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(child: LoadingSkeleton.skeletonCard(height: 110)),
+                const SizedBox(width: AppSpacing.s),
+                Expanded(child: LoadingSkeleton.skeletonCard(height: 110)),
+                const SizedBox(width: AppSpacing.s),
+                Expanded(child: LoadingSkeleton.skeletonCard(height: 140)),
+              ],
+            ),
+          ],
+          const SizedBox(height: AppSpacing.l),
+
+          // 5. Chart 1 skeleton
+          LoadingSkeleton.skeletonCard(height: 250),
+          const SizedBox(height: AppSpacing.l),
+
+          // 6. Chart 2 skeleton
+          LoadingSkeleton.skeletonCard(height: 250),
+        ],
+      ),
+    );
   }
 
   @override
@@ -38,107 +129,108 @@ class DashboardScreen extends ConsumerWidget {
       currentRoute: '/dashboard',
       appBar: AppBar(
         title: const Text('Financial Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.read(dashboardSummaryProvider.notifier).refresh();
-              ref.invalidate(projectedPaymentsProvider);
-              ref.invalidate(projectedExpensesProvider);
-            },
-          ),
-        ],
       ),
-      body: summaryState.when(
-        data: (summary) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.m),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. STAT CARDS (RECEIVABLES, PAYABLES, INCOME, EXPENSES)
-                _buildStatCards(context, summary.topSummary),
-                const SizedBox(height: AppSpacing.l),
-
-                // 2. MONTHLY FILTER BAR
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Monthly Overview',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    Row(
-                      children: [
-                        DropdownButton<int>(
-                          value: selectedMonth,
-                          onChanged: (val) {
-                            if (val != null) {
-                              ref.read(dashboardMonthProvider.notifier).state = val;
-                            }
-                          },
-                          items: List.generate(12, (index) {
-                            return DropdownMenuItem(
-                              value: index + 1,
-                              child: Text(monthNames[index]),
-                            );
-                          }),
-                        ),
-                        const SizedBox(width: AppSpacing.s),
-                        DropdownButton<int>(
-                          value: selectedYear,
-                          onChanged: (val) {
-                            if (val != null) {
-                              ref.read(dashboardYearProvider.notifier).state = val;
-                            }
-                          },
-                          items: yearsList.map((y) {
-                            return DropdownMenuItem(
-                              value: y,
-                              child: Text(y.toString()),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.s),
-
-                // 3. MONTHLY METRICS GRID
-                _buildMonthlyMetricsGrid(context, summary.selectedMonth),
-                const SizedBox(height: AppSpacing.l),
-
-                // 4. PROJECTIONS AND EXPECTED SURPLUS
-                _buildProjectionsSection(context),
-                const SizedBox(height: AppSpacing.l),
-
-                // 5. CASH FLOW LINE CHART (Last 12 months)
-                _buildCashFlowChart(context, summary.chartData.cashFlowYearly),
-                const SizedBox(height: AppSpacing.l),
-
-                // 6. INCOME VS EXPENSE BAR CHART (Last 6 months)
-                _buildBarChart(context, summary.chartData.incomeExpense6Months),
-                const SizedBox(height: AppSpacing.l),
-
-                // 7. EXPENSES BY CATEGORY AND BANK ACCOUNTS (Row on large screens, Column on mobile)
-                _buildBottomLists(context, summary.chartData),
-              ],
-            ),
-          );
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(dashboardSummaryProvider.notifier).refresh();
+          ref.invalidate(projectedPaymentsProvider);
+          ref.invalidate(projectedExpensesProvider);
         },
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.all(AppSpacing.xxl),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Text(
-              'Error loading dashboard metrics: $error',
-              style: const TextStyle(color: AppColors.danger),
+        child: summaryState.when(
+          data: (summary) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildQuickActions(context),
+                  const SizedBox(height: AppSpacing.l),
+                  // 1. STAT CARDS (RECEIVABLES, PAYABLES, INCOME, EXPENSES)
+                  _buildStatCards(context, summary.topSummary),
+                  const SizedBox(height: AppSpacing.l),
+
+                  // 2. MONTHLY FILTER BAR
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AppSpacing.s,
+                    runSpacing: AppSpacing.s,
+                    children: [
+                      Text(
+                        'Monthly Overview',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          DropdownButton<int>(
+                            value: selectedMonth,
+                            onChanged: (val) {
+                              if (val != null) {
+                                ref.read(dashboardMonthProvider.notifier).state = val;
+                              }
+                            },
+                            items: List.generate(12, (index) {
+                              return DropdownMenuItem(
+                                value: index + 1,
+                                child: Text(monthNames[index]),
+                              );
+                            }),
+                          ),
+                          const SizedBox(width: AppSpacing.s),
+                          DropdownButton<int>(
+                            value: selectedYear,
+                            onChanged: (val) {
+                              if (val != null) {
+                                ref.read(dashboardYearProvider.notifier).state = val;
+                              }
+                            },
+                            items: yearsList.map((y) {
+                              return DropdownMenuItem(
+                                value: y,
+                                child: Text(y.toString()),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+
+                  // 3. MONTHLY METRICS GRID
+                  _buildMonthlyMetricsGrid(context, summary.selectedMonth),
+                  const SizedBox(height: AppSpacing.l),
+
+                  // 4. PROJECTIONS AND EXPECTED SURPLUS
+                  _buildProjectionsSection(context),
+                  const SizedBox(height: AppSpacing.l),
+
+                  // 5. CASH FLOW LINE CHART (Last 12 months)
+                  _buildCashFlowChart(context, summary.chartData.cashFlowYearly),
+                  const SizedBox(height: AppSpacing.l),
+
+                  // 6. INCOME VS EXPENSE BAR CHART (Last 6 months)
+                  _buildBarChart(context, summary.chartData.incomeExpense6Months),
+                  const SizedBox(height: AppSpacing.l),
+
+                  // 7. EXPENSES BY CATEGORY AND BANK ACCOUNTS (Row on large screens, Column on mobile)
+                  _buildBottomLists(context, summary.chartData),
+                ],
+              ),
+            );
+          },
+          loading: () => _buildDashboardSkeleton(context),
+          error: (error, _) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Text(
+                'Error loading dashboard metrics: $error',
+                style: const TextStyle(color: AppColors.danger),
+              ),
             ),
           ),
         ),
@@ -156,7 +248,7 @@ class DashboardScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: AppSpacing.s,
           mainAxisSpacing: AppSpacing.s,
-          childAspectRatio: 1.4,
+          childAspectRatio: constraints.maxWidth > 600 ? 1.5 : (constraints.maxWidth < 360 ? 1.05 : 1.3),
           children: [
             _buildStatCard(
               context,
@@ -241,17 +333,20 @@ class DashboardScreen extends ConsumerWidget {
                   child: Text(
                     title,
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            Text(
-              _formatCurrency(context, amount),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _formatCurrency(context, amount),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                maxLines: 1,
+              ),
             ),
             Text(
               sub,
@@ -273,7 +368,7 @@ class DashboardScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: AppSpacing.s,
           mainAxisSpacing: AppSpacing.s,
-          childAspectRatio: 1.8,
+          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : (constraints.maxWidth < 360 ? 1.35 : 1.7),
           children: [
             _buildMetricCard(context, 'INCOME', selected.incomeReceived, const Color(0xFF059669)),
             _buildMetricCard(context, 'EXPENSES', selected.expenses, const Color(0xFFDC2626)),
@@ -299,11 +394,14 @@ class DashboardScreen extends ConsumerWidget {
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
             ),
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              _formatCurrency(context, value),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: valueColor),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _formatCurrency(context, value),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: valueColor),
+                maxLines: 1,
+              ),
             ),
           ],
         ),
@@ -423,7 +521,28 @@ class DashboardScreen extends ConsumerWidget {
         final expensesAsync = ref.watch(projectedExpensesProvider);
 
         if (paymentsAsync.isLoading || expensesAsync.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          final isMobile = MediaQuery.of(context).size.width <= 768;
+          if (isMobile) {
+            return Column(
+              children: [
+                LoadingSkeleton.skeletonCard(height: 110),
+                const SizedBox(height: AppSpacing.s),
+                LoadingSkeleton.skeletonCard(height: 110),
+                const SizedBox(height: AppSpacing.s),
+                LoadingSkeleton.skeletonCard(height: 140),
+              ],
+            );
+          } else {
+            return Row(
+              children: [
+                Expanded(child: LoadingSkeleton.skeletonCard(height: 110)),
+                const SizedBox(width: AppSpacing.s),
+                Expanded(child: LoadingSkeleton.skeletonCard(height: 110)),
+                const SizedBox(width: AppSpacing.s),
+                Expanded(child: LoadingSkeleton.skeletonCard(height: 140)),
+              ],
+            );
+          }
         }
 
         if (paymentsAsync.hasError || expensesAsync.hasError) {
@@ -787,6 +906,77 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    final actions = [
+      {'label': 'Invoice', 'icon': Icons.description_outlined, 'path': '/invoices/new'},
+      {'label': 'Quote', 'icon': Icons.request_quote_outlined, 'path': '/quotes/new'},
+      {'label': 'Customer', 'icon': Icons.people_outline, 'path': '/customers/new'},
+      {'label': 'Item', 'icon': Icons.inventory_2_outlined, 'path': '/items/new'},
+      {'label': 'Bill', 'icon': Icons.receipt_long_outlined, 'path': '/bills/new'},
+      {'label': 'Expense', 'icon': Icons.shopping_bag_outlined, 'path': '/expenses/new'},
+      {'label': 'Journal', 'icon': Icons.calculate_outlined, 'path': '/accounting/journals/new'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quick Actions',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 98,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: actions.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final act = actions[index];
+              return InkWell(
+                onTap: () => context.push(act['path'] as String),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 80,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        act['icon'] as IconData,
+                        color: AppColors.primaryBlue,
+                        size: 24,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        act['label'] as String,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

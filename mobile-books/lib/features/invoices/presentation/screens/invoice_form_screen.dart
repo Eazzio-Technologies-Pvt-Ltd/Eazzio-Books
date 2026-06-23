@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -511,7 +512,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   }
 
   // ─── Save ──────────────────────────────────────────────────
-  Future<void> _saveInvoice(String status) async {
+  Future<void> _saveInvoice(String status, {bool sendImmediately = false}) async {
     if (!_formKey.currentState!.validate()) return;
     if (_customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -612,10 +613,23 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           context.pop();
         }
       } else {
-        await ref.read(invoicesProvider.notifier).createInvoice(invoice, items);
+        final created = await ref.read(invoicesProvider.notifier).createInvoice(invoice, items);
+
+        if (sendImmediately) {
+          final customersState = ref.read(customersProvider);
+          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final toEmail = customer?.email ?? '';
+          await ref.read(invoicesProvider.notifier).sendEmail(
+            created.id,
+            to: toEmail.isEmpty ? 'customer@example.com' : toEmail,
+            subject: 'Tax Invoice ${created.invoiceNumber}',
+            body: 'Dear Customer,\n\nPlease find your tax invoice attached.\n\nInvoice Number: ${created.invoiceNumber}\nTotal: ₹${created.totalAmount.toStringAsFixed(2)}\nBalance Due: ₹${created.balanceDue.toStringAsFixed(2)}\n\nThank you for your business.',
+          );
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invoice created successfully')),
+            SnackBar(content: Text(sendImmediately ? 'Invoice saved & sent successfully' : 'Invoice created successfully')),
           );
           context.pop();
         }
@@ -656,11 +670,19 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Invoice' : 'New Invoice'),
         actions: [
-          if (!_isLoading)
-            IconButton(
+          if (!_isLoading) ...[
+            if (!_isEditMode)
+              TextButton.icon(
+                onPressed: isLocked ? null : () => _saveInvoice('draft', sendImmediately: true),
+                icon: const Icon(Icons.send_and_archive),
+                label: const Text('Save & Send'),
+              ),
+            TextButton.icon(
+              onPressed: isLocked ? null : () => _saveInvoice(_isEditMode ? 'sent' : 'draft', sendImmediately: false),
               icon: const Icon(Icons.check),
-              onPressed: isLocked ? null : () => _saveInvoice(_isEditMode ? 'sent' : 'draft'),
+              label: const Text('Save'),
             ),
+          ]
         ],
       ),
       body: _isLoading
@@ -690,18 +712,28 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                               return Row(
                                 children: [
                                   Expanded(
-                                    child: DropdownButtonFormField<int>(
-                                      decoration: const InputDecoration(labelText: 'Customer *'),
-                                      initialValue: _customerId,
-                                      items: list.map((c) {
+                                    child: SearchableAutocompleteField<Customer>(
+                                      labelText: 'Customer *',
+                                      initialValue: list.where((c) => c.id == _customerId).firstOrNull,
+                                      items: list,
+                                      itemLabelBuilder: (c) {
                                         final name = c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}'.trim();
-                                        return DropdownMenuItem<int>(
-                                          value: c.id,
-                                          child: Text(name.isNotEmpty ? name : (c.email ?? '')),
-                                        );
-                                      }).toList(),
-                                      onChanged: (val) => setState(() => _customerId = val),
+                                        return name.isNotEmpty ? name : (c.email ?? '');
+                                      },
+                                      searchMatcher: (c, query) {
+                                        final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
+                                        final email = (c.email ?? '').toLowerCase();
+                                        final q = query.toLowerCase();
+                                        return name.contains(q) || email.contains(q);
+                                      },
+                                      onChanged: (val) {
+                                        setState(() {
+                                          _customerId = val?.id;
+                                        });
+                                      },
                                       validator: (val) => val == null ? 'Customer is required' : null,
+                                      onAddNew: _showAddCustomerDialog,
+                                      addNewLabel: 'Add New Customer',
                                     ),
                                   ),
                                   const SizedBox(width: AppSpacing.s),
@@ -968,18 +1000,16 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           children: [
             Expanded(
               flex: 3,
-              child: DropdownButtonFormField<int>(
-                decoration: const InputDecoration(labelText: 'Item'),
-                initialValue: li.itemId,
-                items: itemList.map((i) {
-                  return DropdownMenuItem<int>(
-                    value: i.id,
-                    child: Text(i.name),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    final item = itemList.firstWhere((i) => i.id == val);
+              child: SearchableAutocompleteField<Item>(
+                labelText: 'Item',
+                initialValue: itemList.where((i) => i.id == li.itemId).firstOrNull,
+                items: itemList,
+                itemLabelBuilder: (i) => i.name,
+                searchMatcher: (i, query) {
+                  return i.name.toLowerCase().contains(query.toLowerCase());
+                },
+                onChanged: (item) {
+                  if (item != null) {
                     setState(() {
                       li.itemId = item.id;
                       li.itemName = item.name;
@@ -989,8 +1019,19 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       li.unit = item.unit ?? '';
                       li.description = item.description ?? '';
                     });
+                  } else {
+                    setState(() {
+                      li.itemId = null;
+                      li.itemName = '';
+                      li.unitPrice = 0.0;
+                      li.taxRate = 0.0;
+                      li.hsnCode = '';
+                      li.unit = '';
+                      li.description = '';
+                    });
                   }
                 },
+                validator: (val) => val == null ? 'Item is required' : null,
               ),
             ),
             const SizedBox(width: AppSpacing.s),

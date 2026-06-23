@@ -36,7 +36,6 @@ import 'package:mobile_books/features/delivery_challans/presentation/screens/del
 import 'package:mobile_books/features/recurring_invoices/presentation/screens/recurring_invoices_list_screen.dart';
 import 'package:mobile_books/features/recurring_invoices/presentation/screens/recurring_invoice_form_screen.dart';
 import 'package:mobile_books/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:mobile_books/features/reports/presentation/screens/reports_center_screen.dart';
 import 'package:mobile_books/features/reports/presentation/screens/trial_balance_screen.dart';
 import 'package:mobile_books/features/reports/presentation/screens/pnl_screen.dart';
 import 'package:mobile_books/features/reports/presentation/screens/balance_sheet_screen.dart';
@@ -185,7 +184,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/inventory',
-        redirect: (context, state) => '/inventory/movements',
+        redirect: (context, state) {
+          if (state.matchedLocation == '/inventory') {
+            return '/inventory/movements';
+          }
+          return null;
+        },
         routes: [
           GoRoute(
             path: 'stock',
@@ -334,7 +338,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/reports',
-        builder: (context, state) => const ReportsCenterScreen(),
+        redirect: (context, state) {
+          if (state.matchedLocation == '/reports') {
+            return '/reports/profit-loss';
+          }
+          return null;
+        },
         routes: [
           GoRoute(
             path: 'trial-balance',

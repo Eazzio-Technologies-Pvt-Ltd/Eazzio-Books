@@ -159,6 +159,18 @@ class CreditNoteService {
       throw CreditNoteException(e.toString());
     }
   }
+
+  /// Marks a credit note as sent in backend
+  Future<void> markCreditNoteAsSent(int id) async {
+    try {
+      await _networkClient.patch('/credit-notes/$id/mark-sent');
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to mark credit note as sent.';
+      throw CreditNoteException(message);
+    } catch (e) {
+      throw CreditNoteException(e.toString());
+    }
+  }
 }
 
 final creditNoteServiceProvider = Provider<CreditNoteService>((ref) {

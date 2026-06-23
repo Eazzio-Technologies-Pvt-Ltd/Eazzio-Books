@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_assets.dart';
 import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/app_button.dart';
@@ -82,10 +83,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             )
                           ],
                         ),
-                        child: const Icon(
-                          Icons.menu_book_rounded,
-                          color: Colors.white,
-                          size: 38,
+                        alignment: Alignment.center,
+                        child: AppAssets.walletLogo(
+                          width: 38,
+                          height: 38,
                         ),
                       ),
                       const SizedBox(height: 16),

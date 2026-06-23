@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
+import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +12,8 @@ import 'package:mobile_books/features/delivery_challans/data/models/delivery_cha
 import 'package:mobile_books/features/delivery_challans/data/models/delivery_challan_item.dart';
 import 'package:mobile_books/features/delivery_challans/presentation/providers/delivery_challan_provider.dart';
 import 'package:mobile_books/features/delivery_challans/data/services/delivery_challan_service.dart';
+import 'package:mobile_books/features/sales_orders/presentation/providers/sales_order_provider.dart';
+import 'package:mobile_books/features/sales_orders/data/models/sales_order.dart';
 
 class _LineItem {
   int? itemId;
@@ -45,12 +49,14 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
   bool _isInit = false;
 
   int? _customerId;
+  int? _salesOrderId;
   DateTime _challanDate = DateTime.now();
   DateTime? _deliveryDate;
   final _addressController = TextEditingController();
   final _refController = TextEditingController();
   final _notesController = TextEditingController();
   final _termsController = TextEditingController();
+  final _adjustmentController = TextEditingController();
 
   List<_LineItem> _lineItems = [_LineItem()];
 
@@ -62,6 +68,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
     _refController.dispose();
     _notesController.dispose();
     _termsController.dispose();
+    _adjustmentController.dispose();
     super.dispose();
   }
 
@@ -79,12 +86,14 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
       final details = await ref.read(deliveryChallanServiceProvider).getDeliveryChallanById(widget.challanId!);
       final dc = details.deliveryChallan;
       _customerId = dc.customerId;
+      _salesOrderId = dc.salesOrderId;
       _challanDate = dc.challanDate;
       _deliveryDate = dc.deliveryDate;
       _addressController.text = dc.deliveryAddress ?? '';
       _refController.text = dc.referenceNumber ?? '';
       _notesController.text = dc.notes ?? '';
       _termsController.text = dc.termsConditions ?? '';
+      _adjustmentController.text = dc.adjustment?.toString() ?? '';
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
@@ -110,7 +119,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
     }
   }
 
-  Future<void> _saveChallan() async {
+  Future<void> _saveChallan({bool sendImmediately = false}) async {
     if (!_formKey.currentState!.validate()) return;
     if (_customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -143,12 +152,13 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
       id: widget.challanId ?? 0,
       userId: 0,
       customerId: _customerId,
-      salesOrderId: widget.convertFromSalesOrderId,
+      salesOrderId: _salesOrderId ?? widget.convertFromSalesOrderId,
       deliveryChallanNumber: '',
       challanDate: _challanDate,
       deliveryDate: _deliveryDate,
       deliveryAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       referenceNumber: _refController.text.trim().isEmpty ? null : _refController.text.trim(),
+      adjustment: double.tryParse(_adjustmentController.text),
       status: 'Draft',
       stockReduced: false,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
@@ -160,15 +170,33 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
         final Map<String, dynamic> updates = dc.toJson();
         updates['items'] = dcItems.map((i) => i.toJson()).toList();
         await ref.read(deliveryChallansProvider.notifier).updateDeliveryChallan(widget.challanId!, updates);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Delivery Challan updated successfully.')),
+          );
+          context.pop();
+        }
       } else {
-        await ref.read(deliveryChallansProvider.notifier).createDeliveryChallan(dc, dcItems);
-      }
+        final created = await ref.read(deliveryChallansProvider.notifier).createDeliveryChallan(dc, dcItems);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_isEditMode ? 'Delivery Challan updated successfully.' : 'Delivery Challan issued successfully.')),
-        );
-        context.pop();
+        if (sendImmediately) {
+          final customersState = ref.read(customersProvider);
+          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final toEmail = customer?.email ?? '';
+          await ref.read(deliveryChallansProvider.notifier).sendEmail(
+            created.id,
+            to: toEmail.isEmpty ? 'customer@example.com' : toEmail,
+            subject: 'Delivery Challan ${created.deliveryChallanNumber}',
+            body: 'Dear Customer,\n\nPlease find your Delivery Challan attached.\n\nDelivery Challan Number: ${created.deliveryChallanNumber}\n\nThank you for your business.',
+          );
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(sendImmediately ? 'Delivery Challan saved & sent successfully.' : 'Delivery Challan issued successfully.')),
+          );
+          context.pop();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -190,10 +218,24 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Delivery Challan' : 'New Delivery Challan'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _isLoading ? null : _saveChallan,
-          )
+          if (!_isEditMode)
+            TextButton.icon(
+              onPressed: _isLoading ? null : () => _saveChallan(sendImmediately: true),
+              icon: const Icon(Icons.send_and_archive),
+              label: const Text('Save & Send'),
+            ),
+          TextButton.icon(
+            onPressed: _isLoading ? null : () => _saveChallan(sendImmediately: false),
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primaryBlue),
+                  )
+                : const Icon(Icons.save),
+            label: Text(_isLoading ? 'Saving...' : 'Save'),
+          ),
         ],
       ),
       body: _isLoading
@@ -209,26 +251,32 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                     data: (customers) => Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<int>(
-                            initialValue: _customerId,
-                            decoration: const InputDecoration(labelText: 'Customer *'),
-                            isExpanded: true,
-                            items: customers.map((c) {
+                          child: SearchableAutocompleteField<Customer>(
+                            labelText: 'Customer *',
+                            initialValue: customers.where((c) => c.id == _customerId).firstOrNull,
+                            items: customers,
+                            itemLabelBuilder: (c) {
                               final name = c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}'.trim();
-                              return DropdownMenuItem<int>(
-                                value: c.id,
-                                child: Text(name.isEmpty ? (c.email ?? 'Customer #${c.id}') : name),
-                              );
-                            }).toList(),
+                              return name.isNotEmpty ? name : (c.email ?? '');
+                            },
+                            searchMatcher: (c, query) {
+                              final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
+                              final email = (c.email ?? '').toLowerCase();
+                              final q = query.toLowerCase();
+                              return name.contains(q) || email.contains(q);
+                            },
                             onChanged: (val) {
                               setState(() {
-                                _customerId = val;
+                                _customerId = val?.id;
+                                _salesOrderId = null;
                                 if (val != null) {
-                                  final cust = customers.firstWhere((c) => c.id == val);
-                                  _addressController.text = cust.billingAddress ?? '';
+                                  _addressController.text = val.billingAddress ?? '';
                                 }
                               });
                             },
+                            validator: (val) => val == null ? 'Customer is required' : null,
+                            onAddNew: _showAddCustomerDialog,
+                            addNewLabel: 'Add New Customer',
                           ),
                         ),
                         const SizedBox(width: AppSpacing.s),
@@ -240,6 +288,30 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                       ],
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.m),
+                  ref.watch(salesOrdersProvider).when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, s) => Text('Error loading sales orders: $e'),
+                        data: (salesOrders) {
+                          final filteredOrders = _customerId == null
+                              ? salesOrders
+                              : salesOrders.where((so) => so.customerId == _customerId).toList();
+                          return SearchableAutocompleteField<SalesOrder>(
+                            labelText: 'Sales Order',
+                            initialValue: salesOrders.where((so) => so.id == _salesOrderId).firstOrNull,
+                            items: filteredOrders,
+                            itemLabelBuilder: (so) => so.salesOrderNumber,
+                            searchMatcher: (so, query) {
+                              return so.salesOrderNumber.toLowerCase().contains(query.toLowerCase());
+                            },
+                            onChanged: (val) {
+                              setState(() {
+                                _salesOrderId = val?.id;
+                              });
+                            },
+                          );
+                        },
+                      ),
                   const SizedBox(height: AppSpacing.m),
                   Row(
                     children: [
@@ -334,26 +406,30 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                             itemsState.when(
                               loading: () => const LinearProgressIndicator(),
                               error: (e, s) => Text('Error loading products: $e'),
-                              data: (items) => DropdownButtonFormField<int>(
-                                initialValue: li.itemId,
-                                decoration: InputDecoration(labelText: 'Select Item ${idx + 1}'),
-                                items: items.map((item) {
-                                  return DropdownMenuItem<int>(
-                                    value: item.id,
-                                    child: Text(item.name),
-                                  );
-                                }).toList(),
+                              data: (items) => SearchableAutocompleteField<Item>(
+                                labelText: 'Select Item ${idx + 1}',
+                                initialValue: items.where((i) => i.id == li.itemId).firstOrNull,
+                                items: items,
+                                itemLabelBuilder: (item) => item.name,
+                                searchMatcher: (item, query) {
+                                  return item.name.toLowerCase().contains(query.toLowerCase());
+                                },
                                 onChanged: (val) {
                                   setState(() {
-                                    li.itemId = val;
+                                    li.itemId = val?.id;
                                     if (val != null) {
-                                      final selected = items.firstWhere((i) => i.id == val);
+                                      final selected = items.firstWhere((i) => i.id == val.id);
                                       li.itemName = selected.name;
                                       li.unit = selected.unit ?? 'pcs';
                                       li.rate = selected.sellingPrice;
+                                    } else {
+                                      li.itemName = '';
+                                      li.unit = 'pcs';
+                                      li.rate = 0.0;
                                     }
                                   });
                                 },
+                                validator: (val) => val == null ? 'Item is required' : null,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -396,6 +472,23 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                       ),
                     );
                   }),
+                  const SizedBox(height: AppSpacing.m),
+                  TextFormField(
+                    controller: _adjustmentController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Adjustment',
+                      hintText: 'e.g. 10.00 or -10.00',
+                    ),
+                    validator: (val) {
+                      if (val != null && val.isNotEmpty) {
+                        if (double.tryParse(val) == null) {
+                          return 'Please enter a valid number';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: AppSpacing.m),
                   TextFormField(
                     controller: _notesController,

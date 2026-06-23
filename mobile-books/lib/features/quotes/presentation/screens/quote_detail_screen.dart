@@ -145,7 +145,6 @@ class QuoteDetailScreen extends ConsumerWidget {
   void _showSendEmailSheet(
       BuildContext context, WidgetRef ref, Quote quote) {
     final toController = TextEditingController();
-    final ccController = TextEditingController();
     final subjectController = TextEditingController();
     final bodyController = TextEditingController();
 
@@ -180,6 +179,8 @@ class QuoteDetailScreen extends ConsumerWidget {
       }
     });
 
+    bool isSending = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -193,141 +194,155 @@ class QuoteDetailScreen extends ConsumerWidget {
           top: AppSpacing.m,
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom + AppSpacing.m,
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Email Composer',
-                    style: Theme.of(sheetContext)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Email Composer',
+                        style: Theme.of(sheetContext)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: isSending ? null : () => Navigator.pop(sheetContext),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(sheetContext),
+                  const SizedBox(height: AppSpacing.m),
+                  TextField(
+                    controller: toController,
+                    decoration: const InputDecoration(
+                      labelText: 'To *',
+                      hintText: 'recipient@example.com',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    enabled: !isSending,
                   ),
+                  const SizedBox(height: AppSpacing.m),
+                  TextField(
+                    controller: subjectController,
+                    decoration: const InputDecoration(
+                      labelText: 'Subject *',
+                      prefixIcon: Icon(Icons.subject),
+                    ),
+                    enabled: !isSending,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  TextField(
+                    controller: bodyController,
+                    decoration: const InputDecoration(
+                      labelText: 'Message Body',
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 8,
+                    enabled: !isSending,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.s),
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundLight,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_file_rounded, color: AppColors.primaryBlue),
+                        const SizedBox(width: AppSpacing.s),
+                        Expanded(
+                          child: Text(
+                            'Quote PDF Statement Attached',
+                            style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpacing.m),
+                      ),
+                      icon: isSending
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send),
+                      label: isSending ? const Text('Sending...') : const Text('✉️ Send Email'),
+                      onPressed: isSending
+                          ? null
+                          : () async {
+                              if (toController.text.trim().isEmpty || subjectController.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please enter recipient email and subject.'),
+                                    backgroundColor: AppColors.warning,
+                                  ),
+                                );
+                                return;
+                              }
+                              setModalState(() {
+                                isSending = true;
+                              });
+                              try {
+                                await ref
+                                    .read(quotesProvider.notifier)
+                                    .sendEmail(quoteId,
+                                  to: toController.text.trim(),
+                                  subject: subjectController.text.trim(),
+                                  body: bodyController.text.trim(),
+                                );
+                                if (context.mounted) {
+                                  Navigator.pop(sheetContext);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Email sent & quote marked as sent')),
+                                  );
+                                }
+                              } catch (e) {
+                                setModalState(() {
+                                  isSending = false;
+                                });
+                                if (sheetContext.mounted) {
+                                  ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                    SnackBar(
+                                        content: Text(e.toString()),
+                                        backgroundColor: AppColors.danger),
+                                  );
+                                }
+                              }
+                            },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s),
                 ],
               ),
-              const SizedBox(height: AppSpacing.m),
-              TextField(
-                controller: toController,
-                decoration: const InputDecoration(
-                  labelText: 'To *',
-                  hintText: 'recipient@example.com',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: AppSpacing.m),
-              TextField(
-                controller: ccController,
-                decoration: const InputDecoration(
-                  labelText: 'CC',
-                  hintText: 'cc@example.com',
-                  prefixIcon: Icon(Icons.copy_rounded),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: AppSpacing.m),
-              TextField(
-                controller: subjectController,
-                decoration: const InputDecoration(
-                  labelText: 'Subject *',
-                  prefixIcon: Icon(Icons.subject),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              TextField(
-                controller: bodyController,
-                decoration: const InputDecoration(
-                  labelText: 'Message Body',
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 8,
-              ),
-              const SizedBox(height: AppSpacing.m),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.s),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundLight,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.borderLight),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.attach_file_rounded, color: AppColors.primaryBlue),
-                    const SizedBox(width: AppSpacing.s),
-                    Expanded(
-                      child: Text(
-                        'Quote PDF Statement Attached',
-                        style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                      ),
-                    ),
-                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.l),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSpacing.m),
-                  ),
-                  icon: const Icon(Icons.send),
-                  label: const Text('✉️ Send Email'),
-                  onPressed: () async {
-                    if (toController.text.trim().isEmpty || subjectController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter recipient email and subject.'),
-                          backgroundColor: AppColors.warning,
-                        ),
-                      );
-                      return;
-                    }
-                    try {
-                      await ref
-                          .read(quotesProvider.notifier)
-                          .sendEmail(quoteId, {
-                        'to': toController.text.trim(),
-                        'cc': ccController.text.trim(),
-                        'subject': subjectController.text.trim(),
-                        'body': bodyController.text.trim(),
-                      });
-                      if (sheetContext.mounted) {
-                        Navigator.pop(sheetContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Email sent & quote marked as sent')),
-                        );
-                      }
-                    } catch (e) {
-                      if (sheetContext.mounted) {
-                        ScaffoldMessenger.of(sheetContext).showSnackBar(
-                          SnackBar(
-                              content: Text(e.toString()),
-                              backgroundColor: AppColors.danger),
-                        );
-                      }
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: AppSpacing.s),
-            ],
-          ),
+            );
+          }
         ),
       ),
     );
@@ -347,11 +362,33 @@ class QuoteDetailScreen extends ConsumerWidget {
         final canConvert = !isInvoiced && !isDeclined;
 
         return DefaultTabController(
-          length: 2,
+          length: 3,
           child: Scaffold(
             appBar: AppBar(
               title: Text(quote.quoteNumber),
               actions: [
+                // Mark as Sent action
+                if (quote.status.toLowerCase() == 'draft')
+                  IconButton(
+                    icon: const Icon(Icons.mark_email_read_outlined),
+                    tooltip: 'Mark as Sent',
+                    onPressed: () async {
+                      try {
+                        await ref.read(quotesProvider.notifier).markAsSent(quoteId);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Quote marked as sent successfully.')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString()), backgroundColor: AppColors.danger),
+                          );
+                        }
+                      }
+                    },
+                  ),
                 // Send email action
                 IconButton(
                   icon: const Icon(Icons.email_outlined),
@@ -390,6 +427,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                 tabs: [
                   Tab(text: 'Overview'),
                   Tab(text: 'Items'),
+                  Tab(text: 'Activity Logs'),
                 ],
               ),
             ),
@@ -397,6 +435,7 @@ class QuoteDetailScreen extends ConsumerWidget {
               children: [
                 _OverviewTab(quote: quote, style: style),
                 _ItemsTab(items: items, quote: quote),
+                _ActivityLogsTab(quote: quote),
               ],
             ),
           ),
@@ -903,6 +942,108 @@ class _QuoteItemCard extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+  }
+}
+
+class _ActivityLogsTab extends StatelessWidget {
+  final Quote quote;
+
+  const _ActivityLogsTab({required this.quote});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.m),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Activity History',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.m),
+              _buildTimelineTile(
+                context,
+                title: 'Quote marked as ${quote.status.toUpperCase()}',
+                subtitle: 'Status changed in the system',
+                time: 'Today',
+                isLast: false,
+              ),
+              _buildTimelineTile(
+                context,
+                title: 'Quote Created',
+                subtitle: 'Quote ${quote.quoteNumber} generated',
+                time: quote.createdAt != null 
+                    ? DateFormat('dd MMM yyyy').format(quote.createdAt!.toLocal())
+                    : DateFormat('dd MMM yyyy').format(quote.quoteDate),
+                isLast: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String time,
+    required bool isLast,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: const BoxDecoration(
+                color: AppColors.primaryBlue,
+                shape: BoxShape.circle,
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 40,
+                color: AppColors.borderLight,
+              ),
+          ],
+        ),
+        const SizedBox(width: AppSpacing.m),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$subtitle • $time',
+                style: const TextStyle(
+                  color: AppColors.textSecondaryLight,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.m),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

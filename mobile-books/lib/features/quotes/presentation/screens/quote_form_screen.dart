@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
@@ -69,8 +70,10 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
   DateTime? _expiryDate;
   int? _salespersonId;
   int? _projectId;
+  String _discountType = 'flat';
   final _notesController = TextEditingController();
   final _termsController = TextEditingController();
+  final _adjustmentController = TextEditingController(text: '0.0');
 
   // ─── Line items ────────────────────────────────────────────
   List<_LineItem> _lineItems = [_LineItem()];
@@ -81,6 +84,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
   void dispose() {
     _notesController.dispose();
     _termsController.dispose();
+    _adjustmentController.dispose();
     super.dispose();
   }
 
@@ -107,6 +111,8 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       _projectId = q.projectId;
       _notesController.text = q.notes ?? '';
       _termsController.text = q.terms ?? '';
+      _adjustmentController.text = q.adjustment?.toString() ?? '0.0';
+      _discountType = q.discountType ?? 'flat';
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
@@ -145,10 +151,14 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       _lineItems.fold(0.0, (sum, item) => sum + item.discountAmount);
   double get _totalTax =>
       _lineItems.fold(0.0, (sum, item) => sum + item.taxAmount);
-  double get _grandTotal => _subtotal - _totalDiscount + _totalTax;
+  double get _grandTotal {
+    final sub = _subtotal - _totalDiscount + _totalTax;
+    final adj = double.tryParse(_adjustmentController.text) ?? 0.0;
+    return sub + adj;
+  }
 
   // ─── Save ──────────────────────────────────────────────────
-  Future<void> _saveForm() async {
+  Future<void> _saveForm({bool sendImmediately = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_customerId == null) {
@@ -182,6 +192,8 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
           'terms': _termsController.text.trim(),
           'salesperson_id': _salespersonId,
           'project_id': _projectId,
+          'adjustment': double.tryParse(_adjustmentController.text) ?? 0.0,
+          'discount_type': _discountType,
           'items': _lineItems
               .map((i) => {
                     'item_id': i.itemId,
@@ -226,6 +238,8 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
           totalAmount: _grandTotal,
           salespersonId: _salespersonId,
           projectId: _projectId,
+          adjustment: double.tryParse(_adjustmentController.text) ?? 0.0,
+          discountType: _discountType,
         );
 
         final itemsPayload = _lineItems
@@ -247,12 +261,25 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 ))
             .toList();
 
-        await ref
+        final created = await ref
             .read(quotesProvider.notifier)
             .createQuote(quotePayload, itemsPayload);
+
+        if (sendImmediately) {
+          final customersState = ref.read(customersProvider);
+          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final toEmail = customer?.email ?? '';
+          await ref.read(quotesProvider.notifier).sendEmail(
+            created.id,
+            to: toEmail.isEmpty ? 'customer@example.com' : toEmail,
+            subject: 'Quote #${created.quoteNumber} - awaiting your approval',
+            body: 'Dear Customer,\n\nPlease find your quote statement attached in PDF.\n\nQuote Number: ${created.quoteNumber}\nTotal: ₹${created.totalAmount.toStringAsFixed(2)}\n\nBest regards,',
+          );
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Quote created successfully')),
+            SnackBar(content: Text(sendImmediately ? 'Quote saved & sent successfully' : 'Quote created successfully')),
           );
           context.pop();
         }
@@ -583,8 +610,14 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Quote' : 'New Quote'),
         actions: [
+          if (!_isEditMode)
+            TextButton.icon(
+              onPressed: _isLoading ? null : () => _saveForm(sendImmediately: true),
+              icon: const Icon(Icons.send_and_archive),
+              label: const Text('Save & Send'),
+            ),
           TextButton.icon(
-            onPressed: _isLoading ? null : _saveForm,
+            onPressed: _isLoading ? null : () => _saveForm(sendImmediately: false),
             icon: _isLoading
                 ? const SizedBox(
                     width: 18,
@@ -749,6 +782,41 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                               '+ ₹${_totalTax.toStringAsFixed(2)}',
                               valueColor: AppColors.success,
                             ),
+                            const SizedBox(height: AppSpacing.s),
+                            DropdownButtonFormField<String>(
+                              value: _discountType,
+                              decoration: const InputDecoration(labelText: 'Discount Type'),
+                              items: const [
+                                DropdownMenuItem(value: 'percentage', child: Text('Percentage')),
+                                DropdownMenuItem(value: 'flat', child: Text('Flat')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() {
+                                    _discountType = val;
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.s),
+                            TextFormField(
+                              controller: _adjustmentController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              decoration: const InputDecoration(
+                                labelText: 'Adjustment',
+                                hintText: 'e.g. +10.00 or -10.00',
+                              ),
+                              onChanged: (_) => setState(() {}),
+                              validator: (val) {
+                                if (val != null && val.isNotEmpty) {
+                                  if (double.tryParse(val) == null) {
+                                    return 'Please enter a valid number';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.s),
                             const Divider(),
                             _summaryRow(
                               'Grand Total',
@@ -838,22 +906,27 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
     return Row(
       children: [
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _customerId,
-            decoration: const InputDecoration(labelText: 'Customer *'),
-            isExpanded: true,
-            items: customers.map((c) {
+          child: SearchableAutocompleteField<Customer>(
+            labelText: 'Customer *',
+            initialValue: customers.where((c) => c.id == _customerId).firstOrNull,
+            items: customers,
+            itemLabelBuilder: (c) {
               final name = c.displayName ??
                   [c.firstName, c.lastName]
                       .where((s) => s != null && s.isNotEmpty)
                       .join(' ');
-              return DropdownMenuItem(
-                value: c.id,
-                child: Text(name.isEmpty ? (c.email ?? 'Customer #${c.id}') : name),
-              );
-            }).toList(),
-            onChanged: (val) => setState(() => _customerId = val),
+              return name.isNotEmpty ? name : (c.email ?? '');
+            },
+            searchMatcher: (c, query) {
+              final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
+              final email = (c.email ?? '').toLowerCase();
+              final q = query.toLowerCase();
+              return name.contains(q) || email.contains(q);
+            },
+            onChanged: (val) => setState(() => _customerId = val?.id),
             validator: (val) => val == null ? 'Customer is required' : null,
+            onAddNew: _showAddCustomerDialog,
+            addNewLabel: 'Add New Customer',
           ),
         ),
         const SizedBox(width: AppSpacing.s),
@@ -896,23 +969,15 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
     return Row(
       children: [
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _salespersonId,
-            decoration:
-                const InputDecoration(labelText: 'Salesperson'),
-            isExpanded: true,
-            items: [
-              const DropdownMenuItem<int>(
-                value: null,
-                child: Text('— None —'),
-              ),
-              ...list.map((sp) => DropdownMenuItem(
-                    value: sp.id,
-                    child: Text(sp.name),
-                  )),
-            ],
-            onChanged: (val) =>
-                setState(() => _salespersonId = val),
+          child: SearchableAutocompleteField<Salesperson>(
+            labelText: 'Salesperson',
+            initialValue: list.where((sp) => sp.id == _salespersonId).firstOrNull,
+            items: list,
+            itemLabelBuilder: (sp) => sp.name,
+            searchMatcher: (sp, query) => sp.name.toLowerCase().contains(query.toLowerCase()),
+            onChanged: (val) => setState(() => _salespersonId = val?.id),
+            onAddNew: _showAddSalespersonDialog,
+            addNewLabel: 'Add New Salesperson',
           ),
         ),
         const SizedBox(width: AppSpacing.s),
@@ -931,21 +996,15 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
     return Row(
       children: [
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _projectId,
-            decoration: const InputDecoration(labelText: 'Project'),
-            isExpanded: true,
-            items: [
-              const DropdownMenuItem<int>(
-                value: null,
-                child: Text('— None —'),
-              ),
-              ...list.map((p) => DropdownMenuItem(
-                    value: p.id,
-                    child: Text(p.projectName),
-                  )),
-            ],
-            onChanged: (val) => setState(() => _projectId = val),
+          child: SearchableAutocompleteField<Project>(
+            labelText: 'Project',
+            initialValue: list.where((p) => p.id == _projectId).firstOrNull,
+            items: list,
+            itemLabelBuilder: (p) => p.projectName,
+            searchMatcher: (p, query) => p.projectName.toLowerCase().contains(query.toLowerCase()),
+            onChanged: (val) => setState(() => _projectId = val?.id),
+            onAddNew: _showAddProjectDialog,
+            addNewLabel: 'Add New Project',
           ),
         ),
         const SizedBox(width: AppSpacing.s),
@@ -992,26 +1051,15 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
             const SizedBox(height: AppSpacing.s),
 
             // Catalog item dropdown (auto-fills fields)
-            DropdownButtonFormField<int>(
-              initialValue: li.itemId,
-              decoration: const InputDecoration(
-                  labelText: 'Select from Catalog'),
-              isExpanded: true,
-              items: [
-                const DropdownMenuItem<int>(
-                  value: null,
-                  child: Text('— Custom Item —'),
-                ),
-                ...catalogItems.map((item) => DropdownMenuItem(
-                      value: item.id,
-                      child: Text(item.name),
-                    )),
-              ],
+            SearchableAutocompleteField<Item>(
+              labelText: 'Select from Catalog',
+              initialValue: catalogItems.where((c) => c.id == li.itemId).firstOrNull,
+              items: catalogItems,
+              itemLabelBuilder: (item) => item.name,
+              searchMatcher: (item, query) => item.name.toLowerCase().contains(query.toLowerCase()),
               onChanged: (val) {
                 if (val != null) {
-                  final catalogItem =
-                      catalogItems.firstWhere((c) => c.id == val);
-                  _handleCatalogItemSelected(index, catalogItem);
+                  _handleCatalogItemSelected(index, val);
                 } else {
                   setState(() {
                     li.itemId = null;

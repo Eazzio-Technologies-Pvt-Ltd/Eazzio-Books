@@ -6,8 +6,27 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/timesheets/presentation/providers/timesheet_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 
-class TimesheetsListScreen extends ConsumerWidget {
+class TimesheetsListScreen extends ConsumerStatefulWidget {
   const TimesheetsListScreen({super.key});
+
+  @override
+  ConsumerState<TimesheetsListScreen> createState() => _TimesheetsListScreenState();
+}
+
+class _TimesheetsListScreenState extends ConsumerState<TimesheetsListScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(timesheetSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Color _statusColor(String status) {
     switch (status) {
@@ -25,9 +44,9 @@ class TimesheetsListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final timesheetsState = ref.watch(filteredTimesheetsProvider);
-    final searchController = TextEditingController(text: ref.read(timesheetSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/timesheets',

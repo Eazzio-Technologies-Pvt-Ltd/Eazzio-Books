@@ -162,6 +162,18 @@ class SalesOrderService {
       throw SalesOrderException(e.toString());
     }
   }
+
+  /// Marks a sales order as sent/confirmed in backend
+  Future<void> markSalesOrderAsSent(int id) async {
+    try {
+      await _networkClient.patch('/sales-orders/$id/mark-sent');
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to mark sales order as sent.';
+      throw SalesOrderException(message);
+    } catch (e) {
+      throw SalesOrderException(e.toString());
+    }
+  }
 }
 
 final salesOrderServiceProvider = Provider<SalesOrderService>((ref) {

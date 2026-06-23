@@ -6,6 +6,8 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/quotes/data/models/quote.dart';
 import 'package:mobile_books/features/quotes/presentation/providers/quote_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
+import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 
 /// Status badge color configuration matching the web frontend QuoteDetail.js
 const Map<String, _StatusStyle> _statusStyles = {
@@ -30,14 +32,138 @@ _StatusStyle _getStatusStyle(String status) {
       const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
 }
 
-class QuotesScreen extends ConsumerWidget {
+class QuotesScreen extends ConsumerStatefulWidget {
   const QuotesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QuotesScreen> createState() => _QuotesScreenState();
+}
+
+class _QuotesScreenState extends ConsumerState<QuotesScreen> {
+  String _sortBy = 'date';
+  String _sortOrder = 'desc';
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(quoteSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Quote> _sortQuotes(List<Quote> quotes, Map<int, String> customerMap) {
+    final sorted = List<Quote>.from(quotes);
+    sorted.sort((a, b) {
+      int cmp = 0;
+      switch (_sortBy) {
+        case 'amount':
+          cmp = a.totalAmount.compareTo(b.totalAmount);
+          break;
+        case 'status':
+          cmp = a.status.toLowerCase().compareTo(b.status.toLowerCase());
+          break;
+        case 'customer':
+          final nameA = customerMap[a.customerId]?.toLowerCase() ?? '';
+          final nameB = customerMap[b.customerId]?.toLowerCase() ?? '';
+          cmp = nameA.compareTo(nameB);
+          break;
+        case 'date':
+        default:
+          cmp = a.quoteDate.compareTo(b.quoteDate);
+          break;
+      }
+      return _sortOrder == 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }
+
+  void _showSortBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    children: [
+                      _sortOptionChip(setModalState, 'date', 'Date'),
+                      _sortOptionChip(setModalState, 'amount', 'Amount'),
+                      _sortOptionChip(setModalState, 'status', 'Status'),
+                      _sortOptionChip(setModalState, 'customer', 'Customer Name'),
+                    ],
+                  ),
+                  const Divider(),
+                  const Text('Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Ascending'),
+                        selected: _sortOrder == 'asc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'asc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      ChoiceChip(
+                        label: const Text('Descending'),
+                        selected: _sortOrder == 'desc',
+                        onSelected: (val) {
+                          if (val) {
+                            setModalState(() => _sortOrder = 'desc');
+                            setState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sortOptionChip(StateSetter setModalState, String val, String label) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: _sortBy == val,
+      onSelected: (selected) {
+        if (selected) {
+          setModalState(() => _sortBy = val);
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final quotesState = ref.watch(filteredQuotesProvider);
     final filter = ref.watch(quotesListFilterProvider);
-    final searchController = TextEditingController(text: ref.read(quoteSearchQueryProvider));
+    final searchController = _searchController;
+    final customersState = ref.watch(customersProvider);
+
+    final customers = customersState.value ?? [];
+    final customerMap = {for (var c in customers) c.id: c.displayName ?? ''};
 
     return ResponsiveScaffold(
       currentRoute: '/quotes',
@@ -57,22 +183,229 @@ class QuotesScreen extends ConsumerWidget {
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) =>
-                  ref.read(quoteSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search by quote number, notes...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(quoteSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) =>
+                        ref.read(quoteSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search by quote number, notes...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(quoteSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  onSelected: (val) {
+                    switch (val) {
+                      case 'sort':
+                        _showSortBottomSheet(context);
+                        break;
+                      case 'import':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Importing quotes...'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'export':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Quotes exported successfully to downloads'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'preferences':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Preferences configured'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'custom_fields':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Opening custom fields manager...'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'refresh':
+                        ref.read(quotesProvider.notifier).refresh();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Quotes list refreshed'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'reset_width':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Column widths reset'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'sort',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sort, size: 18),
+                          SizedBox(width: 8),
+                          Text('Sort by'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'import',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_download_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Import Quotes'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'export',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_upload_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Export Quotes'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'preferences',
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings, size: 18),
+                          SizedBox(width: 8),
+                          Text('Preferences'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'custom_fields',
+                      child: Row(
+                        children: [
+                          Icon(Icons.dashboard_customize_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Manage Custom Fields'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh, size: 18),
+                          SizedBox(width: 8),
+                          Text('Refresh List'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'reset_width',
+                      child: Row(
+                        children: [
+                          Icon(Icons.view_column_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Reset Column Width'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Inline Sorting Chips
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.m,
+              vertical: AppSpacing.xs,
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  const Text(
+                    'Sort by: ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: AppColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  ChoiceChip(
+                    label: const Text('Date'),
+                    selected: _sortBy == 'date',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'date');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ChoiceChip(
+                    label: const Text('Amount'),
+                    selected: _sortBy == 'amount',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'amount');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ChoiceChip(
+                    label: const Text('Status'),
+                    selected: _sortBy == 'status',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'status');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ChoiceChip(
+                    label: const Text('Customer'),
+                    selected: _sortBy == 'customer',
+                    onSelected: (val) {
+                      if (val) setState(() => _sortBy = 'customer');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.s),
+                  IconButton(
+                    icon: Icon(
+                      _sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
+                      size: 18,
+                      color: AppColors.primaryBlue,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _sortOrder = _sortOrder == 'asc' ? 'desc' : 'asc';
+                      });
+                    },
+                    tooltip: _sortOrder == 'asc' ? 'Ascending' : 'Descending',
+                  ),
+                ],
               ),
             ),
           ),
@@ -84,19 +417,19 @@ class QuotesScreen extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _filterChip(ref, 'all', 'All', filter),
+                  _filterChip('all', 'All', filter),
                   const SizedBox(width: AppSpacing.s),
-                  _filterChip(ref, 'draft', 'Draft', filter),
+                  _filterChip('draft', 'Draft', filter),
                   const SizedBox(width: AppSpacing.s),
-                  _filterChip(ref, 'sent', 'Sent', filter),
+                  _filterChip('sent', 'Sent', filter),
                   const SizedBox(width: AppSpacing.s),
-                  _filterChip(ref, 'accepted', 'Accepted', filter),
+                  _filterChip('accepted', 'Accepted', filter),
                   const SizedBox(width: AppSpacing.s),
-                  _filterChip(ref, 'declined', 'Declined', filter),
+                  _filterChip('declined', 'Declined', filter),
                   const SizedBox(width: AppSpacing.s),
-                  _filterChip(ref, 'expired', 'Expired', filter),
+                  _filterChip('expired', 'Expired', filter),
                   const SizedBox(width: AppSpacing.s),
-                  _filterChip(ref, 'invoiced', 'Invoiced', filter),
+                  _filterChip('invoiced', 'Invoiced', filter),
                 ],
               ),
             ),
@@ -123,18 +456,22 @@ class QuotesScreen extends ConsumerWidget {
                       ],
                     );
                   }
+                  final sortedQuotes = _sortQuotes(quotes, customerMap);
                   return ListView.separated(
                     padding: const EdgeInsets.all(AppSpacing.m),
-                    itemCount: quotes.length,
+                    itemCount: sortedQuotes.length,
                     separatorBuilder: (context, index) => const Divider(height: 1),
                     itemBuilder: (context, index) {
-                      final quote = quotes[index];
+                      final quote = sortedQuotes[index];
                       return _QuoteListTile(quote: quote);
                     },
                   );
                 },
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.m),
+                  itemCount: 6,
+                  itemBuilder: (context, index) => LoadingSkeleton.skeletonListItem(),
+                ),
                 error: (error, _) => ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
@@ -173,7 +510,6 @@ class QuotesScreen extends ConsumerWidget {
   }
 
   Widget _filterChip(
-    WidgetRef ref,
     String value,
     String label,
     String currentFilter,

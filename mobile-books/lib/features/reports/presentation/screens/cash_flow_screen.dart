@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+
+import 'package:mobile_books/core/network/network_client.dart';
 
 class CashFlowScreen extends ConsumerWidget {
   const CashFlowScreen({super.key});
@@ -30,6 +33,32 @@ class CashFlowScreen extends ConsumerWidget {
     }
   }
 
+  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTimeRange? dateRange) {
+    final df = DateFormat('yyyy-MM-dd');
+    final queryParams = <String>[];
+    if (dateRange != null) {
+      queryParams.add('startDate=${df.format(dateRange.start)}');
+      queryParams.add('endDate=${df.format(dateRange.end)}');
+    }
+    queryParams.add('format=${format.toLowerCase()}');
+    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+    final url = '$baseUrl/reports/cash-flow?${queryParams.join('&')}';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Cash Flow Export ${format.toUpperCase()} Link'),
+        content: SelectableText(url),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportState = ref.watch(cashFlowReportProvider);
@@ -44,9 +73,22 @@ class CashFlowScreen extends ConsumerWidget {
       currentRoute: '/reports/cash-flow',
       appBar: AppBar(
         title: const Text('Cash Flow Statement'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.table_chart),
+            tooltip: "Export CSV",
+            onPressed: () => _showExportDialog(context, ref, 'CSV', dateRange),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: "Export PDF",
+            onPressed: () => _showExportDialog(context, ref, 'PDF', dateRange),
+          ),
+        ],
       ),
       body: Column(
         children: [
+          const ReportNavBar(currentRoute: '/reports/cash-flow'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -95,6 +137,21 @@ class CashFlowScreen extends ConsumerWidget {
           Expanded(
             child: reportState.when(
               data: (report) {
+                if (report.operatingActivities.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      child: Text(
+                        'No records',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textSecondaryLight,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  );
+                }
                 final flowColor = report.netCashFlow >= 0 ? AppColors.success : AppColors.danger;
 
                 return ListView(
@@ -165,9 +222,14 @@ class CashFlowScreen extends ConsumerWidget {
                               'Net Cash Flow',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: flowColor),
                             ),
-                            Text(
-                              _formatCurrency(report.netCashFlow),
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: flowColor),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  _formatCurrency(report.netCashFlow),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: flowColor),
+                                ),
+                              ),
                             ),
                           ],
                         ),

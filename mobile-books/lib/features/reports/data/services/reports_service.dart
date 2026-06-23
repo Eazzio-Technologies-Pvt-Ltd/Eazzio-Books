@@ -26,12 +26,13 @@ class ReportsService {
     String? endDate,
   }) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['start_date'] = startDate;
+      if (endDate != null) queryParams['end_date'] = endDate;
+
       final response = await _networkClient.get(
         '/reports/trial-balance',
-        queryParameters: {
-          'start_date':? startDate,
-          'end_date':? endDate,
-        },
+        queryParameters: queryParams,
       );
       return TrialBalanceReport.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -48,12 +49,13 @@ class ReportsService {
     String? endDate,
   }) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['start_date'] = startDate;
+      if (endDate != null) queryParams['end_date'] = endDate;
+
       final response = await _networkClient.get(
         '/reports/pnl',
-        queryParameters: {
-          'start_date':? startDate,
-          'end_date':? endDate,
-        },
+        queryParameters: queryParams,
       );
       return ProfitAndLossReport.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -69,11 +71,12 @@ class ReportsService {
     String? endDate,
   }) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (endDate != null) queryParams['end_date'] = endDate;
+
       final response = await _networkClient.get(
         '/reports/balance-sheet',
-        queryParameters: {
-          'end_date':? endDate,
-        },
+        queryParameters: queryParams,
       );
       return BalanceSheetReport.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -90,12 +93,13 @@ class ReportsService {
     String? endDate,
   }) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['start_date'] = startDate;
+      if (endDate != null) queryParams['end_date'] = endDate;
+
       final response = await _networkClient.get(
         '/reports/cash-flow',
-        queryParameters: {
-          'start_date':? startDate,
-          'end_date':? endDate,
-        },
+        queryParameters: queryParams,
       );
       return CashFlowReport.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -111,11 +115,12 @@ class ReportsService {
     String? asOfDate,
   }) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (asOfDate != null) queryParams['as_of_date'] = asOfDate;
+
       final response = await _networkClient.get(
         '/reports/customer-aging',
-        queryParameters: {
-          'as_of_date':? asOfDate,
-        },
+        queryParameters: queryParams,
       );
       return AgingReport.fromCustomerJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -131,11 +136,12 @@ class ReportsService {
     String? asOfDate,
   }) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (asOfDate != null) queryParams['as_of_date'] = asOfDate;
+
       final response = await _networkClient.get(
         '/reports/vendor-aging',
-        queryParameters: {
-          'as_of_date':? asOfDate,
-        },
+        queryParameters: queryParams,
       );
       return AgingReport.fromVendorJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {

@@ -9,13 +9,7 @@ final cookieJarProvider = Provider<CookieJar>((ref) {
 });
 
 final dioProvider = Provider<Dio>((ref) {
-  String baseUrl = 'http://10.0.2.2:5001/api';
-  try {
-    final envVal = dotenv.env['API_BASE_URL'];
-    if (envVal != null) {
-      baseUrl = envVal;
-    }
-  } catch (_) {}
+  String baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5000/api';
 
   final dio = Dio(
     BaseOptions(

@@ -16,11 +16,24 @@ class RecurringExpensesListScreen extends ConsumerStatefulWidget {
 
 class _RecurringExpensesListScreenState extends ConsumerState<RecurringExpensesListScreen> {
   String _statusFilter = 'All';
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(recurringExpenseSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final expensesState = ref.watch(filteredRecurringExpensesProvider);
-    final searchController = TextEditingController(text: ref.read(recurringExpenseSearchQueryProvider));
+    final searchController = _searchController;
 
     return ResponsiveScaffold(
       currentRoute: '/recurring-expenses',

@@ -55,6 +55,17 @@ class PurchaseOrdersNotifier extends AsyncNotifier<List<PurchaseOrder>> {
     ref.invalidateSelf();
     return billId;
   }
+
+  Future<void> sendEmail(int id, {
+    required String to,
+    required String subject,
+    required String body,
+  }) async {
+    final service = ref.read(purchaseOrderServiceProvider);
+    await service.sendEmail(id, {'to': to, 'subject': subject, 'body': body});
+    ref.invalidateSelf();
+    ref.invalidate(purchaseOrderDetailsProvider(id));
+  }
 }
 
 final purchaseOrdersProvider = AsyncNotifierProvider<PurchaseOrdersNotifier, List<PurchaseOrder>>(() {

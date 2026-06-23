@@ -11,6 +11,7 @@ import 'package:mobile_books/features/accounting/data/models/journal_line.dart';
 import 'package:mobile_books/features/accounting/presentation/providers/accounting_provider.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/widgets/common/unsaved_changes_dialog.dart';
 
 class JournalLineInput {
   int? accountId;
@@ -49,6 +50,7 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
   final List<JournalLineInput> _lineInputs = [];
   bool _isLoading = false;
   bool _isEditMode = false;
+  bool _isSubmitted = false;
 
   @override
   void initState() {
@@ -157,9 +159,16 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
       totalCredit += double.tryParse(input.creditController.text) ?? 0.0;
     }
     final isBalanced = (totalDebit - totalCredit).abs() < 0.015;
+    final hasUnsavedChanges = !_isSubmitted && (
+      _journalNumberController.text.isNotEmpty ||
+      _referenceNumberController.text.isNotEmpty ||
+      _notesController.text.isNotEmpty
+    );
 
-    return ResponsiveScaffold(
-      currentRoute: '/accounting/journals',
+    return UnsavedChangesWrapper(
+      hasChanges: hasUnsavedChanges,
+      child: ResponsiveScaffold(
+        currentRoute: '/accounting/journals',
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Journal Entry' : 'New Journal Entry'),
       ),
@@ -314,7 +323,7 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
                 ),
               ),
             ),
-    );
+    ));
   }
 
   Widget _buildLineItem(int index, JournalLineInput input, List<ChartOfAccount> coaList) {
@@ -455,6 +464,7 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
         }
 
         if (mounted) {
+          setState(() => _isSubmitted = true);
           context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Journal entry saved successfully.')),

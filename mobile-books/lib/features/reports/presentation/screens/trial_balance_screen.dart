@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+
+import 'package:mobile_books/core/network/network_client.dart';
 
 class TrialBalanceScreen extends ConsumerWidget {
   const TrialBalanceScreen({super.key});
@@ -30,6 +33,32 @@ class TrialBalanceScreen extends ConsumerWidget {
     }
   }
 
+  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTimeRange? dateRange) {
+    final df = DateFormat('yyyy-MM-dd');
+    final queryParams = <String>[];
+    if (dateRange != null) {
+      queryParams.add('startDate=${df.format(dateRange.start)}');
+      queryParams.add('endDate=${df.format(dateRange.end)}');
+    }
+    queryParams.add('format=${format.toLowerCase()}');
+    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
+    final url = '$baseUrl/reports/trial-balance?${queryParams.join('&')}';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Trial Balance Export ${format.toUpperCase()} Link'),
+        content: SelectableText(url),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportState = ref.watch(trialBalanceReportProvider);
@@ -44,9 +73,22 @@ class TrialBalanceScreen extends ConsumerWidget {
       currentRoute: '/reports/trial-balance',
       appBar: AppBar(
         title: const Text('Trial Balance'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.table_chart),
+            tooltip: "Export CSV",
+            onPressed: () => _showExportDialog(context, ref, 'CSV', dateRange),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: "Export PDF",
+            onPressed: () => _showExportDialog(context, ref, 'PDF', dateRange),
+          ),
+        ],
       ),
       body: Column(
         children: [
+          const ReportNavBar(currentRoute: '/reports/trial-balance'),
           // Filter card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
