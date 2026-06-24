@@ -247,10 +247,33 @@ router.post("/credit-notes/:id/send", authMiddleware, async (req, res) => {
       ],
     });
 
+    // Mark as sent
+    await pool.query(
+      "UPDATE credit_notes SET status = 'sent', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2",
+      [id, req.user.id]
+    );
+
     res.json({ message: "Email sent with PDF attached" });
   } catch (err) {
     console.error("SEND EMAIL ERROR:", err);
     res.status(500).json({ message: "Failed to send email" });
+  }
+});
+
+router.patch("/credit-notes/:id/mark-sent", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "UPDATE credit_notes SET status = 'sent', updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 RETURNING *",
+      [id, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Credit Note not found" });
+    }
+    res.json({ message: "Credit Note marked as sent", credit_note: result.rows[0] });
+  } catch (err) {
+    console.error("MARK CREDIT NOTE SENT ERROR:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

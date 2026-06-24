@@ -1,0 +1,39 @@
+diff --git a/eazzio_books_mobile/lib/core/network/api_service.dart b/eazzio_books_mobile/lib/core/network/api_service.dart
+index 8e4cfd1..20cf4c3 100644
+--- a/eazzio_books_mobile/lib/core/network/api_service.dart
++++ b/eazzio_books_mobile/lib/core/network/api_service.dart
+@@ -10,6 +10,10 @@ final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+ 
+ class ApiService {
++  // Compile-time environment variables
++  static const String appMode = String.fromEnvironment('APP_MODE', defaultValue: 'development');
++  static const String apiBaseUrl = String.fromEnvironment('API_BASE_URL');
++
+   late final Dio dio;
+   late final PersistCookieJar cookieJar;
+   bool _isInitialized = false;
+@@ -25,9 +29,10 @@ class ApiService {
+     dio.interceptors.add(CookieManager(cookieJar));
+ 
+     // 2. Base URL mapping (handles local Android emulator loopback vs generic desktop/iOS)
+-    dio.options.baseUrl = kIsWeb
+-        ? 'http://localhost:5001/api'
+-        : (Platform.isAndroid ? 'http://10.0.2.2:5001/api' : 'http://localhost:5001/api');
++    final String defaultBaseUrl = kIsWeb
++        ? 'http://localhost:5001/api'
++        : (Platform.isAndroid ? 'http://10.0.2.2:5001/api' : 'http://localhost:5001/api');
++
++    dio.options.baseUrl = apiBaseUrl.isNotEmpty ? apiBaseUrl : defaultBaseUrl;
+ 
+     dio.options.connectTimeout = const Duration(seconds: 10);
+     dio.options.receiveTimeout = const Duration(seconds: 10);
+@@ -37,8 +42,9 @@ class ApiService {
+     };
+ 
+     // Logging interceptor for debugging network logs
+-    if (kDebugMode) {
++    final activeAppMode = appMode.isNotEmpty ? appMode : 'development';
++    if (kDebugMode || activeAppMode == 'development' || activeAppMode == 'staging') {
+       dio.interceptors.add(LogInterceptor(
+         requestHeader: true,
+         requestBody: true,
