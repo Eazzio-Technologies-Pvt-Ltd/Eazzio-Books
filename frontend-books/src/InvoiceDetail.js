@@ -725,6 +725,12 @@ function InvoiceDetail() {
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>Total</td>
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>₹{parseFloat(invoice.total_amount).toFixed(2)}</td>
                             </tr>
+                            {parseFloat(invoice.total_amount || 0) - parseFloat(invoice.balance_due || 0) > 0 && (
+                              <tr>
+                                <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>Amount Paid</td>
+                                <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>₹{(parseFloat(invoice.total_amount || 0) - parseFloat(invoice.balance_due || 0)).toFixed(2)}</td>
+                              </tr>
+                            )}
                             <tr>
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>Balance Due</td>
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>₹{parseFloat(invoice.balance_due).toFixed(2)}</td>

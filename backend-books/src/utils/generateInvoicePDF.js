@@ -192,7 +192,7 @@ async function generateInvoicePDF(invoice, items, customer, userId) {
     y += 12;
 
     // ── Totals Section ──────────────────────────────────────────
-    if (y + 110 > 750) {
+    if (y + 130 > 750) {
       doc.addPage();
       y = 50;
     }
@@ -224,6 +224,14 @@ async function generateInvoicePDF(invoice, items, customer, userId) {
     doc.font("Helvetica-Bold").fillColor("#111827").text("Total:", totalsX, y)
        .text(`₹${grandTotal.toFixed(2)}`, totalsX + labelW, y, { align: "right", width: valueW });
     y += 16;
+
+    // Amount Paid
+    const amountPaid = grandTotal - balanceDue;
+    if (amountPaid > 0) {
+      doc.font("Helvetica-Bold").fillColor("#111827").text("Amount Paid:", totalsX, y)
+         .text(`₹${amountPaid.toFixed(2)}`, totalsX + labelW, y, { align: "right", width: valueW });
+      y += 16;
+    }
 
     // Balance Due
     doc.font("Helvetica-Bold").fillColor("#1a56db").text("Balance Due:", totalsX, y)
