@@ -10,6 +10,9 @@ import 'package:mobile_books/features/customers/presentation/providers/customer_
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:mobile_books/core/utils/pdf_helper.dart';
 
 class InvoiceDocumentPreviewScreen extends ConsumerStatefulWidget {
   final int invoiceId;
@@ -136,6 +139,55 @@ class _InvoiceDocumentPreviewScreenState extends ConsumerState<InvoiceDocumentPr
     }
   }
 
+  Future<void> _printDocument(InvoiceDetails details) async {
+    setState(() => _isLoading = true);
+    try {
+      final bytes = await ref.read(invoiceServiceProvider).downloadInvoicePDF(widget.invoiceId);
+      await Printing.layoutPdf(
+        onLayout: (format) async => bytes,
+        name: 'Invoice_${details.invoice.invoiceNumber}.pdf',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to print document: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _sharePdf(InvoiceDetails details) async {
+    setState(() => _isLoading = true);
+    try {
+      final bytes = await ref.read(invoiceServiceProvider).downloadInvoicePDF(widget.invoiceId);
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = '${tempDir.path}/Invoice_${details.invoice.invoiceNumber}.pdf';
+      final file = File(tempPath);
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles(
+        [XFile(tempPath, mimeType: 'application/pdf')],
+        text: 'Invoice ${details.invoice.invoiceNumber} details.',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share document: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _shareWebLink(InvoiceDetails details) {
+    final invoice = details.invoice;
+    final shareText = 'Invoice ${invoice.invoiceNumber}\nTotal Amount: ₹${invoice.totalAmount.toStringAsFixed(2)}\nDue Date: ${invoice.dueDate != null ? invoice.dueDate!.toLocal().toString().split(' ')[0] : '—'}\nBalance Due: ₹${invoice.balanceDue.toStringAsFixed(2)}\nStatus: ${invoice.status.toUpperCase()}';
+    Share.share(shareText);
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailState = ref.watch(invoiceDetailsProvider(widget.invoiceId));
@@ -148,15 +200,23 @@ class _InvoiceDocumentPreviewScreenState extends ConsumerState<InvoiceDocumentPr
       appBar: AppBar(
         title: const Text('Invoice Document Preview'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.download_rounded),
-            onPressed: _isLoading
-                ? null
-                : () {
-                    final url = ref.read(invoiceServiceProvider).getInvoicePdfUrl(widget.invoiceId);
-                    _exportAndSavePdf(context, url, 'Invoice_${widget.invoiceId}.pdf');
-                  },
-          ),
+          if (invoiceDetails != null) ...[
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              tooltip: 'Share PDF',
+              onPressed: _isLoading ? null : () => _sharePdf(invoiceDetails),
+            ),
+            IconButton(
+              icon: const Icon(Icons.print_outlined),
+              tooltip: 'Print',
+              onPressed: _isLoading ? null : () => _printDocument(invoiceDetails),
+            ),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: 'Share Details',
+              onPressed: _isLoading ? null : () => _shareWebLink(invoiceDetails),
+            ),
+          ]
         ],
       ),
       body: detailState.when(
@@ -740,31 +800,6 @@ class _InvoiceDocumentPreviewScreenState extends ConsumerState<InvoiceDocumentPr
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.m),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
-                    ),
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Icon(Icons.download_rounded),
-                    label: const Text('Export PDF & Save'),
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            final url = ref.read(invoiceServiceProvider).getInvoicePdfUrl(widget.invoiceId);
-                            _exportAndSavePdf(context, url, 'Invoice_${widget.invoiceId}.pdf');
-                          },
                   ),
                 ),
               ),

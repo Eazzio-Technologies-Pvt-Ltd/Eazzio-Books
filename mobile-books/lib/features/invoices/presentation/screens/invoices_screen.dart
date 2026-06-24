@@ -158,7 +158,6 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
   @override
   Widget build(BuildContext context) {
     final invoicesState = ref.watch(filteredInvoicesProvider);
-    final filter = ref.watch(invoicesListFilterProvider);
     final searchController = _searchController;
     final customersState = ref.watch(customersProvider);
 
@@ -208,140 +207,151 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primaryBlue),
-                  onPressed: () {
-                    ref.read(invoicesProvider.notifier).refresh();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Invoices list refreshed'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  onSelected: (val) {
+                    switch (val) {
+                      case 'sort':
+                        _showSortBottomSheet(context);
+                        break;
+                      case 'filter':
+                        _showFilterBottomSheet(context);
+                        break;
+                      case 'import':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Importing invoices...'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'export':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Invoices exported successfully to downloads'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'preferences':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Preferences configured'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'custom_fields':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Opening custom fields manager...'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'refresh':
+                        ref.read(invoicesProvider.notifier).refresh();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Invoices list refreshed'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                      case 'reset_width':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Column widths reset'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        break;
+                    }
                   },
-                  tooltip: 'Refresh List',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.file_download_outlined, color: AppColors.primaryBlue),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Importing invoices...'),
-                        behavior: SnackBarBehavior.floating,
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'sort',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sort, size: 18),
+                          SizedBox(width: 8),
+                          Text('Sort by'),
+                        ],
                       ),
-                    );
-                  },
-                  tooltip: 'Import Invoices',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.file_upload_outlined, color: AppColors.primaryBlue),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Invoices exported successfully to downloads'),
-                        behavior: SnackBarBehavior.floating,
+                    ),
+                    const PopupMenuItem(
+                      value: 'filter',
+                      child: Row(
+                        children: [
+                          Icon(Icons.filter_list, size: 18),
+                          SizedBox(width: 8),
+                          Text('Filter by status'),
+                        ],
                       ),
-                    );
-                  },
-                  tooltip: 'Export Invoices',
+                    ),
+                    const PopupMenuItem(
+                      value: 'import',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_download_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Import Invoices'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'export',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_upload_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Export Invoices'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'preferences',
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings, size: 18),
+                          SizedBox(width: 8),
+                          Text('Preferences'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'custom_fields',
+                      child: Row(
+                        children: [
+                          Icon(Icons.dashboard_customize_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Manage Custom Fields'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh, size: 18),
+                          SizedBox(width: 8),
+                          Text('Refresh List'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'reset_width',
+                      child: Row(
+                        children: [
+                          Icon(Icons.view_column_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Reset Column Width'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-
-          // Inline Sorting Chips
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.m,
-              vertical: AppSpacing.xs,
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  const Text(
-                    'Sort by: ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: AppColors.textSecondaryLight,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  ChoiceChip(
-                    label: const Text('Date'),
-                    selected: _sortBy == 'date',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'date');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Amount'),
-                    selected: _sortBy == 'amount',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'amount');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Status'),
-                    selected: _sortBy == 'status',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'status');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Customer'),
-                    selected: _sortBy == 'customer',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'customer');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  IconButton(
-                    icon: Icon(
-                      _sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 18,
-                      color: AppColors.primaryBlue,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _sortOrder = _sortOrder == 'asc' ? 'desc' : 'asc';
-                      });
-                    },
-                    tooltip: _sortOrder == 'asc' ? 'Ascending' : 'Descending',
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ─── Status Filter Chips ────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _filterChip('all', 'All', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('draft', 'Draft', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('sent', 'Sent', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('unpaid', 'Unpaid', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('partially_paid', 'Part Paid', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('paid', 'Paid', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('overdue', 'Overdue', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('cancelled', 'Cancelled', filter),
-                ],
-              ),
             ),
           ),
           const SizedBox(height: AppSpacing.s),
@@ -415,14 +425,53 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
     );
   }
 
-  Widget _filterChip(String key, String label, String currentSelection) {
-    final isSelected = key == currentSelection;
+  void _showFilterBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final activeFilter = ref.watch(invoicesListFilterProvider);
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Filter by Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    runSpacing: AppSpacing.s,
+                    children: [
+                      _filterOptionChip(context, ref, 'all', 'All', activeFilter),
+                      _filterOptionChip(context, ref, 'draft', 'Draft', activeFilter),
+                      _filterOptionChip(context, ref, 'sent', 'Sent', activeFilter),
+                      _filterOptionChip(context, ref, 'unpaid', 'Unpaid', activeFilter),
+                      _filterOptionChip(context, ref, 'partially_paid', 'Part Paid', activeFilter),
+                      _filterOptionChip(context, ref, 'paid', 'Paid', activeFilter),
+                      _filterOptionChip(context, ref, 'overdue', 'Overdue', activeFilter),
+                      _filterOptionChip(context, ref, 'cancelled', 'Cancelled', activeFilter),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _filterOptionChip(BuildContext context, WidgetRef ref, String val, String label, String activeVal) {
+    final isSelected = val == activeVal;
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (val) {
-        if (val) {
-          ref.read(invoicesListFilterProvider.notifier).state = key;
+      onSelected: (selected) {
+        if (selected) {
+          ref.read(invoicesListFilterProvider.notifier).state = val;
+          Navigator.pop(context);
         }
       },
     );

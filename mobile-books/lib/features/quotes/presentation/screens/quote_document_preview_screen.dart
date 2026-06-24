@@ -10,6 +10,9 @@ import 'package:mobile_books/features/customers/presentation/providers/customer_
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:mobile_books/core/utils/pdf_helper.dart';
 
 class QuoteDocumentPreviewScreen extends ConsumerStatefulWidget {
   final int quoteId;
@@ -88,11 +91,16 @@ class _QuoteDocumentPreviewScreenState extends ConsumerState<QuoteDocumentPrevie
       }
     } catch (e) {
       if (mounted) {
+        String msg = 'Failed to save PDF: $e';
+        if (e is DioException && e.response?.statusCode == 404) {
+          msg = 'Direct PDF download is not supported by the backend for quotes. Please use the "Email Statement" option on Quote Details instead.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save PDF: $e'),
+            content: Text(msg),
             backgroundColor: AppColors.danger,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -135,6 +143,77 @@ class _QuoteDocumentPreviewScreenState extends ConsumerState<QuoteDocumentPrevie
     }
   }
 
+  Future<Uint8List> _generatePdfBytes(QuoteDetails details) async {
+    final quote = details.quote;
+    final items = details.items;
+    final totalWords = _numberToWords(quote.totalAmount.floor());
+
+    final settings = ref.read(organizationSettingsProvider).value;
+    final customer = ref.read(customerDetailsProvider(quote.customerId)).value;
+
+    final html = PdfHelper.generateQuoteHtml(
+      quote: quote,
+      items: items,
+      customer: customer,
+      settings: settings,
+      totalInWords: totalWords,
+    );
+
+    return await Printing.convertHtml(
+      format: PdfPageFormat.a4,
+      html: html,
+    );
+  }
+
+  Future<void> _printDocument(QuoteDetails details) async {
+    setState(() => _isLoading = true);
+    try {
+      final bytes = await _generatePdfBytes(details);
+      await Printing.layoutPdf(
+        onLayout: (format) async => bytes,
+        name: 'Quote_${details.quote.quoteNumber}.pdf',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to print document: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _sharePdf(QuoteDetails details) async {
+    setState(() => _isLoading = true);
+    try {
+      final bytes = await _generatePdfBytes(details);
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = '${tempDir.path}/Quote_${details.quote.quoteNumber}.pdf';
+      final file = File(tempPath);
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles(
+        [XFile(tempPath, mimeType: 'application/pdf')],
+        text: 'Quote ${details.quote.quoteNumber} details.',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share document: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _shareWebLink(QuoteDetails details) {
+    final quote = details.quote;
+    final shareText = 'Quote ${quote.quoteNumber}\nTotal Amount: ₹${quote.totalAmount.toStringAsFixed(2)}\nExpiry Date: ${quote.expiryDate != null ? quote.expiryDate!.toLocal().toString().split(' ')[0] : '—'}\nStatus: ${quote.status.toUpperCase()}';
+    Share.share(shareText);
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailState = ref.watch(quoteDetailsProvider(widget.quoteId));
@@ -147,15 +226,23 @@ class _QuoteDocumentPreviewScreenState extends ConsumerState<QuoteDocumentPrevie
       appBar: AppBar(
         title: const Text('Quote Document Preview'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.download_rounded),
-            onPressed: _isLoading
-                ? null
-                : () {
-                    final url = ref.read(quoteServiceProvider).getQuotePdfUrl(widget.quoteId);
-                    _exportAndSavePdf(context, url, 'Quote_${widget.quoteId}.pdf');
-                  },
-          ),
+          if (quoteDetails != null) ...[
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              tooltip: 'Share PDF',
+              onPressed: _isLoading ? null : () => _sharePdf(quoteDetails),
+            ),
+            IconButton(
+              icon: const Icon(Icons.print_outlined),
+              tooltip: 'Print',
+              onPressed: _isLoading ? null : () => _printDocument(quoteDetails),
+            ),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: 'Share Details',
+              onPressed: _isLoading ? null : () => _shareWebLink(quoteDetails),
+            ),
+          ]
         ],
       ),
       body: detailState.when(
@@ -591,31 +678,6 @@ class _QuoteDocumentPreviewScreenState extends ConsumerState<QuoteDocumentPrevie
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.m),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
-                    ),
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Icon(Icons.download_rounded),
-                    label: const Text('Export PDF & Save'),
-                    onPressed: _isLoading
-                        ? null
-                        : () {
-                            final url = ref.read(quoteServiceProvider).getQuotePdfUrl(widget.quoteId);
-                            _exportAndSavePdf(context, url, 'Quote_${widget.quoteId}.pdf');
-                          },
                   ),
                 ),
               ),

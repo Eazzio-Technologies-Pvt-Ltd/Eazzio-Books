@@ -158,7 +158,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   @override
   Widget build(BuildContext context) {
     final quotesState = ref.watch(filteredQuotesProvider);
-    final filter = ref.watch(quotesListFilterProvider);
     final searchController = _searchController;
     final customersState = ref.watch(customersProvider);
 
@@ -212,6 +211,9 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     switch (val) {
                       case 'sort':
                         _showSortBottomSheet(context);
+                        break;
+                      case 'filter':
+                        _showFilterBottomSheet(context);
                         break;
                       case 'import':
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -272,6 +274,16 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                           Icon(Icons.sort, size: 18),
                           SizedBox(width: 8),
                           Text('Sort by'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'filter',
+                      child: Row(
+                        children: [
+                          Icon(Icons.filter_list, size: 18),
+                          SizedBox(width: 8),
+                          Text('Filter by status'),
                         ],
                       ),
                     ),
@@ -338,100 +350,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                   ],
                 ),
               ],
-            ),
-          ),
-
-          // Inline Sorting Chips
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.m,
-              vertical: AppSpacing.xs,
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  const Text(
-                    'Sort by: ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: AppColors.textSecondaryLight,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  ChoiceChip(
-                    label: const Text('Date'),
-                    selected: _sortBy == 'date',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'date');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Amount'),
-                    selected: _sortBy == 'amount',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'amount');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Status'),
-                    selected: _sortBy == 'status',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'status');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Customer'),
-                    selected: _sortBy == 'customer',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'customer');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  IconButton(
-                    icon: Icon(
-                      _sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 18,
-                      color: AppColors.primaryBlue,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _sortOrder = _sortOrder == 'asc' ? 'desc' : 'asc';
-                      });
-                    },
-                    tooltip: _sortOrder == 'asc' ? 'Ascending' : 'Descending',
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ─── Status Filter Chips ────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _filterChip('all', 'All', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('draft', 'Draft', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('sent', 'Sent', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('accepted', 'Accepted', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('declined', 'Declined', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('expired', 'Expired', filter),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('invoiced', 'Invoiced', filter),
-                ],
-              ),
             ),
           ),
           const SizedBox(height: AppSpacing.s),
@@ -509,17 +427,52 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
-  Widget _filterChip(
-    String value,
-    String label,
-    String currentFilter,
-  ) {
+  void _showFilterBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final activeFilter = ref.watch(quotesListFilterProvider);
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Filter by Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: AppSpacing.s),
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    runSpacing: AppSpacing.s,
+                    children: [
+                      _filterOptionChip(context, ref, 'all', 'All', activeFilter),
+                      _filterOptionChip(context, ref, 'draft', 'Draft', activeFilter),
+                      _filterOptionChip(context, ref, 'sent', 'Sent', activeFilter),
+                      _filterOptionChip(context, ref, 'accepted', 'Accepted', activeFilter),
+                      _filterOptionChip(context, ref, 'declined', 'Declined', activeFilter),
+                      _filterOptionChip(context, ref, 'expired', 'Expired', activeFilter),
+                      _filterOptionChip(context, ref, 'invoiced', 'Invoiced', activeFilter),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _filterOptionChip(BuildContext context, WidgetRef ref, String val, String label, String activeVal) {
+    final isSelected = val == activeVal;
     return ChoiceChip(
       label: Text(label),
-      selected: currentFilter == value,
-      onSelected: (val) {
-        if (val) {
-          ref.read(quotesListFilterProvider.notifier).state = value;
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          ref.read(quotesListFilterProvider.notifier).state = val;
+          Navigator.pop(context);
         }
       },
     );
