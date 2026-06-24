@@ -21,6 +21,7 @@ const ensureBillsTables = async () => {
         status           VARCHAR(20) DEFAULT 'draft',
         notes            TEXT,
         is_deleted       BOOLEAN DEFAULT false,
+        organization_id  INTEGER,
         created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

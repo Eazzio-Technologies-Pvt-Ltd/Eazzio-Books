@@ -1,4 +1,4 @@
-const puppeteer = require("puppeteer");
+const PDFDocument = require("pdfkit");
 const numberToWords = require("number-to-words");
 const pool = require("../config/db");
 
@@ -36,126 +36,238 @@ async function generateInvoicePDF(invoice, items, customer, userId) {
     totalWords = "Indian Rupee " + total.toFixed(0);
   }
 
-  // Build items rows with optional HSN column
-  const showHSN = prefs.show_hsn || false;
-  let itemsRows = "";
-  if (items.length > 0) {
-    items.forEach((item, idx) => {
-      const qty = parseFloat(item.quantity) || 0;
-      const rate = parseFloat(item.unit_price) || 0;
-      const amount = qty * rate;
-      itemsRows += `<tr>
-        <td style="padding:6px; border-bottom:1px solid #ddd;">${idx + 1}</td>
-        <td style="padding:6px; border-bottom:1px solid #ddd;">${item.description || "—"}</td>`;
-      if (showHSN) {
-        itemsRows += `<td style="padding:6px; border-bottom:1px solid #ddd;">${item.hsn_code || "—"}</td>`;
-      }
-      itemsRows += `<td style="padding:6px; border-bottom:1px solid #ddd; text-align:center;">${qty.toFixed(2)}</td>
-        <td style="padding:6px; border-bottom:1px solid #ddd; text-align:right;">₹${rate.toFixed(2)}</td>
-        <td style="padding:6px; border-bottom:1px solid #ddd; text-align:right;">₹${amount.toFixed(2)}</td>
-      </tr>`;
-    });
-  } else {
-    const colspan = showHSN ? 6 : 5;
-    itemsRows = `<tr><td colspan="${colspan}" style="padding:16px; text-align:center; color:#888;">No items</td></tr>`;
-  }
-
   // CGST/SGST calculation
   const showCGSTSGST = prefs.show_cgst_sgst || false;
   const cgst = showCGSTSGST ? (total * 0.09) : 0; // Example: 9% CGST
   const sgst = showCGSTSGST ? (total * 0.09) : 0;
   const grandTotal = total + cgst + sgst;
 
-  const html = `
-<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 12px; color: #333; padding: 20px 25px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-  .biz-name { font-size: 16px; font-weight: bold; }
-  .biz-detail { font-size: 10px; color: #555; }
-  .doc-title { font-size: 22px; font-weight: bold; color: #000; }
-  .divider { border-top: 1px solid #999; margin: 10px 0; }
-  .meta { font-size: 11px; }
-  .meta div { margin: 2px 0; }
-  .bill-to { font-size: 11px; margin: 10px 0; }
-  table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-  th { background: #f0f0f0; padding: 6px; text-align: left; font-weight: bold; border-bottom: 2px solid #333; }
-  td { padding: 6px; border-bottom: 1px solid #ddd; }
-  .totals { text-align: right; margin: 10px 0; font-size: 12px; }
-  .words { margin: 10px 0; font-style: italic; }
-  .notes { margin: 10px 0; font-size: 11px; }
-  .signature { text-align: right; margin-top: 40px; }
-  .footer { text-align: center; font-size: 10px; color: #888; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 8px; }
-</style></head><body>
-  <div class="header">
-    <div>
-      <div class="biz-name">${bizName}</div>
-      <div class="biz-detail">${bizAddress1}</div>
-      <div class="biz-detail">${bizAddress2}</div>
-      <div class="biz-detail">${bizEmail}</div>
-      ${prefs.show_gstin ? `<div class="biz-detail">GSTIN: ${bizGSTIN}</div>` : ''}
-      ${prefs.show_pan ? `<div class="biz-detail">PAN NO: ${bizPAN}</div>` : ''}
-    </div>
-    <div class="doc-title">TAX INVOICE</div>
-  </div>
-  <div class="divider"></div>
-  <div class="meta">
-    <div><strong>Invoice No:</strong> ${invoiceNumber}</div>
-    <div><strong>Date:</strong> ${invoiceDate}</div>
-    ${prefs.show_due_date !== false ? `<div><strong>Due Date:</strong> ${dueDate}</div>` : ''}
-    ${prefs.show_payment_mode ? `<div><strong>Payment Mode:</strong> ___________</div>` : ''}
-  </div>
-  <div class="divider"></div>
-  <div class="bill-to">
-    <strong>Bill To:</strong><br>
-    ${customerName}<br>
-    ${customerAddress}<br>
-    ${customerEmail}
-  </div>
-  <div class="divider"></div>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Description</th>
-        ${showHSN ? '<th>HSN Code</th>' : ''}
-        <th>Qty</th>
-        <th>Rate</th>
-        <th>Amount</th>
-      </tr>
-    </thead>
-    <tbody>${itemsRows}</tbody>
-  </table>
-  <div class="totals">
-    <div>Sub Total: ₹${total.toFixed(2)}</div>
-    ${showCGSTSGST ? `<div>CGST @9%: ₹${cgst.toFixed(2)}</div><div>SGST @9%: ₹${sgst.toFixed(2)}</div>` : ''}
-    <div style="font-weight:bold;">Total: ₹${grandTotal.toFixed(2)}</div>
-    <div style="font-weight:bold;">Balance Due: ₹${balanceDue.toFixed(2)}</div>
-  </div>
-  <div class="words"><strong>Total in Words:</strong> Indian Rupee ${totalWords} Only</div>
-  ${prefs.show_terms !== false ? `<div class="notes"><strong>Terms & Conditions:</strong><br>${terms}</div>` : ''}
-  ${prefs.show_signature !== false ? `<div class="signature">Authorised Signatory<br><br>_________________</div>` : ''}
-  <div class="footer">POWERED BY ${bizName}</div>
-</body></html>`;
+  const showHSN = prefs.show_hsn || false;
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: "A4", bufferPages: true });
+    const buffers = [];
+    doc.on("data", chunk => buffers.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
+
+    const drawLine = (y, from = 50, to = 545, color = "#cccccc") =>
+      doc.moveTo(from, y).lineTo(to, y).strokeColor(color).stroke().strokeColor("#000000");
+
+    let y = 50;
+
+    // ── Header: Title & Company Info ───────────────────────────
+    doc.fontSize(20).font("Helvetica-Bold").text("TAX INVOICE", 50, y, { align: "right" });
+    doc.fontSize(14).font("Helvetica-Bold").text(bizName, 50, y, { width: 300 });
+    y += 18;
+    doc.fontSize(9).font("Helvetica").fillColor("#555555");
+    doc.text(bizAddress1, 50, y, { width: 300 });
+    y += 12;
+    doc.text(bizAddress2, 50, y, { width: 300 });
+    y += 12;
+    doc.text(bizEmail, 50, y, { width: 300 });
+    y += 12;
+
+    if (prefs.show_gstin) {
+      doc.text(`GSTIN: ${bizGSTIN}`, 50, y, { width: 300 });
+      y += 12;
+    }
+    if (prefs.show_pan) {
+      doc.text(`PAN: ${bizPAN}`, 50, y, { width: 300 });
+      y += 12;
+    }
+
+    y += 8;
+    drawLine(y, 50, 545, "#888888");
+    y += 10;
+
+    // ── Metadata Grid: Invoice details ───────────────────────────
+    doc.fillColor("#000000").fontSize(9);
+    doc.font("Helvetica-Bold").text("Invoice No:", 50, y).font("Helvetica").text(invoiceNumber, 120, y);
+    doc.font("Helvetica-Bold").text("Date:", 320, y).font("Helvetica").text(invoiceDate, 400, y);
+    y += 14;
+
+    if (prefs.show_due_date !== false) {
+      doc.font("Helvetica-Bold").text("Due Date:", 50, y).font("Helvetica").text(dueDate, 120, y);
+    }
+    if (prefs.show_payment_mode) {
+      doc.font("Helvetica-Bold").text("Payment Mode:", 320, y).font("Helvetica").text("___________", 400, y);
+    }
+    y += 14;
+
+    y += 2;
+    drawLine(y, 50, 545, "#888888");
+    y += 10;
+
+    // ── Bill To Block ──────────────────────────────────────────
+    doc.fontSize(10).font("Helvetica-Bold").text("Bill To:", 50, y);
+    y += 14;
+    doc.fontSize(12).font("Helvetica-Bold").fillColor("#1a56db").text(customerName, 50, y);
+    doc.fillColor("#333333").fontSize(9).font("Helvetica");
+    
+    if (customerAddress) {
+      y += 14;
+      doc.text(customerAddress, 50, y, { width: 495 });
+    }
+    if (customerEmail) {
+      y += 14;
+      doc.text(customerEmail, 50, y);
+    }
+
+    y += 18;
+    drawLine(y, 50, 545, "#888888");
+    y += 12;
+
+    // ── Items Table Columns & Header ───────────────────────────
+    const cols = {
+      sNo: 50,
+      desc: 80,
+      hsn: showHSN ? 255 : null,
+      qty: 315,
+      rate: 375,
+      amount: 455
+    };
+    const colW = {
+      sNo: 30,
+      desc: showHSN ? 175 : 235,
+      hsn: 60,
+      qty: 60,
+      rate: 80,
+      amount: 90
+    };
+
+    doc.rect(50, y, 495, 20).fill("#f3f4f6");
+    doc.fillColor("#1f2937").font("Helvetica-Bold").fontSize(9);
+    doc.text("#", cols.sNo + 4, y + 6);
+    doc.text("Description", cols.desc, y + 6);
+    if (showHSN) {
+      doc.text("HSN Code", cols.hsn, y + 6, { align: "center", width: colW.hsn });
+    }
+    doc.text("Qty", cols.qty, y + 6, { align: "center", width: colW.qty });
+    doc.text("Rate", cols.rate, y + 6, { align: "right", width: colW.rate });
+    doc.text("Amount", cols.amount, y + 6, { align: "right", width: colW.amount });
+    doc.fillColor("#000000");
+    y += 20;
+
+    // ── Items Rows ─────────────────────────────────────────────
+    if (items.length > 0) {
+      items.forEach((item, idx) => {
+        const qty = parseFloat(item.quantity) || 0;
+        const rate = parseFloat(item.unit_price) || 0;
+        const amount = qty * rate;
+
+        // Auto Page Break check
+        if (y + 24 > 740) {
+          doc.addPage();
+          y = 50;
+        }
+
+        // Row background striping
+        if (idx % 2 === 1) {
+          doc.rect(50, y, 495, 20).fill("#f9fafb");
+        }
+        
+        doc.fillColor("#000000").font("Helvetica").fontSize(9);
+        doc.text(String(idx + 1), cols.sNo + 4, y + 5);
+        doc.text(item.description || "—", cols.desc, y + 5, { width: colW.desc, ellipsis: true });
+        
+        if (showHSN) {
+          doc.text(item.hsn_code || "—", cols.hsn, y + 5, { align: "center", width: colW.hsn });
+        }
+        doc.text(qty.toFixed(2), cols.qty, y + 5, { align: "center", width: colW.qty });
+        doc.text(`₹${rate.toFixed(2)}`, cols.rate, y + 5, { align: "right", width: colW.rate });
+        doc.text(`₹${amount.toFixed(2)}`, cols.amount, y + 5, { align: "right", width: colW.amount });
+        
+        y += 20;
+      });
+    } else {
+      doc.rect(50, y, 495, 30).fill("#ffffff");
+      doc.fillColor("#888888").font("Helvetica").fontSize(9);
+      doc.text("No items", 50, y + 10, { align: "center", width: 495 });
+      y += 30;
+    }
+
+    y += 4;
+    drawLine(y, 50, 545, "#888888");
+    y += 12;
+
+    // ── Totals Section ──────────────────────────────────────────
+    if (y + 110 > 750) {
+      doc.addPage();
+      y = 50;
+    }
+
+    const totalsX = 330;
+    const labelW = 110;
+    const valueW = 105;
+
+    doc.font("Helvetica").fontSize(9).fillColor("#4b5563");
+    
+    // Subtotal
+    doc.text("Sub Total:", totalsX, y).font("Helvetica-Bold").fillColor("#111827")
+       .text(`₹${total.toFixed(2)}`, totalsX + labelW, y, { align: "right", width: valueW });
+    y += 16;
+
+    // Taxes
+    if (showCGSTSGST) {
+      doc.font("Helvetica").fillColor("#4b5563").text("CGST @9%:", totalsX, y)
+         .text(`₹${cgst.toFixed(2)}`, totalsX + labelW, y, { align: "right", width: valueW });
+      y += 16;
+      doc.text("SGST @9%:", totalsX, y)
+         .text(`₹${sgst.toFixed(2)}`, totalsX + labelW, y, { align: "right", width: valueW });
+      y += 16;
+    }
+
+    // Grand Total
+    drawLine(y, totalsX, 545, "#dddddd");
+    y += 6;
+    doc.font("Helvetica-Bold").fillColor("#111827").text("Total:", totalsX, y)
+       .text(`₹${grandTotal.toFixed(2)}`, totalsX + labelW, y, { align: "right", width: valueW });
+    y += 16;
+
+    // Balance Due
+    doc.font("Helvetica-Bold").fillColor("#1a56db").text("Balance Due:", totalsX, y)
+       .text(`₹${balanceDue.toFixed(2)}`, totalsX + labelW, y, { align: "right", width: valueW });
+    y += 20;
+
+    drawLine(y, 50, 545, "#888888");
+    y += 10;
+
+    // ── Words, Notes & Signatures ────────────────────────────────
+    if (y + 110 > 760) {
+      doc.addPage();
+      y = 50;
+    }
+
+    doc.font("Helvetica-Bold").fillColor("#111827").text("Total in Words:");
+    doc.font("Helvetica").fillColor("#374151").text(`Indian Rupee ${totalWords} Only`, 50, y + 12);
+    y += 32;
+
+    if (prefs.show_terms !== false) {
+      doc.font("Helvetica-Bold").fillColor("#111827").text("Terms & Conditions:");
+      doc.font("Helvetica").fillColor("#4b5563").fontSize(8).text(terms, 50, y + 12, { width: 495, lineHeight: 1.3 });
+      y += 40;
+    }
+
+    if (prefs.show_signature !== false) {
+      const sigY = y + 20;
+      doc.fontSize(9).font("Helvetica-Bold").fillColor("#111827")
+         .text("Authorised Signatory", 380, sigY)
+         .text("_________________", 380, sigY + 30);
+    }
+
+    // ── Footer (on every page) ──────────────────────────────────
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(i);
+      const footerY = doc.page.height - 40;
+      doc.moveTo(50, footerY).lineTo(545, footerY).strokeColor("#eeeeee").stroke();
+      doc.fontSize(8).font("Helvetica").fillColor("#9ca3af")
+         .text(`POWERED BY ${bizName}`, 50, footerY + 8, { align: "center", width: 495 });
+    }
+
+    doc.end();
   });
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "15mm", bottom: "15mm", left: "12mm", right: "12mm" }
-    });
-    return Buffer.from(pdfBuffer);
-  } finally {
-    await browser.close();
-  }
 }
 
 module.exports = generateInvoicePDF;

@@ -8,16 +8,24 @@ const getExpenses = async (req, res) => {
     let query = `SELECT e.*, v.display_name AS vendor_name
                  FROM expenses e
                  LEFT JOIN vendors v ON e.vendor_id = v.id
-                 WHERE e.user_id = $1`;
-    const values = [req.user.id];
+                 WHERE 1=1`;
+    const values = [];
+    let paramIndex = 1;
+
+    if (req.tenantId) {
+      query += ` AND e.organization_id = $${paramIndex++}`;
+      values.push(req.tenantId);
+    } else {
+      query += ` AND e.user_id = $${paramIndex++}`;
+      values.push(req.user.id);
+    }
 
     if (category) {
-      query += ` AND e.category = $2`;
+      query += ` AND e.category = $${paramIndex++}`;
       values.push(category);
     }
     if (status) {
-      const idx = values.length + 1;
-      query += ` AND e.status = $${idx}`;
+      query += ` AND e.status = $${paramIndex++}`;
       values.push(status);
     }
     query += ` ORDER BY e.expense_date DESC`;
@@ -34,13 +42,22 @@ const getExpenses = async (req, res) => {
 const getExpenseById = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(
-      `SELECT e.*, v.display_name AS vendor_name
-       FROM expenses e
-       LEFT JOIN vendors v ON e.vendor_id = v.id
-       WHERE e.id = $1 AND e.user_id = $2`,
-      [id, req.user.id]
-    );
+    let query = `SELECT e.*, v.display_name AS vendor_name
+                 FROM expenses e
+                 LEFT JOIN vendors v ON e.vendor_id = v.id
+                 WHERE e.id = $1`;
+    const values = [id];
+    let paramIndex = 2;
+
+    if (req.tenantId) {
+      query += ` AND e.organization_id = $${paramIndex++}`;
+      values.push(req.tenantId);
+    } else {
+      query += ` AND e.user_id = $${paramIndex++}`;
+      values.push(req.user.id);
+    }
+
+    const result = await pool.query(query, values);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Expense not found" });
     }
@@ -60,10 +77,10 @@ const createExpense = async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO expenses
-       (user_id, vendor_id, category, amount, expense_date, description, reference, attachment_url, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       (user_id, vendor_id, category, amount, expense_date, description, reference, attachment_url, status, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
-      [req.user.id, vendor_id || null, category || "Other Expenses", amount, expense_date || new Date(), description, reference, attachment_url || null, status || "unpaid"]
+      [req.user.id, vendor_id || null, category || "Other Expenses", amount, expense_date || new Date(), description, reference, attachment_url || null, status || "unpaid", req.tenantId || null]
     );
     const expense = result.rows[0];
 
@@ -133,14 +150,35 @@ const updateExpense = async (req, res) => {
   }
   setColumns.push("updated_at = CURRENT_TIMESTAMP");
 
-  const query = `UPDATE expenses SET ${setColumns.join(", ")} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING *`;
-  values.push(id, req.user.id);
+  const existingQuery = `SELECT expense_date FROM expenses WHERE id = $1`;
+  const existingVals = [id];
+  let checkIdx = 2;
+  if (req.tenantId) {
+    existingQuery = `SELECT expense_date FROM expenses WHERE id = $1 AND organization_id = $2`;
+    existingVals.push(req.tenantId);
+  } else {
+    existingQuery = `SELECT expense_date FROM expenses WHERE id = $1 AND user_id = $2`;
+    existingVals.push(req.user.id);
+  }
 
   try {
-    const existing = await pool.query(`SELECT expense_date FROM expenses WHERE id = $1 AND user_id = $2`, [id, req.user.id]);
+    const existing = await pool.query(existingQuery, existingVals);
     if (existing.rows.length === 0) return res.status(404).json({ message: "Expense not found" });
     await checkTransactionLock(req.user.id, "Expenses", existing.rows[0].expense_date);
     if (fields.expense_date) await checkTransactionLock(req.user.id, "Expenses", fields.expense_date);
+
+    let query = `UPDATE expenses SET ${setColumns.join(", ")} WHERE id = $${idx}`;
+    values.push(id);
+    idx++;
+
+    if (req.tenantId) {
+      query += ` AND organization_id = $${idx++}`;
+      values.push(req.tenantId);
+    } else {
+      query += ` AND user_id = $${idx++}`;
+      values.push(req.user.id);
+    }
+    query += ` RETURNING *`;
 
     const result = await pool.query(query, values);
     if (result.rows.length === 0) {
@@ -157,14 +195,33 @@ const updateExpense = async (req, res) => {
 const deleteExpense = async (req, res) => {
   const { id } = req.params;
   try {
-    const existing = await pool.query(`SELECT expense_date FROM expenses WHERE id = $1 AND user_id = $2`, [id, req.user.id]);
+    let checkQuery = `SELECT expense_date FROM expenses WHERE id = $1`;
+    let checkVals = [id];
+    let pIdx = 2;
+    if (req.tenantId) {
+      checkQuery += ` AND organization_id = $${pIdx++}`;
+      checkVals.push(req.tenantId);
+    } else {
+      checkQuery += ` AND user_id = $${pIdx++}`;
+      checkVals.push(req.user.id);
+    }
+    const existing = await pool.query(checkQuery, checkVals);
     if (existing.rows.length === 0) return res.status(404).json({ message: "Expense not found" });
     await checkTransactionLock(req.user.id, "Expenses", existing.rows[0].expense_date);
 
-    const result = await pool.query(
-      `DELETE FROM expenses WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, req.user.id]
-    );
+    let query = `DELETE FROM expenses WHERE id = $1`;
+    const values = [id];
+    let idx = 2;
+    if (req.tenantId) {
+      query += ` AND organization_id = $${idx++}`;
+      values.push(req.tenantId);
+    } else {
+      query += ` AND user_id = $${idx++}`;
+      values.push(req.user.id);
+    }
+    query += ` RETURNING *`;
+
+    const result = await pool.query(query, values);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Expense not found" });
     }
