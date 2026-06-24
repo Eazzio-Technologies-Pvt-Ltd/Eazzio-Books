@@ -21,6 +21,8 @@ class PdfHelper {
     final customerName = customer?.displayName ?? 
         '${customer?.firstName ?? ""} ${customer?.lastName ?? ""}'.trim();
     final displayCustomerName = customerName.isNotEmpty ? customerName : 'Customer';
+    final customerEmail = customer?.email;
+    final customerPhone = customer?.phone;
 
     final itemsRows = items.asMap().entries.map((entry) {
       final idx = entry.key;
@@ -176,8 +178,8 @@ class PdfHelper {
             <td style="width: 50%;">
               <div class="section-header" style="padding: 2px 0; margin-bottom: 5px;">Bill To</div>
               <strong style="color: #006EE6;">$displayCustomerName</strong><br/>
-              ${customer?.email != null && customer.email!.isNotEmpty ? customer.email! + '<br/>' : ''}
-              ${customer?.phone != null && customer.phone!.isNotEmpty ? customer.phone! : ''}
+              ${customerEmail != null && customerEmail.isNotEmpty ? customerEmail + '<br/>' : ''}
+              ${customerPhone != null && customerPhone.isNotEmpty ? customerPhone : ''}
             </td>
           </tr>
         </table>
@@ -248,6 +250,8 @@ class PdfHelper {
     final customerName = customer?.displayName ?? 
         '${customer?.firstName ?? ""} ${customer?.lastName ?? ""}'.trim();
     final displayCustomerName = customerName.isNotEmpty ? customerName : 'Customer';
+    final customerEmail = customer?.email;
+    final customerPhone = customer?.phone;
     final isIntraState = invoice.gstType == 'intra_state';
     final isInterState = invoice.gstType == 'inter_state';
 
@@ -444,8 +448,8 @@ class PdfHelper {
             <td style="width: 33%;">
               <div class="section-header">Bill To</div>
               <strong style="color: #0BA5EC;">$displayCustomerName</strong><br/>
-              ${customer?.email != null && customer.email!.isNotEmpty ? customer.email! + '<br/>' : ''}
-              ${customer?.phone != null && customer.phone!.isNotEmpty ? customer.phone! + '<br/>' : ''}
+              ${customerEmail != null && customerEmail.isNotEmpty ? customerEmail + '<br/>' : ''}
+              ${customerPhone != null && customerPhone.isNotEmpty ? customerPhone + '<br/>' : ''}
               ${invoice.customerGstin != null && invoice.customerGstin!.isNotEmpty ? '<strong>GSTIN:</strong> ' + invoice.customerGstin! : ''}
             </td>
             <td style="width: 34%;">

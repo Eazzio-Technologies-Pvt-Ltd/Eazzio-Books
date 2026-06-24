@@ -469,6 +469,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
 
                     if (_itemType == 'Goods') ...[
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: _unit,
                         decoration: const InputDecoration(labelText: 'Unit'),
                         hint: const Text('Select unit'),
@@ -545,6 +546,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
                                       initialValue: _salesAccount,
                                       decoration: const InputDecoration(labelText: 'Sales Account'),
                                       items: _salesAccountsList
@@ -651,6 +653,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                               const SizedBox(height: AppSpacing.s),
                               vendorsState.when(
                                 data: (vendors) => DropdownButtonFormField<int>(
+                                  isExpanded: true,
                                   initialValue: _preferredVendorId,
                                   decoration: const InputDecoration(labelText: 'Preferred Vendor'),
                                   hint: const Text('Select preferred vendor'),
@@ -723,6 +726,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                               const Divider(),
                               if (_isInventoryTracked) ...[
                                 DropdownButtonFormField<String>(
+                                  isExpanded: true,
                                   initialValue: _inventoryAccount,
                                   decoration: const InputDecoration(labelText: 'Inventory Asset Account'),
                                   items: _inventoryAccounts

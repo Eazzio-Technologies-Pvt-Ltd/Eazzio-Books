@@ -153,11 +153,12 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
     final subjectController = TextEditingController(text: 'Delivery Challan $dcNumber from Tinplate');
     final bodyController = TextEditingController(text: 'Please find attached your Delivery Challan details in PDF format.');
 
+    bool isSending = false;
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          bool isSending = false;
 
           return AlertDialog(
             title: const Text('Send Delivery Challan'),

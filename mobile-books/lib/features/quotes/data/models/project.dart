@@ -1,3 +1,13 @@
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class Project {
   final int id;
   final int userId;
@@ -40,9 +50,9 @@ class Project {
       projectCode: json['project_code'] as String? ?? json['projectCode'] as String?,
       startDate: json['start_date'] != null ? DateTime.tryParse(json['start_date'] as String) : null,
       endDate: json['end_date'] != null ? DateTime.tryParse(json['end_date'] as String) : null,
-      budget: (json['budget'] as num? ?? 0.0).toDouble(),
+      budget: _parseDouble(json['budget']),
       billingType: json['billing_type'] as String? ?? json['billingType'] as String? ?? 'Fixed Cost',
-      hourlyRate: (json['hourly_rate'] as num? ?? json['hourlyRate'] as num? ?? 0.0).toDouble(),
+      hourlyRate: _parseDouble(json['hourly_rate'] ?? json['hourlyRate']),
       status: json['status'] as String? ?? 'Active',
       description: json['description'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,

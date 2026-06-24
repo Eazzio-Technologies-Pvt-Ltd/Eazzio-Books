@@ -272,6 +272,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       builder: (context) {
+        bool isSending = false;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -281,7 +282,6 @@ class InvoiceDetailScreen extends ConsumerWidget {
           ),
           child: StatefulBuilder(
             builder: (context, setModalState) {
-              bool isSending = false;
 
               return SingleChildScrollView(
                 child: Column(

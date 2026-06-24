@@ -185,42 +185,77 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primaryBlue),
-                  onPressed: () {
-                    ref.read(paymentsProvider.notifier).refresh();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Payments list refreshed'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  onSelected: (val) {
+                    if (val == 'sort') {
+                      _showSortBottomSheet(context);
+                    } else if (val == 'refresh') {
+                      ref.read(paymentsProvider.notifier).refresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Payments list refreshed'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else if (val == 'import') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Importing payments...'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else if (val == 'export') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Payments exported successfully to downloads'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
                   },
-                  tooltip: 'Refresh List',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.file_download_outlined, color: AppColors.primaryBlue),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Importing payments...'),
-                        behavior: SnackBarBehavior.floating,
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'sort',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sort, size: 18),
+                          SizedBox(width: 8),
+                          Text('Sort Payments'),
+                        ],
                       ),
-                    );
-                  },
-                  tooltip: 'Import Payments',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.file_upload_outlined, color: AppColors.primaryBlue),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Payments exported successfully to downloads'),
-                        behavior: SnackBarBehavior.floating,
+                    ),
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh, size: 18),
+                          SizedBox(width: 8),
+                          Text('Refresh List'),
+                        ],
                       ),
-                    );
-                  },
-                  tooltip: 'Export Payments',
+                    ),
+                    const PopupMenuItem(
+                      value: 'import',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_download_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Import Payments'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'export',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_upload_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Export Payments'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

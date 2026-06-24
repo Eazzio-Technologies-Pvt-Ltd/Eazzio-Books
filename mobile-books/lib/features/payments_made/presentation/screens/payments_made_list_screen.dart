@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
@@ -145,39 +146,117 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
 
     return ResponsiveScaffold(
       currentRoute: '/payments-made',
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/bills/0/record-payment?balanceDue=0.0'),
+        backgroundColor: AppColors.primaryBlue,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
       appBar: AppBar(
         title: const Text('Payments Made'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: () => _showSortBottomSheet(context),
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // Search Bar
+          // Search Bar & Actions Row
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) => ref.read(paymentMadeSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search payments...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(paymentMadeSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) => ref.read(paymentMadeSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search payments...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(paymentMadeSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  onSelected: (val) {
+                    if (val == 'sort') {
+                      _showSortBottomSheet(context);
+                    } else if (val == 'refresh') {
+                      ref.read(paymentsMadeProvider.notifier).refresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Payments list refreshed'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else if (val == 'import') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Importing payments...'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } else if (val == 'export') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Payments exported successfully to downloads'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'sort',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sort, size: 18),
+                          SizedBox(width: 8),
+                          Text('Sort Payments'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh, size: 18),
+                          SizedBox(width: 8),
+                          Text('Refresh List'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'import',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_download_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Import Payments'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'export',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_upload_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Export Payments'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.xs),

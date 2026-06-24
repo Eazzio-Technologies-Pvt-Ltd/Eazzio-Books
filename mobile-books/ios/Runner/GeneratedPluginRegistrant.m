@@ -24,12 +24,26 @@
 @import image_picker_ios;
 #endif
 
+#if __has_include(<printing/PrintingPlugin.h>)
+#import <printing/PrintingPlugin.h>
+#else
+@import printing;
+#endif
+
+#if __has_include(<share_plus/FPPSharePlusPlugin.h>)
+#import <share_plus/FPPSharePlusPlugin.h>
+#else
+@import share_plus;
+#endif
+
 @implementation GeneratedPluginRegistrant
 
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
   [FilePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FilePickerPlugin"]];
   [FlutterSecureStorageDarwinPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterSecureStorageDarwinPlugin"]];
   [FLTImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTImagePickerPlugin"]];
+  [PrintingPlugin registerWithRegistrar:[registry registrarForPlugin:@"PrintingPlugin"]];
+  [FPPSharePlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPSharePlusPlugin"]];
 }
 
 @end

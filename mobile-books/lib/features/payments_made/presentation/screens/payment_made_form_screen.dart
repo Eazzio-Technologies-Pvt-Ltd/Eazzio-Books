@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/bills/presentation/providers/bill_provider.dart';
+import 'package:mobile_books/features/bills/data/models/bill.dart';
+import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
+import 'package:mobile_books/features/vendors/data/models/vendor.dart';
 import 'package:mobile_books/features/payments_made/data/models/payment_made.dart';
 import 'package:mobile_books/features/payments_made/presentation/providers/payment_made_provider.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
@@ -33,17 +36,24 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
   String _paymentMode = 'cash';
   bool _isLoading = false;
   int? _vendorId;
+  int? _selectedBillId;
+  double _currentBalanceDue = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _amountController.text = widget.balanceDue.toStringAsFixed(2);
-    _loadBillDetails();
+    _selectedBillId = widget.billId != 0 ? widget.billId : null;
+    _currentBalanceDue = widget.billId != 0 ? widget.balanceDue : 0.0;
+    _amountController.text = _currentBalanceDue > 0 ? _currentBalanceDue.toStringAsFixed(2) : '';
+    if (_selectedBillId != null) {
+      _loadBillDetails();
+    }
   }
 
   Future<void> _loadBillDetails() async {
+    if (_selectedBillId == null) return;
     try {
-      final details = await ref.read(billDetailsProvider(widget.billId).future);
+      final details = await ref.read(billDetailsProvider(_selectedBillId!).future);
       if (mounted) {
         setState(() {
           _vendorId = details.bill.vendorId;
@@ -77,6 +87,12 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
   }
 
   Future<void> _submit() async {
+    if (_selectedBillId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a bill to apply payment.')),
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
 
     final amt = double.tryParse(_amountController.text) ?? 0.0;
@@ -86,9 +102,9 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
       );
       return;
     }
-    if (amt > widget.balanceDue) {
+    if (amt > _currentBalanceDue) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Payment amount exceeds remaining balance due (₹${widget.balanceDue.toStringAsFixed(2)}).')),
+        SnackBar(content: Text('Payment amount exceeds remaining balance due (₹${_currentBalanceDue.toStringAsFixed(2)}).')),
       );
       return;
     }
@@ -101,7 +117,7 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
       final pm = PaymentMade(
         id: 0,
         userId: 0,
-        billId: widget.billId,
+        billId: _selectedBillId!,
         vendorId: _vendorId,
         amount: amt,
         paymentDate: _paymentDate,
@@ -117,7 +133,7 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
           const SnackBar(content: Text('Payment recorded successfully.')),
         );
         ref.invalidate(billsProvider);
-        ref.invalidate(billDetailsProvider(widget.billId));
+        ref.invalidate(billDetailsProvider(_selectedBillId!));
         context.pop();
       }
     } catch (e) {
@@ -142,6 +158,20 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
           date: _paymentDate,
         );
 
+    final billsState = ref.watch(billsProvider);
+    final vendorsState = ref.watch(vendorsProvider);
+
+    final bills = billsState.value ?? [];
+    final vendors = vendorsState.value ?? [];
+    final vendorMap = {for (var v in vendors) v.id: v.displayName};
+
+    // Filter active bills with outstanding balance due
+    final unpaidBills = bills.where((b) {
+      return b.balanceDue > 0 &&
+          b.status.toLowerCase() != 'draft' &&
+          b.status.toLowerCase() != 'void';
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Record Payment Made'),
@@ -157,16 +187,46 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
                     module: TransactionLockModule.paymentsMade,
                     date: _paymentDate,
                   ),
-                  Text(
-                    'Record payment against Bill #${widget.billId}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: AppSpacing.s),
-                  Text(
-                    'Balance Due: ₹${widget.balanceDue.toStringAsFixed(2)}',
-                    style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppSpacing.m),
+                  if (widget.billId == 0) ...[
+                    DropdownButtonFormField<int>(
+                      value: _selectedBillId,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Bill to Pay *',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: unpaidBills.map((b) {
+                        final vName = vendorMap[b.vendorId] ?? 'Vendor #${b.vendorId}';
+                        return DropdownMenuItem<int>(
+                          value: b.id,
+                          child: Text('${b.billNumber} ($vName) - Due: ₹${b.balanceDue.toStringAsFixed(2)}'),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          final selectedBill = unpaidBills.firstWhere((b) => b.id == val);
+                          setState(() {
+                            _selectedBillId = val;
+                            _vendorId = selectedBill.vendorId;
+                            _currentBalanceDue = selectedBill.balanceDue;
+                            _amountController.text = _currentBalanceDue.toStringAsFixed(2);
+                          });
+                        }
+                      },
+                      validator: (val) => val == null ? 'Bill selection is required' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                  ] else ...[
+                    Text(
+                      'Record payment against Bill #${widget.billId}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    Text(
+                      'Balance Due: ₹${_currentBalanceDue.toStringAsFixed(2)}',
+                      style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: AppSpacing.m),
+                  ],
                   TextFormField(
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),

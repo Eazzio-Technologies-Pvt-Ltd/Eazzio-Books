@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
 import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
+import 'package:mobile_books/features/invoices/data/models/invoice.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/features/customers/data/models/customer.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
@@ -217,6 +218,21 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     final customersState = ref.watch(customersProvider);
     final invoicesState = ref.watch(invoicesProvider);
 
+    ref.listen<AsyncValue<List<Invoice>>>(invoicesProvider, (previous, next) {
+      if (next.hasValue && next.value != null && _selectedCustomerId != null) {
+        final customerInvoices = next.value!.where((i) {
+          return i.customerId == _selectedCustomerId &&
+              i.balanceDue > 0 &&
+              i.status.toLowerCase() != 'draft' &&
+              i.status.toLowerCase() != 'cancelled';
+        }).toList();
+        customerInvoices.sort((a, b) => a.invoiceDate.compareTo(b.invoiceDate));
+        if (_amountReceivedController.text.isNotEmpty && paymentsMap.isEmpty) {
+          _handleAmountReceivedChanged(_amountReceivedController.text, customerInvoices);
+        }
+      }
+    });
+
     final customers = customersState.value ?? [];
     final allInvoices = invoicesState.value ?? [];
 
@@ -230,11 +246,12 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
       }
     }
 
-    // Filter sent/unpaid invoices for the selected customer
+    // Filter active invoices with balance due for the selected customer
     final customerInvoices = allInvoices.where((i) {
       return i.customerId == _selectedCustomerId &&
           i.balanceDue > 0 &&
-          (i.status.toLowerCase() == 'sent' || i.status.toLowerCase() == 'unpaid' || i.status.toLowerCase() == 'partially_paid');
+          i.status.toLowerCase() != 'draft' &&
+          i.status.toLowerCase() != 'cancelled';
     }).toList();
 
     // Sort by date oldest first
