@@ -95,8 +95,8 @@ const AnimatedDashboard = () => {
   // Amounts
   const inc = step >= 1 ? 12450000 : 0; // ₹1.24 Cr
   const exp = step >= 2 ? 3950000 : 0;  // ₹39.5 L
-  const prof = step >= 3 ? (inc - exp) : 0; 
-  const cash = step >= 4 ? prof + 250000 : 0; 
+  const prof = step >= 3 ? (inc - exp) : 0;
+  const cash = step >= 4 ? prof + 250000 : 0;
 
   const formatCurrency = (val) => {
     return '₹' + val.toLocaleString('en-IN', { maximumFractionDigits: 0 });
@@ -116,7 +116,7 @@ const AnimatedDashboard = () => {
           <div className="mock-menu-item">Reports</div>
         </div>
       </div>
-      
+
       <div className="mockup-main-area">
         <div className="mockup-header">
           <div className="mockup-search-dark">Search transactions...</div>
@@ -156,7 +156,7 @@ const AnimatedDashboard = () => {
               </div>
               <div className="stat-sub">This Year</div>
             </div>
-            
+
             <div className="mockup-stat-card">
               <div className="stat-label">
                 <span className="icon cash-icon">💳</span> Net Cash
@@ -186,7 +186,7 @@ const AnimatedDashboard = () => {
           </div>
         </div>
       </div>
-      
+
       {step >= 4 && (
         <div className="al-badge pop-in" style={{ bottom: '30px', right: '30px', position: 'absolute' }}>
           <span className="check-icon">✓</span> Matched with bank
@@ -275,7 +275,7 @@ const LandingPage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="hero-visual-col" style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px', minHeight: '550px' }}>
             <AnimatedDashboard />
           </div>
