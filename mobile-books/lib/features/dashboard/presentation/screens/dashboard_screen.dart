@@ -9,10 +9,60 @@ import 'package:mobile_books/features/dashboard/data/models/dashboard_summary.da
 import 'package:mobile_books/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
-import 'package:mobile_books/widgets/common/exit_confirmation_dialog.dart';
+import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
+
+  Widget _buildGreetingHeader(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    String orgName = 'Your Organization';
+    if (authState is AuthAuthenticated) {
+      orgName = authState.user.organizationName ?? 'Your Organization';
+    }
+
+    final hour = DateTime.now().hour;
+    String greeting = 'Good evening';
+    if (hour >= 5 && hour < 12) {
+      greeting = 'Good morning';
+    } else if (hour >= 12 && hour < 17) {
+      greeting = 'Good afternoon';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.m),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$greeting,',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            orgName,
+            style: Theme.of(context).brightness == Brightness.dark
+                ? const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimaryDark,
+                  )
+                : const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimaryLight,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
 
   String _formatCurrency(BuildContext context, double amount) {
     final format = NumberFormat.currency(
@@ -144,6 +194,7 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildGreetingHeader(context, ref),
                   _buildQuickActions(context),
                   const SizedBox(height: AppSpacing.l),
                   // 1. STAT CARDS (RECEIVABLES, PAYABLES, INCOME, EXPENSES)

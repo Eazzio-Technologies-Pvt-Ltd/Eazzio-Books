@@ -37,6 +37,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     return ResponsiveScaffold(
       currentRoute: '/items',
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Items & Inventory'),
       ),
       floatingActionButton: FloatingActionButton(

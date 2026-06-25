@@ -170,6 +170,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
     return ResponsiveScaffold(
       currentRoute: '/invoices',
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Invoices'),
       ),
       floatingActionButton: FloatingActionButton(

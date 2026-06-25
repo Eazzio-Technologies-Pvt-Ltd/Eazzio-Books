@@ -347,6 +347,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(widget.itemId == null ? 'New Item' : 'Edit Item'),
       ),
       body: _isLoading && !(_isInit || widget.itemId == null)

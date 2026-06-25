@@ -93,7 +93,12 @@ import 'package:mobile_books/features/projects/presentation/screens/project_deta
 import 'package:mobile_books/features/projects/presentation/screens/project_form_screen.dart';
 import 'package:mobile_books/features/timesheets/presentation/screens/timesheets_list_screen.dart';
 import 'package:mobile_books/features/timesheets/presentation/screens/timesheet_form_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile_books/features/auth/presentation/screens/feature_showcase_screen.dart';
 
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('SharedPreferences has not been overridden');
+});
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authNotifierProvider);
@@ -106,8 +111,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isRegistering = location == '/register';
       final isForgotting = location == '/forgot-password';
       final isResetting = location.startsWith('/reset-password');
+      final isShowcase = location == '/showcase';
 
-      final isPublicRoute = isLoggingIn || isRegistering || isForgotting || isResetting;
+      final isPublicRoute = isLoggingIn || isRegistering || isForgotting || isResetting || isShowcase;
 
       // While checking session initialization, allow boot route
       if (authState is AuthInitial) {
@@ -116,6 +122,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // If user is not logged in and attempts secure access, force login redirect
       if (authState is AuthUnauthenticated) {
+        final hasSeenOnboarding = ref.read(sharedPreferencesProvider).getBool('has_seen_onboarding') ?? false;
+        if (!hasSeenOnboarding) {
+          return isShowcase ? null : '/showcase';
+        }
         return isPublicRoute ? null : '/login';
       }
 
@@ -135,6 +145,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/showcase',
+        builder: (context, state) => const FeatureShowcaseScreen(),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),

@@ -62,6 +62,7 @@ class ItemDetailScreen extends ConsumerWidget {
         length: 3,
         child: Scaffold(
           appBar: AppBar(
+            automaticallyImplyLeading: false,
             title: Text(item.name),
             actions: [
               IconButton(

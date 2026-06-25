@@ -608,6 +608,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(_isEditMode ? 'Edit Quote' : 'New Quote'),
         actions: [
           if (!_isEditMode)

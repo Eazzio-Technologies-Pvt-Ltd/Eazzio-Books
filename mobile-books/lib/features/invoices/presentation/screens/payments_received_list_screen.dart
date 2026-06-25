@@ -153,6 +153,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
         child: const Icon(Icons.add, color: Colors.white),
       ),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Payments Received'),
       ),
       body: Column(
@@ -373,85 +374,89 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                       final payment = filteredAndSorted[index];
                       final dateStr = DateFormat('dd MMM yyyy').format(payment.paymentDate);
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.m),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.m),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    payment.invoiceNumber != null
-                                        ? 'Invoice: ${payment.invoiceNumber}'
-                                        : 'Invoice #${payment.invoiceId}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                      color: AppColors.primaryBlue,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.s,
-                                      vertical: AppSpacing.xs,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF1F5F9),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      payment.paymentMode?.toUpperCase() ?? 'CASH',
+                      return InkWell(
+                        onTap: () => context.push('/invoices/${payment.invoiceId}'),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: AppSpacing.m),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.m),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      payment.invoiceNumber != null
+                                          ? 'Invoice: ${payment.invoiceNumber}'
+                                          : 'Invoice #${payment.invoiceId}',
                                       style: const TextStyle(
-                                        color: Color(0xFF475569),
-                                        fontSize: 10,
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: AppColors.primaryBlue,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.s),
-                              Text(
-                                payment.customerName ?? 'Customer #${payment.customerId}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.s,
+                                        vertical: AppSpacing.xs,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        payment.paymentMode?.toUpperCase() ?? 'CASH',
+                                        style: const TextStyle(
+                                          color: Color(0xFF475569),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
+                                const SizedBox(height: AppSpacing.s),
+                                Text(
+                                  payment.customerName ?? 'Customer #${payment.customerId}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Date: $dateStr',
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondaryLight,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${payment.amount.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (payment.reference != null && payment.reference!.isNotEmpty) ...[
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
-                                    'Date: $dateStr',
+                                    'Ref: ${payment.reference}',
                                     style: const TextStyle(
                                       color: AppColors.textSecondaryLight,
                                       fontSize: 12,
                                     ),
                                   ),
-                                  Text(
-                                    '₹${payment.amount.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
                                 ],
-                              ),
-                              if (payment.reference != null && payment.reference!.isNotEmpty) ...[
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  'Ref: ${payment.reference}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondaryLight,
-                                    fontSize: 12,
-                                  ),
-                                ),
                               ],
-                            ],
+                            ),
                           ),
                         ),
                       );

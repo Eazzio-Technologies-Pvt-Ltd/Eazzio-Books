@@ -167,6 +167,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     return ResponsiveScaffold(
       currentRoute: '/quotes',
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Quotes'),
       ),
       floatingActionButton: FloatingActionButton(

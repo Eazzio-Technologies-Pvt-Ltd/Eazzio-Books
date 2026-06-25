@@ -365,6 +365,7 @@ class QuoteDetailScreen extends ConsumerWidget {
           length: 3,
           child: Scaffold(
             appBar: AppBar(
+              automaticallyImplyLeading: false,
               title: Text(quote.quoteNumber),
               actions: [
                 // Mark as Sent action

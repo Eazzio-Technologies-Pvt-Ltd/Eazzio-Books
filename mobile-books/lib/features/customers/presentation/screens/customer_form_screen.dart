@@ -485,7 +485,8 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
         length: 4,
         child: Scaffold(
           appBar: AppBar(
-          title: Text(isEdit ? 'Edit Customer' : 'New Customer'),
+            automaticallyImplyLeading: false,
+            title: Text(isEdit ? 'Edit Customer' : 'New Customer'),
           bottom: const TabBar(
             isScrollable: true,
             tabs: [

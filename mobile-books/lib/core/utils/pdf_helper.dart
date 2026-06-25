@@ -13,9 +13,9 @@ class PdfHelper {
     required OrganizationSettings? settings,
     required String totalInWords,
   }) {
-    final orgName = settings?.organizationName ?? 'Tinplate Computer Training Center';
-    final orgAddress = settings?.address ?? '2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001';
-    final orgEmail = settings?.organizationEmail ?? 'info@tinplate.com';
+    final orgName = settings?.organizationName ?? 'Your Organization';
+    final orgAddress = settings?.address ?? '';
+    final orgEmail = settings?.organizationEmail ?? '';
     final orgCountry = settings?.country ?? 'India';
 
     final customerName = customer?.displayName ?? 
@@ -23,6 +23,11 @@ class PdfHelper {
     final displayCustomerName = customerName.isNotEmpty ? customerName : 'Customer';
     final customerEmail = customer?.email;
     final customerPhone = customer?.phone;
+
+    double subtotal = 0.0;
+    for (final item in items) {
+      subtotal += item.quantity * item.unitPrice;
+    }
 
     final itemsRows = items.asMap().entries.map((entry) {
       final idx = entry.key;
@@ -65,6 +70,7 @@ class PdfHelper {
       <head>
         <meta charset="utf-8">
         <style>
+          @page { size: A4 portrait; margin: 10mm 12mm; }
           body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #333;
@@ -216,7 +222,7 @@ class PdfHelper {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 5px 0; color: #667085; text-align: left;">Sub Total</td>
-                <td style="padding: 5px 0; font-weight: 500; text-align: right;">₹${quote.totalAmount.toStringAsFixed(2)}</td>
+                <td style="padding: 5px 0; font-weight: 500; text-align: right;">₹${subtotal.toStringAsFixed(2)}</td>
               </tr>
               <tr class="total-row">
                 <td style="padding: 8px 0; border-top: 1px solid #D0D5DD; text-align: left;">Total</td>
@@ -230,6 +236,9 @@ class PdfHelper {
           </div>
           <div style="clear: both;"></div>
         </div>
+        <div style="text-align: center; margin-top: 40px; padding: 12px 0; border-top: 1px solid #E5E7EB; color: #98A2B3; font-size: 9px;">
+          Powered by Eazzio Technology
+        </div>
       </body>
       </html>
     ''';
@@ -242,9 +251,9 @@ class PdfHelper {
     required OrganizationSettings? settings,
     required String totalInWords,
   }) {
-    final orgName = settings?.organizationName ?? 'Tinplate Computer Training Center';
-    final orgAddress = settings?.address ?? '2nd Floor, Thakur Pyara Singh Road, Jamshedpur – 831001';
-    final orgEmail = settings?.organizationEmail ?? 'info@tinplate.com';
+    final orgName = settings?.organizationName ?? 'Your Organization';
+    final orgAddress = settings?.address ?? '';
+    final orgEmail = settings?.organizationEmail ?? '';
     final orgCountry = settings?.country ?? 'India';
 
     final customerName = customer?.displayName ?? 
@@ -254,6 +263,45 @@ class PdfHelper {
     final customerPhone = customer?.phone;
     final isIntraState = invoice.gstType == 'intra_state';
     final isInterState = invoice.gstType == 'inter_state';
+
+    double subtotal = 0.0;
+    double discountAmount = 0.0;
+    double cgstAmount = 0.0;
+    double sgstAmount = 0.0;
+    double igstAmount = 0.0;
+    double taxAmount = 0.0;
+
+    for (final item in items) {
+      final qty = item.quantity;
+      final rate = item.unitPrice;
+      final disc = item.discount;
+      final discType = item.discountType;
+
+      double itemSubtotal = qty * rate;
+      subtotal += itemSubtotal;
+
+      double itemDiscount = 0.0;
+      if (discType == 'percent') {
+        itemDiscount = itemSubtotal * (disc / 100);
+      } else {
+        itemDiscount = disc;
+      }
+      discountAmount += itemDiscount;
+
+      double taxable = item.taxableValue;
+      if (taxable == 0.0) {
+        taxable = itemSubtotal - itemDiscount;
+      }
+
+      if (isIntraState) {
+        cgstAmount += item.cgstAmount;
+        sgstAmount += item.sgstAmount;
+      } else if (isInterState) {
+        igstAmount += item.igstAmount;
+      } else {
+        taxAmount += taxable * (item.taxRate / 100);
+      }
+    }
 
     final itemsRows = items.asMap().entries.map((entry) {
       final idx = entry.key;
@@ -335,6 +383,7 @@ class PdfHelper {
       <head>
         <meta charset="utf-8">
         <style>
+          @page { size: A4 portrait; margin: 10mm 12mm; }
           body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #333;
@@ -440,7 +489,7 @@ class PdfHelper {
         <table class="meta-table">
           <tr>
             <td style="width: 33%;">
-              <strong>Invoice Number:</strong> INV-${invoice.invoiceNumber}<br/>
+              <strong>Invoice Number:</strong> ${invoice.invoiceNumber}<br/>
               <strong>Invoice Date:</strong> ${invoice.invoiceDate.toLocal().toString().split(' ')[0]}<br/>
               <strong>Terms:</strong> ${invoice.terms ?? 'Due on Receipt'}<br/>
               <strong>Due Date:</strong> ${invoice.dueDate != null ? invoice.dueDate!.toLocal().toString().split(' ')[0] : '—'}
@@ -490,8 +539,13 @@ class PdfHelper {
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 5px 0; color: #667085; text-align: left;">Sub Total</td>
-                <td style="padding: 5px 0; font-weight: 500; text-align: right;">₹${invoice.totalAmount.toStringAsFixed(2)}</td>
+                <td style="padding: 5px 0; font-weight: 500; text-align: right;">₹${subtotal.toStringAsFixed(2)}</td>
               </tr>
+              ${discountAmount > 0 ? '<tr><td style="padding: 5px 0; color: #DC2626; text-align: left;">Discount</td><td style="padding: 5px 0; color: #DC2626; text-align: right;">-₹' + discountAmount.toStringAsFixed(2) + '</td></tr>' : ''}
+              ${cgstAmount > 0 ? '<tr><td style="padding: 5px 0; color: #667085; text-align: left;">CGST</td><td style="padding: 5px 0; text-align: right;">₹' + cgstAmount.toStringAsFixed(2) + '</td></tr>' : ''}
+              ${sgstAmount > 0 ? '<tr><td style="padding: 5px 0; color: #667085; text-align: left;">SGST</td><td style="padding: 5px 0; text-align: right;">₹' + sgstAmount.toStringAsFixed(2) + '</td></tr>' : ''}
+              ${igstAmount > 0 ? '<tr><td style="padding: 5px 0; color: #667085; text-align: left;">IGST</td><td style="padding: 5px 0; text-align: right;">₹' + igstAmount.toStringAsFixed(2) + '</td></tr>' : ''}
+              ${taxAmount > 0 ? '<tr><td style="padding: 5px 0; color: #667085; text-align: left;">Tax</td><td style="padding: 5px 0; text-align: right;">₹' + taxAmount.toStringAsFixed(2) + '</td></tr>' : ''}
               <tr class="total-row">
                 <td style="padding: 8px 0; border-top: 1px solid #D0D5DD; text-align: left;">Total</td>
                 <td style="padding: 8px 0; border-top: 1px solid #D0D5DD; text-align: right;">₹${invoice.totalAmount.toStringAsFixed(2)}</td>
@@ -507,6 +561,9 @@ class PdfHelper {
             </div>
           </div>
           <div style="clear: both;"></div>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding: 12px 0; border-top: 1px solid #E5E7EB; color: #98A2B3; font-size: 9px;">
+          Powered by Eazzio Technology
         </div>
       </body>
       </html>

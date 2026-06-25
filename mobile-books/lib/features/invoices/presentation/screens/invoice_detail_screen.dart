@@ -405,6 +405,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Invoice Details'),
         actions: [
           detailsState.when(
@@ -455,7 +456,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         ),
                         icon: const Icon(Icons.payment, color: Colors.white, size: 18),
                         label: const Text('PAY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        onPressed: () => _showRecordPaymentSheet(context, ref, invoice),
+                        onPressed: () => context.push('/invoices/${invoice.id}/record-payment?balanceDue=${invoice.balanceDue}'),
                       ),
                     ),
                   PopupMenuButton<String>(

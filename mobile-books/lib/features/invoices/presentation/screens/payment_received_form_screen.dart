@@ -263,6 +263,7 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Record Payment'),
       ),
       body: _isLoading

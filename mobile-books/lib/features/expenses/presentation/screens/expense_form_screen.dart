@@ -266,6 +266,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     if (_isLoading && _isEdit) {
       return Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: Text(_isEdit ? 'Edit Expense' : 'Record Expense'),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -274,6 +275,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(_isEdit ? 'Edit Expense' : 'Record Expense'),
         actions: [
           IconButton(

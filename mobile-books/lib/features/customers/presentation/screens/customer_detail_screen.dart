@@ -63,6 +63,7 @@ class CustomerDetailScreen extends ConsumerWidget {
         length: 5,
         child: Scaffold(
           appBar: AppBar(
+            automaticallyImplyLeading: false,
             title: Text(customer.formattedName),
             actions: [
               IconButton(

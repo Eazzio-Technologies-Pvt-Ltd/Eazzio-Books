@@ -176,6 +176,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
     return ResponsiveScaffold(
       currentRoute: '/expenses',
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Expenses'),
         actions: [
           IconButton(

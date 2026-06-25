@@ -141,6 +141,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     return ResponsiveScaffold(
       currentRoute: '/customers',
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Customers'),
       ),
       floatingActionButton: FloatingActionButton(

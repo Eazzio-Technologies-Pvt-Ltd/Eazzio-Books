@@ -668,7 +668,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Invoice' : 'New Invoice'),
+        automaticallyImplyLeading: false,
+        title: Text(widget.invoiceId == null ? 'New Invoice' : 'Edit Invoice'),
         actions: [
           if (!_isLoading) ...[
             if (!_isEditMode)

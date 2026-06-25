@@ -18,6 +18,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Expense Details'),
         actions: [
           detailState.when(
