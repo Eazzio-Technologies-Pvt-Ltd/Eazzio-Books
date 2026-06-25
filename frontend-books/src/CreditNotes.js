@@ -354,9 +354,9 @@ function CreditNotes() {
           ) : filteredData.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 20px', color: '#98a2b3' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>📄</div>
-              <h3 style={{ color: '#1d2939', marginBottom: '8px', fontSize: "16px", fontWeight: "600" }}>No items found</h3>
-              <p style={{ marginBottom: '20px', fontSize: "13px" }}>{search ? 'No items match your search.' : 'Start by creating your first item.'}</p>
-              <button className="btn-new" onClick={() => navigate('/credit-notes/new')} style={{ margin: "0 auto" }}>+ New Item</button>
+              <h3 style={{ color: '#1d2939', marginBottom: '8px', fontSize: "16px", fontWeight: "600" }}>No credit note found</h3>
+              <p style={{ marginBottom: '20px', fontSize: "13px" }}>{search ? 'No items match your search.' : 'Start by creating your credit note.'}</p>
+              <button className="btn-new" onClick={() => navigate('/credit-notes/new')} style={{ margin: "0 auto" }}>+ New credit note</button>
             </div>
           ) : (
             <table className={`items-table ${clipText ? 'clip-text' : ''}`}>

@@ -1,3 +1,6 @@
+/**
+ * Taxes.js – Modernized Taxes & GST management
+ */
 import React, { useEffect, useState } from "react";
 import { apiRequest } from "./api";
 import { TableSkeleton } from "./components/skeletons";
@@ -106,22 +109,131 @@ function Taxes() {
     return matchSearch && matchType && matchStatus;
   });
 
+  const labelStyle = { display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "500", color: "#344054" };
+  const thStyle = { padding: "12px 18px", color: "#475569", fontWeight: "600", fontSize: "12px", borderBottom: "1px solid #eaecf0", letterSpacing: "0.02em" };
+  const tdStyle = { padding: "14px 18px", verticalAlign: "middle", borderBottom: "1px solid #eaecf0" };
+
   return (
-    <div style={{ padding: "30px", maxWidth: "1000px", margin: "auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2>Taxes & GST Management</h2>
-        <button onClick={handleOpenAdd} style={primaryBtn}>+ New Tax</button>
+    <div style={{ padding: "30px", maxWidth: "1000px", margin: "auto", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+      
+      {/* Dynamic Style Injection */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .premium-input {
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #d0d5dd;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #344054;
+          background: #ffffff;
+          box-sizing: border-box;
+          outline: none;
+          transition: all 0.15s ease;
+        }
+        .premium-input:hover { border-color: #98a2b3; }
+        .premium-input:focus { border-color: #006ee6; box-shadow: 0 0 0 3px rgba(0, 110, 230, 0.1); }
+        
+        select.premium-input {
+          appearance: none;
+          background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+          background-position: right 12px center;
+          background-repeat: no-repeat;
+          background-size: 18px;
+          padding-right: 36px;
+        }
+        
+        .action-link {
+          background: none;
+          border: none;
+          color: #006ee6;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 13px;
+          padding: 0;
+          transition: color 0.15s ease;
+        }
+        .action-link:hover { color: #0056b3; text-decoration: underline; }
+        
+        .delete-link {
+          background: none;
+          border: none;
+          color: #d92d20;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 13px;
+          padding: 0;
+          margin-left: 12px;
+          transition: color 0.15s ease;
+        }
+        .delete-link:hover { color: #b91c1c; text-decoration: underline; }
+        
+        .status-pill-active {
+          padding: 4px 10px;
+          background: #d1fae5;
+          color: #065f46;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+          display: inline-block;
+        }
+        .status-pill-inactive {
+          padding: 4px 10px;
+          background: #f1f5f9;
+          color: #475569;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+          display: inline-block;
+        }
+        
+        .primary-btn {
+          padding: 10px 18px;
+          background: #006ee6;
+          color: #ffffff;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 13px;
+          transition: background 0.15s ease;
+        }
+        .primary-btn:hover { background: #0056b3; }
+        
+        .secondary-btn {
+          padding: 10px 18px;
+          background: #ffffff;
+          color: #344054;
+          border: 1px solid #d0d5dd;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 13px;
+          transition: all 0.15s ease;
+        }
+        .secondary-btn:hover { background: #f9fafb; border-color: #98a2b3; }
+      `}} />
+
+      {/* Header section */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "700", color: "#1d2939" }}>Taxes & GST Management</h2>
+          <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#667085" }}>Manage your goods and services tax rates, types, and active statuses.</p>
+        </div>
+        <button onClick={handleOpenAdd} className="primary-btn">+ New Tax</button>
       </div>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-        <input
-          type="text"
-          placeholder="Search tax name..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ ...inputStyle, maxWidth: "300px" }}
-        />
-        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ ...inputStyle, width: "150px" }}>
+      {/* Filters Bar */}
+      <div style={{ display: "flex", gap: "16px", marginBottom: "24px", background: "#ffffff", padding: "18px 24px", borderRadius: "10px", border: "1px solid #eaecf0", boxShadow: "0 1px 3px rgba(16, 24, 40, 0.05)", alignItems: "center" }}>
+        <div style={{ position: "relative", flex: 1, maxWidth: "320px" }}>
+          <input
+            type="text"
+            placeholder="Search tax name..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="premium-input"
+          />
+        </div>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="premium-input" style={{ maxWidth: "160px", cursor: "pointer" }}>
           <option value="all">All Types</option>
           <option value="GST">GST</option>
           <option value="IGST">IGST</option>
@@ -130,75 +242,82 @@ function Taxes() {
           <option value="CESS">CESS</option>
           <option value="Other">Other</option>
         </select>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ ...inputStyle, width: "150px" }}>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="premium-input" style={{ maxWidth: "160px", cursor: "pointer" }}>
           <option value="all">All Statuses</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
       </div>
 
+      {/* Table Container */}
       {loading ? (
         <TableSkeleton columns={5} rows={5} />
       ) : filteredTaxes.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "50px", color: "gray", background: "#f9fafb", borderRadius: "8px" }}>
-          <p>No taxes found.</p>
-          <button onClick={handleOpenAdd} style={secondaryBtn}>Add New Tax</button>
+        <div style={{ textAlign: "center", padding: "50px", color: "#667085", background: "#f9fafb", borderRadius: "8px", border: "1px solid #eaecf0" }}>
+          <p style={{ margin: "0 0 16px 0", fontSize: "14px" }}>No taxes found.</p>
+          <button onClick={handleOpenAdd} className="secondary-btn">Add New Tax</button>
         </div>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: "8px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-          <thead>
-            <tr style={{ background: "#f1f5f9", textAlign: "left" }}>
-              <th style={thStyle}>Tax Name</th>
-              <th style={thStyle}>Type</th>
-              <th style={thStyle}>Rate (%)</th>
-              <th style={thStyle}>Status</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTaxes.map(tax => (
-              <tr key={tax.id} style={{ borderBottom: "1px solid #e2e8f0", transition: "background 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f8fafc"} onMouseOut={e => e.currentTarget.style.background = "transparent"}>
-                <td style={tdStyle}>
-                  <div style={{ fontWeight: "500", color: "#333" }}>{tax.tax_name}</div>
-                  {tax.description && <div style={{ fontSize: "12px", color: "#64748b" }}>{tax.description}</div>}
-                </td>
-                <td style={tdStyle}>{tax.tax_type || "—"}</td>
-                <td style={tdStyle}><span style={{ fontWeight: "600", color: "#0f172a" }}>{parseFloat(tax.rate).toFixed(2)}%</span></td>
-                <td style={tdStyle}>
-                  {tax.status === "active" ? (
-                    <span style={activeBadge}>Active</span>
-                  ) : (
-                    <span style={inactiveBadge}>Inactive</span>
-                  )}
-                </td>
-                <td style={tdStyle}>
-                  <button onClick={() => handleOpenEdit(tax)} style={actionBtn}>Edit</button>
-                  <button onClick={() => handleDelete(tax.id)} style={{ ...actionBtn, color: "red", marginLeft: "8px" }}>Delete</button>
-                </td>
+        <div style={{ border: "1px solid #eaecf0", borderRadius: "10px", overflow: "hidden", boxShadow: "0 1px 3px rgba(16, 24, 40, 0.05)", background: "#ffffff" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
+            <thead>
+              <tr style={{ background: "#f9fafb" }}>
+                <th style={thStyle}>Tax Name</th>
+                <th style={thStyle}>Type</th>
+                <th style={thStyle}>Rate (%)</th>
+                <th style={thStyle}>Status</th>
+                <th style={thStyle}>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredTaxes.map(tax => (
+                <tr key={tax.id} style={{ transition: "background 0.2s" }} onMouseOver={e => e.currentTarget.style.background = "#f9fafb"} onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                  <td style={tdStyle}>
+                    <div style={{ fontWeight: "600", color: "#1d2939" }}>{tax.tax_name}</div>
+                    {tax.description && <div style={{ fontSize: "12px", color: "#667085", marginTop: "2px" }}>{tax.description}</div>}
+                  </td>
+                  <td style={{ ...tdStyle, color: "#475569" }}>{tax.tax_type || "—"}</td>
+                  <td style={tdStyle}><span style={{ fontWeight: "700", color: "#1d2939" }}>{parseFloat(tax.rate).toFixed(2)}%</span></td>
+                  <td style={tdStyle}>
+                    <span className={tax.status === 'active' ? "status-pill-active" : "status-pill-inactive"}>
+                      {tax.status === 'active' ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>
+                    <button onClick={() => handleOpenEdit(tax)} className="action-link">Edit</button>
+                    <button onClick={() => handleDelete(tax.id)} className="delete-link">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div style={modalOverlay}>
-          <div style={modalBox}>
-            <h3 style={{ marginTop: 0, marginBottom: "20px" }}>{isEditMode ? "Edit Tax" : "New Tax"}</h3>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(16, 24, 40, 0.4)", backdropFilter: "blur(4px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+          <div style={{ background: "#ffffff", padding: "32px", borderRadius: "12px", width: "100%", maxWidth: "480px", boxShadow: "0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03)", border: "1px solid #eaecf0", overflow: "hidden" }}>
+            <h3 style={{ margin: "0 0 4px 0", fontSize: "18px", fontWeight: "700", color: "#1d2939" }}>
+              {isEditMode ? "Edit Tax" : "New Tax"}
+            </h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#667085" }}>
+              {isEditMode ? "Update tax rate details" : "Add a new tax rate to your account."}
+            </p>
             <form onSubmit={handleSave}>
-              <div style={{ marginBottom: "15px" }}>
+              <div style={{ marginBottom: "16px" }}>
                 <label style={labelStyle}>Tax Name *</label>
-                <input type="text" name="tax_name" value={formData.tax_name} onChange={handleChange} style={inputStyle} placeholder="e.g. GST 18%" required />
+                <input type="text" name="tax_name" value={formData.tax_name} onChange={handleChange} className="premium-input" placeholder="e.g. GST 18%" required />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                 <div>
                   <label style={labelStyle}>Rate (%) *</label>
-                  <input type="number" step="0.01" name="rate" value={formData.rate} onChange={handleChange} style={inputStyle} required />
+                  <input type="number" step="0.01" name="rate" value={formData.rate} onChange={handleChange} className="premium-input" placeholder="e.g. 18.00" required />
                 </div>
                 <div>
                   <label style={labelStyle}>Tax Type</label>
-                  <select name="tax_type" value={formData.tax_type} onChange={handleChange} style={inputStyle}>
+                  <select name="tax_type" value={formData.tax_type} onChange={handleChange} className="premium-input" style={{ cursor: "pointer" }}>
                     <option value="GST">GST</option>
                     <option value="IGST">IGST</option>
                     <option value="CGST">CGST</option>
@@ -208,20 +327,23 @@ function Taxes() {
                   </select>
                 </div>
               </div>
-              <div style={{ marginBottom: "15px" }}>
+              
+              <div style={{ marginBottom: "16px" }}>
                 <label style={labelStyle}>Status</label>
-                <select name="status" value={formData.status} onChange={handleChange} style={inputStyle}>
+                <select name="status" value={formData.status} onChange={handleChange} className="premium-input" style={{ cursor: "pointer" }}>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
-              <div style={{ marginBottom: "20px" }}>
+              
+              <div style={{ marginBottom: "24px" }}>
                 <label style={labelStyle}>Description (Optional)</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows={3} style={inputStyle}></textarea>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows={3} className="premium-input" placeholder="Enter tax details..." style={{ resize: "none" }}></textarea>
               </div>
-              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-                <button type="button" onClick={() => setShowModal(false)} style={cancelBtn}>Cancel</button>
-                <button type="submit" style={primaryBtn}>Save Tax</button>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid #eaecf0", padding: "16px 32px", margin: "24px -32px -32px -32px", background: "#f9fafb", borderBottomLeftRadius: "12px", borderBottomRightRadius: "12px" }}>
+                <button type="button" onClick={() => setShowModal(false)} className="secondary-btn">Cancel</button>
+                <button type="submit" className="primary-btn">Save Tax</button>
               </div>
             </form>
           </div>
@@ -230,19 +352,5 @@ function Taxes() {
     </div>
   );
 }
-
-const thStyle = { padding: "12px", borderBottom: "2px solid #cbd5e1" };
-const tdStyle = { padding: "12px" };
-const primaryBtn = { padding: "10px 20px", background: "#4a90e2", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" };
-const secondaryBtn = { padding: "10px 20px", background: "#f1f5f9", color: "#333", border: "1px solid #ccc", borderRadius: "5px", cursor: "pointer" };
-const actionBtn = { padding: "4px 10px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: "4px", cursor: "pointer", fontSize: "13px" };
-const inputStyle = { width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" };
-const labelStyle = { display: "block", marginBottom: "5px", fontWeight: "500", fontSize: "14px" };
-const activeBadge = { background: "#dcfce7", color: "#166534", padding: "4px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" };
-const inactiveBadge = { background: "#f1f5f9", color: "#475569", padding: "4px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" };
-
-const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 };
-const modalBox = { background: "#fff", borderRadius: "8px", padding: "30px", width: "450px", maxWidth: "90%", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" };
-const cancelBtn = { padding: "10px 20px", background: "#f1f5f9", color: "#333", border: "1px solid #ccc", borderRadius: "5px", cursor: "pointer" };
 
 export default Taxes;
