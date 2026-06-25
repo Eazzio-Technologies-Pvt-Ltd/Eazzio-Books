@@ -1,0 +1,10 @@
+
+# Flutter / Android generated files
+**/.dart_tool/
+**/build/
+**/.cxx/
+**/android/app/build/
+**/ios/Pods/
+**/macos/Pods/
+**/*.apk
+**/*.aab
