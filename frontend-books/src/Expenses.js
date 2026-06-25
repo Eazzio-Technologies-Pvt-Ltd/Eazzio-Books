@@ -76,7 +76,7 @@ function Expenses() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [visibleColumns, setVisibleColumns] = useState(
     ALL_COLUMNS.reduce((acc, col) => {
       acc[col.key] = true;
@@ -114,9 +114,9 @@ function Expenses() {
   const [activities, setActivities] = useState([]);
   const [activeTab, setActiveTab] = useState("Overview");
 
-  const [activeStatus, setActiveStatus] = useState(true);
+  const [activeStatus, setActiveStatus] = useState("unpaid");
   useEffect(() => {
-    if (expandedExpense) setActiveStatus(expandedExpense.is_active);
+    if (expandedExpense) setActiveStatus(expandedExpense.status || "unpaid");
   }, [expandedExpense]);
 
   const [comments, setComments] = useState([]);
@@ -184,37 +184,36 @@ function Expenses() {
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
-      const newStatus = !currentStatus;
+      const newStatus = currentStatus?.toLowerCase() === 'paid' ? 'unpaid' : 'paid';
       await apiRequest(`/expenses/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ is_active: newStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
-      toast.success(newStatus ? 'Expense activated' : 'Expense deactivated');
-      if (expandedId === id) setActiveStatus(newStatus);
+      toast.success(`Expense marked as ${newStatus}`);
+      if (expandedId === id) {
+        setActiveStatus(newStatus);
+        const res = await apiRequest(`/expenses/${id}`);
+        if (res) setExpandedExpense(res.expense);
+      }
       fetchExpenses();
     } catch (err) {
       toast.error('Failed to update status');
     }
   };
 
-  const getExpenseName = (cust) => {
-    if (!cust) return "Unknown Expense";
-    return (
-      cust.display_name ||
-      [cust.first_name, cust.last_name].filter(Boolean).join(" ") ||
-      cust.company_name ||
-      cust.email ||
-      "Unknown Expense"
-    );
+  const getExpenseName = (exp) => {
+    if (!exp) return "Expense";
+    return exp.category || "Expense";
   };
 
   const filteredExpenses = expenses.filter(c => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    const name = getExpenseName(c).toLowerCase();
-    const email = (c.email || "").toLowerCase();
-    const comp = (c.company_name || "").toLowerCase();
-    return name.includes(q) || email.includes(q) || comp.includes(q);
+    const category = (c.category || "").toLowerCase();
+    const vendorName = (c.vendor_name || "").toLowerCase();
+    const desc = (c.description || "").toLowerCase();
+    const ref = (c.reference || "").toLowerCase();
+    return category.includes(q) || vendorName.includes(q) || desc.includes(q) || ref.includes(q);
   });
 
   const fetchExpenses = useCallback(async () => {
@@ -1076,7 +1075,7 @@ function Expenses() {
                   onClick={() => setMenuOpen(!menuOpen)}
                   style={{ background: "none", border: "none", fontSize: "15px", fontWeight: "600", color: "#1d2939", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
                 >
-                  {statusFilter === "all" ? "All Expenses" : statusFilter === "active" ? "Active Expenses" : "Inactive Expenses"}
+                  {statusFilter === "all" ? "All Expenses" : statusFilter === "paid" ? "Paid Expenses" : "Unpaid Expenses"}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
@@ -1085,11 +1084,10 @@ function Expenses() {
                 {menuOpen && (
                   <div style={{ position: "absolute", left: 0, top: "100%", marginTop: "8px", background: "#ffffff", border: "1px solid #eaecf0", borderRadius: "8px", boxShadow: "0 10px 25px rgba(0,0,0,0.08)", zIndex: 100, minWidth: "180px" }}>
                     <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("all"); setMenuOpen(false); }}>All Expenses</button>
-                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("active"); setMenuOpen(false); }}>Active Expenses</button>
-                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("inactive"); setMenuOpen(false); }}>Inactive Expenses</button>
+                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("paid"); setMenuOpen(false); }}>Paid Expenses</button>
+                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={() => { setStatusFilter("unpaid"); setMenuOpen(false); }}>Unpaid Expenses</button>
                     <div style={{ borderTop: "1px solid #eaecf0", margin: "4px 0" }}></div>
                     <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={handleRefresh}>🔄 Refresh List</button>
-                    <button style={{ width: "100%", padding: "10px 14px", border: "none", background: "none", textAlign: "left", cursor: "pointer", fontSize: "13px", color: "#344054" }} onClick={handleImport}>📥 Import Contacts</button>
                   </div>
                 )}
               </div>
@@ -1113,7 +1111,7 @@ function Expenses() {
                 <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#98a2b3", fontSize: "12px" }}>🔍</span>
                 <input
                   type="text"
-                  placeholder="Search contacts..."
+                  placeholder="Search expenses..."
                   value={searchQuery}
                   onChange={(e) => {
                     const newParams = new URLSearchParams(location.search);
@@ -1158,16 +1156,16 @@ function Expenses() {
                           {getExpenseName(c)}
                         </div>
                         <div style={{ fontSize: "11px", color: "#667085", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: "2px" }}>
-                          {c.company_name || "No Company"}
+                          {c.vendor_name || "No Vendor"}
                         </div>
                       </div>
 
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: "13px", fontWeight: "600", color: "#344054" }}>
-                          ₹{c.opening_balance ? parseFloat(c.opening_balance).toFixed(0) : "0"}
+                          ₹{c.amount ? parseFloat(c.amount).toFixed(2) : "0.00"}
                         </div>
-                        <div style={{ fontSize: "10px", color: c.is_active ? "#12b76a" : "#667085", fontWeight: "500", marginTop: "2px" }}>
-                          {c.is_active ? "Active" : "Inactive"}
+                        <div style={{ fontSize: "10px", color: c.status?.toLowerCase() === "paid" ? "#12b76a" : "#d97706", fontWeight: "500", marginTop: "2px" }}>
+                          {c.status || "Unpaid"}
                         </div>
                       </div>
                     </div>
@@ -1195,9 +1193,9 @@ function Expenses() {
                     <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "#1d2939" }}>
                       {getExpenseName(expandedExpense)}
                     </h2>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: activeStatus ? "#ecfdf5" : "#f2f4f7", border: `1px solid ${activeStatus ? "#a7f3d0" : "#d0d5dd"}`, padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "500", color: activeStatus ? "#047857" : "#475569" }}>
-                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: activeStatus ? "#10b981" : "#6b7280" }}></span>
-                      {activeStatus ? "Active" : "Inactive"}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: activeStatus?.toLowerCase() === "paid" ? "#ecfdf5" : "#fffbeb", border: `1px solid ${activeStatus?.toLowerCase() === "paid" ? "#a7f3d0" : "#fde68a"}`, padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "500", color: activeStatus?.toLowerCase() === "paid" ? "#047857" : "#b45309" }}>
+                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: activeStatus?.toLowerCase() === "paid" ? "#10b981" : "#d97706" }}></span>
+                      {activeStatus || "Unpaid"}
                     </span>
                   </div>
 
@@ -1265,9 +1263,9 @@ function Expenses() {
                           <button style={menuItem} onClick={async () => {
                             setMoreOpen(false);
                             try {
-                              const newStatus = !activeStatus;
-                              await apiRequest(`/expenses/${expandedExpense.id}`, { method: "PUT", body: JSON.stringify({ is_active: newStatus }) });
-                              toast.success(newStatus ? "Expense activated" : "Expense deactivated");
+                              const newStatus = activeStatus?.toLowerCase() === "paid" ? "unpaid" : "paid";
+                              await apiRequest(`/expenses/${expandedExpense.id}`, { method: "PUT", body: JSON.stringify({ status: newStatus }) });
+                              toast.success(`Expense marked as ${newStatus}`);
                               setActiveStatus(newStatus);
                               const res = await apiRequest(`/expenses/${expandedExpense.id}`);
                               if (res) setExpandedExpense(res.expense);
@@ -1275,7 +1273,7 @@ function Expenses() {
                               fetchActivities(expandedExpense.id);
                             } catch (err) { toast.error("Failed to update status"); }
                           }}>
-                            {activeStatus ? "Mark as Inactive" : "Mark as Active"}
+                            {activeStatus?.toLowerCase() === "paid" ? "Mark as Unpaid" : "Mark as Paid"}
                           </button>
                           <button style={menuItem} onClick={() => { setMoreOpen(false); handleNewTransaction(expandedExpense.id); }}>New Invoice</button>
                           <button style={menuItem} onClick={() => { setMoreOpen(false); toast("Credit note page coming soon"); }}>New Credit Note</button>
@@ -1353,13 +1351,13 @@ function Expenses() {
                             <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", padding: "16px", background: "#ffffff" }}>
                               <div style={{ fontSize: "12px", fontWeight: "600", color: "#667085", marginBottom: "8px" }}>NOTES</div>
                               <div style={{ fontSize: "13px", color: "#344054", lineHeight: "1.5" }}>
-                                {expandedExpense.notes || "No notes provided."}
+                                {expandedExpense.description || "No notes provided."}
                               </div>
                             </div>
                             <div style={{ border: "1px solid #eaecf0", borderRadius: "8px", padding: "16px", background: "#ffffff" }}>
                               <div style={{ fontSize: "12px", fontWeight: "600", color: "#667085", marginBottom: "8px" }}>REFERENCE #</div>
                               <div style={{ fontSize: "13px", color: "#344054", lineHeight: "1.5" }}>
-                                {expandedExpense.reference_number || "—"}
+                                {expandedExpense.reference || "—"}
                               </div>
                             </div>
                           </div>
@@ -1525,14 +1523,14 @@ function Expenses() {
               <div className="full-table-header">
                 <div className="view-dropdown-container">
                   <h3 className={`view-dropdown-btn ${menuOpen ? 'active' : ''}`} onClick={() => setMenuOpen(!menuOpen)} style={{ fontWeight: 600 }}>
-                    {statusFilter === "all" ? "All Expenses" : statusFilter === "active" ? "Active Expenses" : "Inactive Expenses"}
+                    {statusFilter === "all" ? "All Expenses" : statusFilter === "paid" ? "Paid Expenses" : "Unpaid Expenses"}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: menuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9" /></svg>
                   </h3>
                   {menuOpen && (
                     <div className="view-dropdown-menu">
                       <div className="view-dropdown-item" onClick={() => { setStatusFilter("all"); setMenuOpen(false); }}>All Expenses</div>
-                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("active"); setMenuOpen(false); }}>Active Expenses</div>
-                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("inactive"); setMenuOpen(false); }}>Inactive Expenses</div>
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("paid"); setMenuOpen(false); }}>Paid Expenses</div>
+                      <div className="view-dropdown-item" onClick={() => { setStatusFilter("unpaid"); setMenuOpen(false); }}>Unpaid Expenses</div>
                     </div>
                   )}
                 </div>

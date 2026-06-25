@@ -411,12 +411,14 @@ const convertPurchaseOrderToBill = async (req, res) => {
     dueDate.setDate(dueDate.getDate() + 15);
     const dueDateStr = dueDate.toISOString().slice(0, 10);
 
+    const orgId = req.tenantId || req.user.organization_id || po.organization_id || 1;
+
     const billResult = await client.query(
       `INSERT INTO bills
          (user_id, vendor_id, bill_number, bill_date, due_date,
           subtotal, discount_amount, tax_amount, adjustment, total_amount, balance_due,
-          status, notes, purchase_order_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+          status, notes, purchase_order_id, organization_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
        RETURNING *`,
       [
         req.user.id,
@@ -432,7 +434,8 @@ const convertPurchaseOrderToBill = async (req, res) => {
         po.total_amount, // balance_due
         "draft",
         po.notes || null,
-        id, 
+        id,
+        orgId
       ]
     );
     const billId = billResult.rows[0].id;

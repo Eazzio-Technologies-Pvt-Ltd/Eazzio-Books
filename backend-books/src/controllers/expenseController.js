@@ -70,17 +70,20 @@ const getExpenseById = async (req, res) => {
 
 // CREATE expense
 const createExpense = async (req, res) => {
-  const { vendor_id, category, amount, expense_date, description, reference, attachment_url, status } = req.body;
+  const { vendor_id, category, amount, expense_date, description, reference, attachment_url, status, paid_through } = req.body;
 
   try {
     await pool.query('BEGIN');
+
+    // Secure organization_id for Super Admin (using first organization as default fallback)
+    const orgId = req.tenantId || req.user.organization_id || 1;
 
     const result = await pool.query(
       `INSERT INTO expenses
        (user_id, vendor_id, category, amount, expense_date, description, reference, attachment_url, status, organization_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
-      [req.user.id, vendor_id || null, category || "Other Expenses", amount, expense_date || new Date(), description, reference, attachment_url || null, status || "unpaid", req.tenantId || null]
+      [req.user.id, vendor_id || null, category || "Other Expenses", amount, expense_date || new Date(), description, reference, attachment_url || null, status || "unpaid", orgId]
     );
     const expense = result.rows[0];
 
@@ -89,7 +92,7 @@ const createExpense = async (req, res) => {
     let expAccountId;
     if (expAccount.rows.length === 0) {
       const newAcc = await pool.query(
-        `INSERT INTO chart_of_accounts (user_id, account_name, account_type, is_active) VALUES ($1, $2, 'Expense', true) RETURNING id`,
+        `INSERT INTO chart_of_accounts (user_id, account_name, account_type, status) VALUES ($1, $2, 'Expense', 'active') RETURNING id`,
         [req.user.id, expense.category]
       );
       expAccountId = newAcc.rows[0].id;
@@ -97,27 +100,55 @@ const createExpense = async (req, res) => {
       expAccountId = expAccount.rows[0].id;
     }
 
-    // Find Cash account (fallback to first bank/asset if cash doesn't exist)
-    let cashAccount = await pool.query(`SELECT id FROM chart_of_accounts WHERE user_id = $1 AND (account_name ILIKE '%cash%' OR account_type = 'Asset') ORDER BY id ASC LIMIT 1`, [req.user.id]);
+    // Find custom/fallback Cash/Asset account
+    const paidThroughName = paid_through || "Cash";
+    let cashAccount = await pool.query(`SELECT id FROM chart_of_accounts WHERE user_id = $1 AND account_name = $2 LIMIT 1`, [req.user.id, paidThroughName]);
     let cashAccountId;
     if (cashAccount.rows.length === 0) {
-      const newCash = await pool.query(`INSERT INTO chart_of_accounts (user_id, account_name, account_type, is_active) VALUES ($1, 'Cash', 'Asset', true) RETURNING id`, [req.user.id]);
-      cashAccountId = newCash.rows[0].id;
+      // Look up fallback Cash/Asset account
+      let fallbackAccount = await pool.query(
+        `SELECT id FROM chart_of_accounts WHERE user_id = $1 AND (account_name ILIKE '%cash%' OR account_type = 'Asset') ORDER BY id ASC LIMIT 1`,
+        [req.user.id]
+      );
+      if (fallbackAccount.rows.length === 0) {
+        const newCash = await pool.query(
+          `INSERT INTO chart_of_accounts (user_id, account_name, account_type, status) VALUES ($1, $2, 'Asset', 'active') RETURNING id`,
+          [req.user.id, paidThroughName]
+        );
+        cashAccountId = newCash.rows[0].id;
+      } else {
+        cashAccountId = fallbackAccount.rows[0].id;
+      }
     } else {
       cashAccountId = cashAccount.rows[0].id;
     }
 
-    // Insert journal entry
+    // Insert journal entry with correct schema columns
     const je = await pool.query(
-      `INSERT INTO journal_entries (user_id, entry_date, description, reference_type, reference_number, reference_id)
-       VALUES ($1, $2, $3, 'EXPENSE', $4, $5) RETURNING id`,
-      [req.user.id, expense.expense_date, expense.description || `Expense: ${expense.category}`, `EXP-${expense.id}`, expense.id]
+      `INSERT INTO journal_entries (user_id, journal_number, journal_date, reference_number, notes, total_debit, total_credit)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [
+        req.user.id,
+        `EXP-${expense.id}`, // journal_number
+        expense.expense_date, // journal_date
+        expense.reference || `EXP-${expense.id}`, // reference_number
+        expense.description || `Expense: ${expense.category}`, // notes
+        expense.amount, // total_debit
+        expense.amount  // total_credit
+      ]
     );
 
     // Insert journal lines: Debit Expense, Credit Cash
     await pool.query(
-      `INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit) VALUES ($1, $2, $3, 0), ($1, $4, 0, $3)`,
-      [je.rows[0].id, expAccountId, expense.amount, cashAccountId]
+      `INSERT INTO journal_entry_lines (journal_entry_id, account_id, description, debit, credit) 
+       VALUES ($1, $2, $3, $4, 0), ($1, $5, $3, 0, $4)`,
+      [
+        je.rows[0].id, 
+        expAccountId, 
+        expense.description || `Expense: ${expense.category}`, 
+        expense.amount, 
+        cashAccountId
+      ]
     );
 
     await pool.query('COMMIT');
@@ -132,8 +163,9 @@ const createExpense = async (req, res) => {
 // UPDATE expense (partial update)
 const updateExpense = async (req, res) => {
   const { id } = req.params;
-  const fields = req.body;
+  const fields = { ...req.body };
   delete fields.id; delete fields.user_id; delete fields.created_at; delete fields.updated_at;
+  delete fields.customer_id; delete fields.paid_through;
 
   const setColumns = [];
   const values = [];
@@ -150,7 +182,7 @@ const updateExpense = async (req, res) => {
   }
   setColumns.push("updated_at = CURRENT_TIMESTAMP");
 
-  const existingQuery = `SELECT expense_date FROM expenses WHERE id = $1`;
+  let existingQuery = `SELECT expense_date FROM expenses WHERE id = $1`;
   const existingVals = [id];
   let checkIdx = 2;
   if (req.tenantId) {

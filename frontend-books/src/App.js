@@ -196,6 +196,7 @@ function App() {
           <Route path="/delivery-challans" element={<DeliveryChallans />} />
           <Route path="/delivery-challans/new" element={<AddDeliveryChallan />} />
           <Route path="/delivery-challans/:id/edit" element={<AddDeliveryChallan />} />
+          <Route path="/delivery-challans/:id" element={<DeliveryChallanDetail />} />
           <Route path="/delivery-challans/:id/document" element={<DeliveryChallanDetail />} />
           <Route path="/recurring-invoices" element={<RecurringInvoices />} />
           <Route path="/recurring-invoices/new" element={<AddRecurringInvoice />} />
@@ -204,6 +205,7 @@ function App() {
           <Route path="/credit-notes" element={<CreditNotes />} />
           <Route path="/credit-notes/new" element={<AddCreditNote />} />
           <Route path="/credit-notes/:id/edit" element={<AddCreditNote />} />
+          <Route path="/credit-notes/:id" element={<CreditNoteDetail />} />
           <Route path="/credit-notes/:id/document" element={<CreditNoteDetail />} />
           <Route path="/vendors" element={<ProtectedRoute module={MODULES.VENDORS}><Vendors /></ProtectedRoute>} />
           <Route path="/vendors/new" element={<ProtectedRoute module={MODULES.VENDORS} action={ACTIONS.CREATE}><AddVendor /></ProtectedRoute>} />
@@ -216,16 +218,19 @@ function App() {
           <Route path="/purchase-orders" element={<PurchaseOrders />} />
           <Route path="/purchase-orders/new" element={<AddPurchaseOrder />} />
           <Route path="/purchase-orders/:id/edit" element={<AddPurchaseOrder />} />
+          <Route path="/purchase-orders/:id" element={<PurchaseOrderDetail />} />
           <Route path="/purchase-orders/:id/document" element={<PurchaseOrderDetail />} />
           <Route path="/bills" element={<ProtectedRoute module={MODULES.BILLS}><Bills /></ProtectedRoute>} />
           <Route path="/bills/new" element={<ProtectedRoute module={MODULES.BILLS} action={ACTIONS.CREATE}><AddBill /></ProtectedRoute>} />
           <Route path="/bills/:id/edit" element={<ProtectedRoute module={MODULES.BILLS} action={ACTIONS.EDIT}><AddBill /></ProtectedRoute>} />
+          <Route path="/bills/:id" element={<ProtectedRoute module={MODULES.BILLS}><BillDetail /></ProtectedRoute>} />
           <Route path="/bills/:id/document" element={<ProtectedRoute module={MODULES.BILLS}><BillDetail /></ProtectedRoute>} />
           <Route path="/payments-made" element={<PaymentsMade />} />
           <Route path="/payments-made/new" element={<AddPaymentMade />} />
           <Route path="/vendor-credits" element={<VendorCredits />} />
           <Route path="/vendor-credits/new" element={<AddVendorCredit />} />
           <Route path="/vendor-credits/:id/edit" element={<AddVendorCredit />} />
+          <Route path="/vendor-credits/:id" element={<VendorCreditDetail />} />
           <Route path="/vendor-credits/:id/document" element={<VendorCreditDetail />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/projects/new" element={<AddProject />} />

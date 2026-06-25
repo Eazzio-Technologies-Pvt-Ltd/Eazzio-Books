@@ -10,7 +10,6 @@ function AddExpense() {
   const isEdit = !!id;
   
   const [vendorId, setVendorId] = useState("");
-  const [customerId, setCustomerId] = useState("");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().slice(0, 10));
@@ -19,7 +18,6 @@ function AddExpense() {
   const [paidThrough, setPaidThrough] = useState("Petty Cash");
   
   const [vendors, setVendors] = useState([]);
-  const [customers, setCustomers] = useState([]);
   const [saving, setSaving] = useState(false);
   
   const [activeTab, setActiveTab] = useState("Record Expense");
@@ -41,19 +39,15 @@ function AddExpense() {
   const [file, setFile] = useState(null);
   const [bulkRows, setBulkRows] = useState(
     Array.from({ length: 8 }, () => ({
-      date: "", account: "", amount: "", paidThrough: "", vendor: "", customer: "", project: "", billable: false
+      date: "", account: "", amount: "", paidThrough: "", vendor: "", project: "", billable: false
     }))
   );
 
   useEffect(() => {
     const fetchDropdowns = async () => {
       try {
-        const [venRes, custRes] = await Promise.all([
-          apiRequest("/vendors"),
-          apiRequest("/customers")
-        ]);
+        const venRes = await apiRequest("/vendors");
         setVendors(venRes?.vendors || []);
-        setCustomers(custRes?.customers || []);
       } catch (err) {
         console.error("Error fetching dropdowns:", err);
       }
@@ -69,7 +63,6 @@ function AddExpense() {
           if (res && res.expense) {
             const exp = res.expense;
             setVendorId(exp.vendor_id || "");
-            setCustomerId(exp.customer_id || "");
             setCategory(exp.category || "");
             setAmount(exp.amount || "");
             setExpenseDate(exp.expense_date ? exp.expense_date.slice(0, 10) : new Date().toISOString().slice(0, 10));
@@ -88,7 +81,6 @@ function AddExpense() {
     if (location.state?.cloneFrom) {
       const clone = location.state.cloneFrom;
       setVendorId(clone.vendor_id || "");
-      setCustomerId(clone.customer_id || "");
       setCategory(clone.category || "");
       setAmount(clone.amount || "");
       setExpenseDate(new Date().toISOString().slice(0, 10));
@@ -109,17 +101,17 @@ function AddExpense() {
           method: "POST",
           body: JSON.stringify({
             vendor_id: row.vendor || null,
-            customer_id: row.customer || null,
             category: row.account,
             amount: parseFloat(row.amount),
             expense_date: row.date,
-            status: "paid"
+            status: "paid",
+            paid_through: row.paidThrough
           }),
         })));
         toast.success("Expenses recorded successfully!");
         if (isNew) {
           setBulkRows(Array.from({ length: 8 }, () => ({
-            date: "", account: "", amount: "", paidThrough: "", vendor: "", customer: "", project: "", billable: false
+            date: "", account: "", amount: "", paidThrough: "", vendor: "", project: "", billable: false
           })));
           setActiveTab("Record Expense");
         } else {
@@ -134,12 +126,9 @@ function AddExpense() {
     }
 
     let currentCategory = category;
-    if (activeTab === 'Record Mileage') {
-      currentCategory = "Fuel/Mileage Expenses";
-    }
 
     if (!amount || parseFloat(amount) <= 0) return toast.error("Enter a valid amount");
-    if (!currentCategory) return toast.error(activeTab === 'Record Expense' ? "Select an expense account" : "Missing mileage category");
+    if (!currentCategory) return toast.error("Select an expense account");
     if (!expenseDate) return toast.error("Select a date");
     
     setSaving(true);
@@ -150,19 +139,18 @@ function AddExpense() {
         method: method,
         body: JSON.stringify({
           vendor_id: vendorId || null,
-          customer_id: customerId || null, 
           category: currentCategory,
           amount: parseFloat(amount),
           expense_date: expenseDate,
           description,
           reference,
-          status: "paid"
+          status: "paid",
+          paid_through: paidThrough
         }),
       });
       toast.success(isEdit ? "Expense updated successfully!" : "Expense recorded successfully!");
       if (isNew) {
          setVendorId("");
-         setCustomerId("");
          setCategory("");
          setAmount("");
          setExpenseDate(new Date().toISOString().slice(0, 10));
@@ -179,14 +167,12 @@ function AddExpense() {
          setSelectedEmployee("");
          setBulkRows(
            Array.from({ length: 8 }, () => ({
-             date: "", account: "", amount: "", paidThrough: "", vendor: "", customer: "", project: "", billable: false
+             date: "", account: "", amount: "", paidThrough: "", vendor: "", project: "", billable: false
            }))
          );
          
          // Switch to next tab sequentially
          if (activeTab === "Record Expense") {
-           setActiveTab("Record Mileage");
-         } else if (activeTab === "Record Mileage") {
            setActiveTab("Bulk Add Expenses");
          }
       } else {
@@ -216,7 +202,7 @@ function AddExpense() {
           <>
             <h2 style={{ margin: '0 0 15px 0', fontSize: '20px', fontWeight: '500', color: '#111827', display: 'none' }}>New Expense</h2>
             <div style={{ display: 'flex', gap: '30px' }}>
-              {['Record Expense', 'Record Mileage', 'Bulk Add Expenses'].map(tab => (
+              {['Record Expense', 'Bulk Add Expenses'].map(tab => (
                 <div 
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -423,21 +409,7 @@ function AddExpense() {
               </div>
             </div>
 
-            {/* Customer Name */}
-            <div style={{...rowStyle, marginTop: '30px'}}>
-              <div style={labelContainerStyle}>
-                <label style={blackLabelStyle}>Customer Name</label>
-              </div>
-              <div style={{ ...inputContainerStyle, display: 'flex' }}>
-                <select value={customerId} onChange={e => setCustomerId(e.target.value)} style={{ ...inputFieldStyle, flex: 1, borderRadius: '4px 0 0 4px' }}>
-                  <option value="">Select or add a customer</option>
-                  {customers.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}
-                </select>
-                <button style={{ background: '#3b82f6', border: 'none', width: '36px', borderRadius: '0 4px 4px 0', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                </button>
-              </div>
-            </div>
+
 
           </div>
 
@@ -491,275 +463,7 @@ function AddExpense() {
         </div>
         )}
 
-        {activeTab === 'Record Mileage' && (
-          <div style={{ display: 'flex', gap: '40px', maxWidth: '1200px' }}>
-            <div style={{ flex: '1', maxWidth: '700px' }}>
-              
-              {/* Date */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={redLabelStyle}>Date<span style={reqStyle}>*</span></label>
-                </div>
-                <div style={inputContainerStyle}>
-                  <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} style={inputFieldStyle} />
-                </div>
-              </div>
 
-              {/* Employee */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={blackLabelStyle}>Employee</label>
-                </div>
-                <div style={inputContainerStyle}>
-                  <select 
-                    value={selectedEmployee}
-                    style={inputFieldStyle}
-                    onChange={(e) => {
-                      if (e.target.value === 'manage_employees') {
-                        setShowEmployeeModal(true);
-                        e.target.value = '';
-                      } else {
-                        setSelectedEmployee(e.target.value);
-                      }
-                    }}
-                  >
-                    <option value="">Select Employee</option>
-                    {employees.map((emp, index) => (
-                      <option key={index} value={String(index)}>{emp.name || emp.email}</option>
-                    ))}
-                    <option value="manage_employees" style={{ color: '#2563eb', fontWeight: '500' }}>+ Manage Employees</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Calculate mileage using */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={redLabelStyle}>Calculate mileage using<span style={reqStyle}>*</span></label>
-                </div>
-                <div style={{ ...inputContainerStyle, display: 'flex', gap: '20px', alignItems: 'center' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#111827' }}>
-                    <input type="radio" name="calc_mileage" value="distance" checked={calcMileageUsing === "distance"} onChange={(e) => setCalcMileageUsing(e.target.value)} style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
-                    Distance travelled
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#111827' }}>
-                    <input type="radio" name="calc_mileage" value="odometer" checked={calcMileageUsing === "odometer"} onChange={(e) => setCalcMileageUsing(e.target.value)} style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
-                    Odometer reading
-                  </label>
-                </div>
-              </div>
-
-              {calcMileageUsing === 'odometer' && (
-                <div style={rowStyle}>
-                  <div style={labelContainerStyle}>
-                    <label style={redLabelStyle}>Odometer reading<span style={reqStyle}>*</span></label>
-                  </div>
-                  <div style={{ ...inputContainerStyle, display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <input 
-                      type="number" 
-                      placeholder="Start reading"
-                      value={startReading}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setStartReading(val);
-                        if (val && endReading && parseFloat(endReading) >= parseFloat(val)) {
-                          const dist = (parseFloat(endReading) - parseFloat(val)).toFixed(1);
-                          setDistance(dist);
-                          setAmount((parseFloat(dist) * mileageRate).toFixed(2));
-                        } else {
-                          setDistance("");
-                          setAmount("");
-                        }
-                      }}
-                      style={{ ...inputFieldStyle, flex: 1 }} 
-                    />
-                    <span style={{ fontSize: '14px', color: '#111827', fontWeight: '500' }}>To</span>
-                    <input 
-                      type="number" 
-                      placeholder="End reading"
-                      value={endReading}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setEndReading(val);
-                        if (startReading && val && parseFloat(val) >= parseFloat(startReading)) {
-                          const dist = (parseFloat(val) - parseFloat(startReading)).toFixed(1);
-                          setDistance(dist);
-                          setAmount((parseFloat(dist) * mileageRate).toFixed(2));
-                        } else {
-                          setDistance("");
-                          setAmount("");
-                        }
-                      }}
-                      style={{ ...inputFieldStyle, flex: 1 }} 
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Distance */}
-              <div style={{ ...rowStyle, marginBottom: '5px' }}>
-                <div style={labelContainerStyle}>
-                  <label style={redLabelStyle}>Distance<span style={reqStyle}>*</span></label>
-                </div>
-                <div style={{ ...inputContainerStyle, display: 'flex' }}>
-                  <input 
-                    type="number" 
-                    value={distance}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setDistance(val);
-                      if (val) {
-                        setAmount((parseFloat(val) * mileageRate).toFixed(2));
-                      } else {
-                        setAmount("");
-                      }
-                    }}
-                    readOnly={calcMileageUsing === 'odometer'}
-                    style={{ ...inputFieldStyle, flex: 1, borderRadius: '4px 0 0 4px', borderRight: 'none', backgroundColor: calcMileageUsing === 'odometer' ? '#f9fafb' : '#fff' }} 
-                  />
-                  <div style={{ padding: '8px 12px', background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: '0 4px 4px 0', fontSize: '14px', color: '#374151' }}>Kilometer(s)</div>
-                </div>
-              </div>
-              <div style={{ ...rowStyle, marginTop: 0, position: 'relative' }}>
-                <div style={labelContainerStyle}></div>
-                <div style={{ ...inputContainerStyle, fontSize: '12px', color: '#6b7280', position: 'relative' }}>
-                  Rate per km = ₹{mileageRate} <span onClick={() => { setTempRate(mileageRate); setShowEditRate(true); }} style={{ color: '#2563eb', cursor: 'pointer', marginLeft: '5px' }}>Change</span>
-                  
-                  {showEditRate && (
-                    <div style={{ position: 'absolute', top: '25px', left: '10px', width: '250px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', zIndex: 10 }}>
-                      <div style={{ padding: '10px 15px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: '500', color: '#111827', fontSize: '14px' }}>Edit Mileage Rate</span>
-                        <button type="button" onClick={() => setShowEditRate(false)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '16px', cursor: 'pointer' }}>&#x2715;</button>
-                      </div>
-                      <div style={{ padding: '15px' }}>
-                        <label style={{ display: 'block', color: '#ef4444', fontSize: '12px', marginBottom: '8px' }}>Mileage rate (in INR)*</label>
-                        <input 
-                          type="number" 
-                          value={tempRate} 
-                          onChange={e => setTempRate(e.target.value)} 
-                          style={{ ...inputFieldStyle, width: '100%', marginBottom: '15px', boxSizing: 'border-box' }} 
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            const newRate = parseFloat(tempRate) || 0;
-                            setMileageRate(newRate);
-                            if (distance) setAmount((parseFloat(distance) * newRate).toFixed(2));
-                            setShowEditRate(false);
-                          }}
-                          style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '4px', fontSize: '13px', fontWeight: '500', cursor: 'pointer' }}
-                        >
-                          Save
-                        </button>
-                      </div>
-                      {/* CSS triangle pointer */}
-                      <div style={{ position: 'absolute', top: '-6px', left: '100px', width: '10px', height: '10px', background: '#fff', borderLeft: '1px solid #e5e7eb', borderTop: '1px solid #e5e7eb', transform: 'rotate(45deg)' }}></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Amount */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={redLabelStyle}>Amount<span style={reqStyle}>*</span></label>
-                </div>
-                <div style={{ ...inputContainerStyle, display: 'flex' }}>
-                  <select style={{ ...inputFieldStyle, width: '80px', borderRight: 'none', borderRadius: '4px 0 0 4px', backgroundColor: '#f9fafb' }}>
-                    <option>INR</option>
-                  </select>
-                  <input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} style={{ ...inputFieldStyle, flex: 1, borderRadius: '0 4px 4px 0', background: '#f9fafb' }} readOnly />
-                </div>
-              </div>
-
-              <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '30px 0' }} />
-
-              {/* Paid Through */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={redLabelStyle}>Paid Through<span style={reqStyle}>*</span></label>
-                </div>
-                <div style={inputContainerStyle}>
-                  <select value={paidThrough} onChange={e => setPaidThrough(e.target.value)} style={inputFieldStyle}>
-                    <option value="">Select an account</option>
-                    <optgroup label="Cash">
-                      <option value="Petty Cash">Petty Cash</option>
-                      <option value="Undeposited Funds">Undeposited Funds</option>
-                    </optgroup>
-                    <optgroup label="Other Current Asset">
-                      <option value="Advance Tax">Advance Tax</option>
-                      <option value="Employee Advance">Employee Advance</option>
-                      <option value="Prepaid Expenses">Prepaid Expenses</option>
-                      <option value="TDS Receivable">TDS Receivable</option>
-                    </optgroup>
-                    <optgroup label="Fixed Asset">
-                      <option value="Furniture and Equipment">Furniture and Equipment</option>
-                    </optgroup>
-                    <optgroup label="Other Current Liability">
-                      <option value="Employee Reimbursements">Employee Reimbursements</option>
-                      <option value="TDS Payable">TDS Payable</option>
-                    </optgroup>
-                    <optgroup label="Non Current Liability">
-                      <option value="Construction Loans">Construction Loans</option>
-                      <option value="Mortgages">Mortgages</option>
-                    </optgroup>
-                    <optgroup label="Equity">
-                      <option value="Capital Stock">Capital Stock</option>
-                      <option value="Distributions">Distributions</option>
-                      <option value="Dividends Paid">Dividends Paid</option>
-                      <option value="Drawings">Drawings</option>
-                      <option value="Investments">Investments</option>
-                      <option value="Opening Balance Offset">Opening Balance Offset</option>
-                      <option value="Owner's Equity">Owner's Equity</option>
-                    </optgroup>
-                  </select>
-                </div>
-              </div>
-
-              {/* Vendor */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={blackLabelStyle}>Vendor</label>
-                </div>
-                <div style={{ ...inputContainerStyle, display: 'flex' }}>
-                  <select value={vendorId} onChange={e => setVendorId(e.target.value)} style={{ ...inputFieldStyle, flex: 1, borderRadius: '4px 0 0 4px' }}>
-                    <option value="">Select an account</option>
-                    {vendors.map(v => <option key={v.id} value={v.id}>{v.display_name}</option>)}
-                  </select>
-                  <button style={{ background: '#3b82f6', border: 'none', width: '36px', borderRadius: '0 4px 4px 0', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Invoice# */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={blackLabelStyle}>Invoice#</label>
-                </div>
-                <div style={inputContainerStyle}>
-                  <input type="text" value={reference} onChange={e => setReference(e.target.value)} style={inputFieldStyle} />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div style={rowStyle}>
-                <div style={labelContainerStyle}>
-                  <label style={blackLabelStyle}>Notes</label>
-                </div>
-                <div style={inputContainerStyle}>
-                  <textarea 
-                    placeholder="Max. 500 characters" 
-                    value={description} 
-                    onChange={e => setDescription(e.target.value)} 
-                    maxLength={500}
-                    style={{ ...inputFieldStyle, minHeight: '80px', resize: 'vertical' }} 
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {activeTab === 'Bulk Add Expenses' && (
           <div style={{ maxWidth: '100%', overflowX: 'auto', padding: '10px 0' }}>
@@ -774,7 +478,7 @@ function AddExpense() {
                   <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#ef4444' }}>AMOUNT*</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#ef4444' }}>PAID THROUGH*</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>VENDOR</th>
-                  <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>CUSTOMER NAME</th>
+
                   <th style={{ padding: '10px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>PROJECTS</th>
                   <th style={{ padding: '10px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280' }}>BILLABLE</th>
                   <th style={{ padding: '10px', width: '30px' }}></th>
@@ -913,16 +617,7 @@ function AddExpense() {
                         {vendors.map(v => <option key={v.id} value={v.id}>{v.display_name}</option>)}
                       </select>
                     </td>
-                    <td style={{ padding: '5px' }}>
-                      <select value={row.customer} onChange={(e) => {
-                        const newRows = [...bulkRows];
-                        newRows[index].customer = e.target.value;
-                        setBulkRows(newRows);
-                      }} style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', background: '#fff' }}>
-                        <option value=""></option>
-                        {customers.map(c => <option key={c.id} value={c.id}>{c.display_name}</option>)}
-                      </select>
-                    </td>
+
                     <td style={{ padding: '5px' }}>
                       <select value={row.project} onChange={(e) => {
                         const newRows = [...bulkRows];
@@ -949,7 +644,7 @@ function AddExpense() {
             <div style={{ marginTop: '30px', marginLeft: '10px' }}>
               <button 
                 type="button" 
-                onClick={() => setBulkRows(prev => [...prev, { date: "", account: "", amount: "", paidThrough: "", vendor: "", customer: "", project: "", billable: false }])}
+                onClick={() => setBulkRows(prev => [...prev, { date: "", account: "", amount: "", paidThrough: "", vendor: "", project: "", billable: false }])}
                 style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '14px', fontWeight: '500', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '5px' }}
               >
                 <span style={{ fontSize: '16px' }}>+</span> Add More Expenses
@@ -958,113 +653,7 @@ function AddExpense() {
           </div>
         )}
 
-        {showMileagePref && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', width: '100%', maxWidth: '750px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ padding: '20px 30px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ margin: 0, color: '#ef4444', fontSize: '20px', fontWeight: '400' }}>Set your mileage preferences</h2>
-                <button onClick={() => setShowMileagePref(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-              </div>
-              <div style={{ padding: '30px', overflowY: 'auto' }}>
-                <div style={{ marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <input type="checkbox" id="associate" style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  <label htmlFor="associate" style={{ color: '#374151', fontSize: '14px', cursor: 'pointer' }}>Associate employees to expenses</label>
-                </div>
-                
-                <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '0 -30px 25px -30px' }} />
-                
-                <h3 style={{ margin: '0 0 25px 0', fontSize: '18px', fontWeight: '400', color: '#111827' }}>Mileage Preference</h3>
-                
-                <div style={{ display: 'flex', marginBottom: '25px', alignItems: 'center' }}>
-                  <div style={{ width: '220px' }}>
-                    <label style={{ color: '#374151', fontSize: '14px' }}>Default Mileage Category</label>
-                  </div>
-                  <div>
-                    <select style={{ ...inputFieldStyle, width: '300px' }}>
-                      <option value="Fuel/Mileage Expenses">Fuel/Mileage Expenses</option>
-                      <option value="Office Supplies">Office Supplies</option>
-                      <option value="Advertising And Marketing">Advertising And Marketing</option>
-                      <option value="Bank Fees and Charges">Bank Fees and Charges</option>
-                      <option value="Credit Card Charges">Credit Card Charges</option>
-                      <option value="Travel Expense">Travel Expense</option>
-                      <option value="Telephone Expense">Telephone Expense</option>
-                      <option value="Automobile Expense">Automobile Expense</option>
-                      <option value="IT and Internet Expenses">IT and Internet Expenses</option>
-                      <option value="Rent Expense">Rent Expense</option>
-                      <option value="Janitorial Expense">Janitorial Expense</option>
-                      <option value="Postage">Postage</option>
-                      <option value="Bad Debt">Bad Debt</option>
-                      <option value="Printing and Stationery">Printing and Stationery</option>
-                      <option value="Salaries and Employee Wages">Salaries and Employee Wages</option>
-                      <option value="Meals and Entertainment">Meals and Entertainment</option>
-                      <option value="Depreciation Expense">Depreciation Expense</option>
-                      <option value="Consultant Expense">Consultant Expense</option>
-                      <option value="Repairs and Maintenance">Repairs and Maintenance</option>
-                      <option value="Other Expenses">Other Expenses</option>
-                      <option value="Lodging">Lodging</option>
-                      <option value="Purchase Discounts">Purchase Discounts</option>
-                      <option value="Raw Materials And Consumables">Raw Materials And Consumables</option>
-                      <option value="Merchandise">Merchandise</option>
-                      <option value="Transportation Expense">Transportation Expense</option>
-                      <option value="Depreciation And Amortisation">Depreciation And Amortisation</option>
-                      <option value="Contract Assets">Contract Assets</option>
-                    </select>
-                  </div>
-                </div>
 
-                <div style={{ display: 'flex', marginBottom: '40px', alignItems: 'center' }}>
-                  <div style={{ width: '220px' }}>
-                    <label style={{ color: '#374151', fontSize: '14px' }}>Default Unit</label>
-                  </div>
-                  <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#374151' }}>
-                      <input type="radio" name="unit" value="km" defaultChecked style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
-                      Km
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#374151' }}>
-                      <input type="radio" name="unit" value="mile" style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }} />
-                      Mile
-                    </label>
-                  </div>
-                </div>
-
-                <h4 style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: '500', color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em' }}>MILEAGE RATES</h4>
-                <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#6b7280', lineHeight: '1.5' }}>
-                  Any mileage expense recorded on or after the start date will have the corresponding mileage rate. You can create a default rate (created without specifying a date), which will be applicable for mileage expenses recorded before the initial start date.
-                </p>
-
-                <div style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb', padding: '12px 30px', display: 'flex', fontSize: '12px', fontWeight: '600', color: '#6b7280', margin: '0 -30px 20px -30px' }}>
-                  <div style={{ width: '220px' }}>START DATE</div>
-                  <div>MILEAGE RATE</div>
-                </div>
-
-                <div style={{ display: 'flex', marginBottom: '20px' }}>
-                  <div style={{ width: '220px' }}>
-                    <input type="date" style={{ ...inputFieldStyle, width: '150px' }} />
-                  </div>
-                  <div style={{ display: 'flex' }}>
-                    <div style={{ padding: '8px 12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRight: 'none', borderRadius: '4px 0 0 4px', fontSize: '14px', color: '#374151' }}>INR</div>
-                    <input type="text" style={{ ...inputFieldStyle, width: '100px', borderRadius: '0 4px 4px 0' }} />
-                  </div>
-                </div>
-
-                <div style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '30px', marginBottom: '20px' }}>
-                  <button style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '14px', fontWeight: '500', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: 0 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#2563eb" stroke="#fff" strokeWidth="2"><circle cx="12" cy="12" r="10" stroke="none"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                    Add Mileage Rate
-                  </button>
-                </div>
-
-              </div>
-              <div style={{ background: '#f9fafb', borderTop: '1px solid #e5e7eb', padding: '15px 30px', display: 'flex', gap: '10px' }}>
-                <button onClick={() => setShowMileagePref(false)} style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>Save</button>
-                <button onClick={() => setShowMileagePref(false)} style={{ background: '#fff', color: '#374151', border: '1px solid #d1d5db', padding: '8px 16px', borderRadius: '4px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Manage Employees Modal */}
         {showEmployeeModal && (
