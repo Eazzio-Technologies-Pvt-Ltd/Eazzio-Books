@@ -37,13 +37,35 @@ function ProfitAndLoss() {
       toast.error("No data to export");
       return;
     }
+
+    const otherIncomeKeywords = ["interest", "discount", "dividend", "rent", "commission", "late fee", "other", "non-operating", "refund"];
+    const isOtherIncome = (accName) => {
+      if (!accName) return false;
+      const name = accName.toLowerCase();
+      return otherIncomeKeywords.some(keyword => name.includes(keyword));
+    };
+
+    const incomeAccounts = data?.income?.accounts || [];
+    const operatingIncomeAccounts = incomeAccounts.filter(acc => !isOtherIncome(acc.account_name));
+    const otherIncomeAccounts = incomeAccounts.filter(acc => isOtherIncome(acc.account_name));
+
+    const totalOperating = operatingIncomeAccounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
+    const totalOther = otherIncomeAccounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
     
     let csv = "Account Name,Balance (INR)\n";
-    csv += "--- OPERATING INCOME ---\n";
-    data.income.accounts.forEach(acc => {
+    csv += "--- A) REVENUE FROM OPERATIONS ---\n";
+    operatingIncomeAccounts.forEach(acc => {
       csv += `"${acc.account_name}",${parseFloat(acc.balance).toFixed(2)}\n`;
     });
-    csv += `"Total Operating Income",${parseFloat(data.income.total).toFixed(2)}\n\n`;
+    csv += `"Total Revenue from Operations",${totalOperating.toFixed(2)}\n\n`;
+
+    csv += "--- B) OTHER INCOME ---\n";
+    otherIncomeAccounts.forEach(acc => {
+      csv += `"${acc.account_name}",${parseFloat(acc.balance).toFixed(2)}\n`;
+    });
+    csv += `"Total Other Income",${totalOther.toFixed(2)}\n\n`;
+    
+    csv += `"Total Incomes (A + B)",${parseFloat(data.income.total).toFixed(2)}\n\n`;
     
     csv += "--- OPERATING EXPENSES ---\n";
     data.expense.accounts.forEach(acc => {
@@ -93,23 +115,89 @@ function ProfitAndLoss() {
         ) : (
           <div>
             {/* INCOME */}
-            <h3 style={{ color: "#065f46", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>Operating Income</h3>
-            <table style={tableStyle}>
-              <tbody>
-                {data.income.accounts.map((acc, idx) => (
-                  <tr key={idx}>
-                    <td style={tdStyle}>{acc.account_name}</td>
-                    <td style={{...tdStyle, textAlign: "right"}}>{parseFloat(acc.balance).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td style={{...tdStyle, fontWeight: "bold"}}>Total Operating Income</td>
-                  <td style={{...tdStyle, textAlign: "right", fontWeight: "bold"}}>₹{parseFloat(data.income.total).toFixed(2)}</td>
-                </tr>
-              </tfoot>
-            </table>
+            {(() => {
+              const otherIncomeKeywords = ["interest", "discount", "dividend", "rent", "commission", "late fee", "other", "non-operating", "refund"];
+              const isOtherIncome = (accName) => {
+                if (!accName) return false;
+                const name = accName.toLowerCase();
+                return otherIncomeKeywords.some(keyword => name.includes(keyword));
+              };
+
+              const incomeAccounts = data?.income?.accounts || [];
+              const operatingIncomeAccounts = incomeAccounts.filter(acc => !isOtherIncome(acc.account_name));
+              const otherIncomeAccounts = incomeAccounts.filter(acc => isOtherIncome(acc.account_name));
+
+              const totalOperating = operatingIncomeAccounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
+              const totalOther = otherIncomeAccounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0);
+
+              return (
+                <div>
+                  <h3 style={{ color: "#065f46", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px" }}>Incomes</h3>
+                  
+                  {/* A) Revenue from Operations */}
+                  <div style={{ marginBottom: "15px" }}>
+                    <h4 style={{ color: "#0f766e", margin: "15px 0 5px 0", fontSize: "14px", fontWeight: "600" }}>A) Revenue from Operations</h4>
+                    <table style={tableStyle}>
+                      <tbody>
+                        {operatingIncomeAccounts.length > 0 ? (
+                          operatingIncomeAccounts.map((acc, idx) => (
+                            <tr key={idx}>
+                              <td style={{ ...tdStyle, paddingLeft: "15px" }}>{acc.account_name}</td>
+                              <td style={{ ...tdStyle, textAlign: "right" }}>{parseFloat(acc.balance).toFixed(2)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td style={{ ...tdStyle, paddingLeft: "15px", color: "#64748b", fontStyle: "italic" }}>No revenue from operations accounts found.</td>
+                            <td style={{ ...tdStyle, textAlign: "right", color: "#64748b" }}>0.00</td>
+                          </tr>
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ fontWeight: "bold" }}>
+                          <td style={{ ...tdStyle, paddingLeft: "15px" }}>Total Revenue from Operations</td>
+                          <td style={{ ...tdStyle, textAlign: "right" }}>₹{totalOperating.toFixed(2)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* B) Other Income */}
+                  <div style={{ marginBottom: "15px" }}>
+                    <h4 style={{ color: "#0f766e", margin: "15px 0 5px 0", fontSize: "14px", fontWeight: "600" }}>B) Other Income</h4>
+                    <table style={tableStyle}>
+                      <tbody>
+                        {otherIncomeAccounts.length > 0 ? (
+                          otherIncomeAccounts.map((acc, idx) => (
+                            <tr key={idx}>
+                              <td style={{ ...tdStyle, paddingLeft: "15px" }}>{acc.account_name}</td>
+                              <td style={{ ...tdStyle, textAlign: "right" }}>{parseFloat(acc.balance).toFixed(2)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td style={{ ...tdStyle, paddingLeft: "15px", color: "#64748b", fontStyle: "italic" }}>No other income accounts found.</td>
+                            <td style={{ ...tdStyle, textAlign: "right", color: "#64748b" }}>0.00</td>
+                          </tr>
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ fontWeight: "bold" }}>
+                          <td style={{ ...tdStyle, paddingLeft: "15px" }}>Total Other Income</td>
+                          <td style={{ ...tdStyle, textAlign: "right" }}>₹{totalOther.toFixed(2)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* Total Incomes */}
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "15px", padding: "10px 0", borderTop: "2px solid #cbd5e1", borderBottom: "2px solid #cbd5e1", color: "#065f46", marginBottom: "20px" }}>
+                    <span>Total Incomes (A + B)</span>
+                    <span>₹{parseFloat(data.income.total).toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             <h3 style={{ color: "#2563eb", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px", marginTop: "30px" }}>Gross Profit</h3>
             <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "18px", padding: "10px 0" }}>
