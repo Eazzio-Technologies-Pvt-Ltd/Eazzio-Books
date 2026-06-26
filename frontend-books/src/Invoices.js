@@ -562,7 +562,7 @@ function Invoices() {
               </thead>
               <tbody>
                 {sortedInvoices.map((inv) => (
-                  <tr key={inv.id} onClick={() => navigate(`/invoices/${inv.id}/document`)} style={{ cursor: "pointer", background: selectedIds.includes(inv.id) ? "#fcfcfd" : "" }}>
+                  <tr key={inv.id} onClick={() => navigate(`/invoices/${inv.id}`)} style={{ cursor: "pointer", background: selectedIds.includes(inv.id) ? "#fcfcfd" : "" }}>
                     <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}></td>
                     <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selectedIds.includes(inv.id)} onChange={() => handleSelectOne(inv.id)} />
