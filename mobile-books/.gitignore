@@ -125,3 +125,4 @@ analysis.json
 analyze_output.txt
 .env
 *.iml
+*.json
