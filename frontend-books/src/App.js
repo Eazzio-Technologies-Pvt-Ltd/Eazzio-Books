@@ -65,6 +65,7 @@ import RecurringInvoiceDetail from "./RecurringInvoiceDetail";
 import Taxes from "./Taxes";
 import PaymentsReceived from "./PaymentsReceived";
 import AddPaymentReceived from "./AddPaymentReceived";
+import PaymentDetail from "./PaymentDetail";
 import ChartOfAccounts from "./ChartOfAccounts";
 import ManualJournals from "./ManualJournals";
 import AddManualJournal from "./AddManualJournal";
@@ -82,6 +83,8 @@ import PaymentsMade from "./PaymentsMade";
 import AddPaymentMade from "./AddPaymentMade";
 import InventoryMovements from "./InventoryMovements";
 import AddInventoryMovement from "./AddInventoryMovement";
+import LowStockAlerts from "./LowStockAlerts";
+import ItemValuationReport from "./ItemValuationReport";
 import BankReconciliation from "./BankReconciliation";
 import Documents from "./Documents";
 import UploadDocument from "./UploadDocument";
@@ -130,8 +133,8 @@ function App() {
           <Route path="/items/:id" element={<ProtectedRoute module={MODULES.ITEMS}><ItemDetail /></ProtectedRoute>} />
           <Route path="/inventory/stock" element={<ProtectedRoute module={MODULES.ITEMS}><AddInventoryMovement /></ProtectedRoute>} />
           <Route path="/inventory/movements" element={<ProtectedRoute module={MODULES.ITEMS}><InventoryMovements /></ProtectedRoute>} />
-          <Route path="/inventory/low-stock" element={<PlaceholderPage title="Low Stock Alerts" description="View items that are running low on stock." />} />
-          <Route path="/reports/item-valuation" element={<PlaceholderPage title="Item Valuation Report" description="View the valuation of your current inventory." />} />
+          <Route path="/inventory/low-stock" element={<ProtectedRoute module={MODULES.ITEMS}><LowStockAlerts /></ProtectedRoute>} />
+          <Route path="/reports/item-valuation" element={<ProtectedRoute module={MODULES.ITEMS}><ItemValuationReport /></ProtectedRoute>} />
           <Route path="/customers" element={<ProtectedRoute module={MODULES.CUSTOMERS}><Customers /></ProtectedRoute>} />
           <Route path="/customers/new" element={<ProtectedRoute module={MODULES.CUSTOMERS} action={ACTIONS.CREATE}><AddCustomer /></ProtectedRoute>} />
           <Route path="/customers/:id/edit" element={<ProtectedRoute module={MODULES.CUSTOMERS} action={ACTIONS.EDIT}><AddCustomer /></ProtectedRoute>} />
@@ -161,6 +164,7 @@ function App() {
           <Route path="/sales-orders/:id/document" element={<SalesOrderDetail />} />
           <Route path="/payments-received" element={<PaymentsReceived />} />
           <Route path="/payments-received/new" element={<AddPaymentReceived />} />
+          <Route path="/payments-received/:id" element={<PaymentDetail />} />
           <Route path="/delivery-challans" element={<DeliveryChallans />} />
           <Route path="/delivery-challans/new" element={<AddDeliveryChallan />} />
           <Route path="/delivery-challans/:id/edit" element={<AddDeliveryChallan />} />

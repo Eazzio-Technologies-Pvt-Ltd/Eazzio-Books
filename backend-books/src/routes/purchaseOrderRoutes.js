@@ -21,6 +21,7 @@ const {
   updatePurchaseOrder,
   deletePurchaseOrder,
   convertPurchaseOrderToBill,
+  receivePurchaseOrder,
 } = require("../controllers/purchaseOrderController");
 
 // ================= CRUD routes =================
@@ -30,8 +31,9 @@ router.post("/purchase-orders", authMiddleware, createPurchaseOrder);
 router.put("/purchase-orders/:id", authMiddleware, updatePurchaseOrder);
 router.delete("/purchase-orders/:id", authMiddleware, deletePurchaseOrder);
 
-// ================= Conversions =================
+// ================= Conversions & Actions =================
 router.post("/purchase-orders/:id/convert-to-bill", authMiddleware, convertPurchaseOrderToBill);
+router.post("/purchase-orders/:id/receive", authMiddleware, receivePurchaseOrder);
 
 // ================= Send Purchase Order via Email (Brevo SMTP) =================
 router.post("/purchase-orders/:id/send", authMiddleware, async (req, res) => {

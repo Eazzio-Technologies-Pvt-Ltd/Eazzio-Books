@@ -141,4 +141,31 @@ const getAllPayments = async (req, res) => {
   }
 };
 
-module.exports = { recordPayment, getPayments, getAllPayments };
+// GET payment by ID
+const getPaymentById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT p.*, c.display_name AS customer_name, c.email AS customer_email,
+       (SELECT CONCAT_WS(', ', ca.address_line1, ca.address_line2, ca.city, ca.state, ca.country, ca.pin_code) 
+        FROM customer_addresses ca 
+        WHERE ca.customer_id = c.id AND ca.type = 'billing' LIMIT 1) AS billing_address,
+       i.invoice_number 
+       FROM payments p
+       LEFT JOIN customers c ON p.customer_id = c.id
+       LEFT JOIN invoices i ON p.invoice_id = i.id
+       WHERE p.id = $1 AND p.user_id = $2`,
+      [id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+    res.json({ payment: result.rows[0] });
+  } catch (err) {
+    console.error("GET PAYMENT ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { recordPayment, getPayments, getAllPayments, getPaymentById };

@@ -299,7 +299,7 @@ function AddInvoice() {
           body: JSON.stringify(payload),
         });
         toast.success("Invoice updated");
-        navigate(`/invoices/${id}/document`);
+        navigate(`/invoices/${id}`);
       } else {
         await apiRequest("/invoices", {
           method: "POST",

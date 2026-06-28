@@ -95,6 +95,17 @@ function PurchaseOrderDetail() {
     }
   };
 
+  const handleReceive = async () => {
+    if (!window.confirm("Mark this Purchase Order as Received? This will increase stock for tracked items.")) return;
+    try {
+      await apiRequest(`/purchase-orders/${id}/receive`, { method: "POST" });
+      toast.success("Purchase Order received! Stock updated.");
+      setPO(prev => ({ ...prev, status: "Received" }));
+    } catch (err) {
+      toast.error("Failed to mark as received");
+    }
+  };
+
   const openEmailModal = () => {
     setEmailTo(vendor?.email || "");
     setEmailSubject(`Purchase Order ${po.purchase_order_number} from ${orgInfo.name}`);
@@ -219,10 +230,13 @@ function PurchaseOrderDetail() {
           </button>
           <button onClick={handlePrint} style={actionBtn}>🖨️ Print / PDF</button>
           <button onClick={() => navigate(`/purchase-orders/${id}/edit`)} style={actionBtn}>✏️ Edit</button>
-          {po.status !== "Billed" && po.status !== "Cancelled" && (
+          {po.status !== "Billed" && po.status !== "Cancelled" && po.status !== "Received" && (
             <button onClick={handleConvertToBill} style={{ ...actionBtn, background: "#28a745", color: "#fff", borderColor: "#28a745" }}>🔄 Convert to Bill</button>
           )}
           {po.status === "Draft" && <button onClick={() => changeStatus("Issued")} style={actionBtn}>Mark Issued</button>}
+          {(po.status === "Draft" || po.status === "Issued") && (
+            <button onClick={handleReceive} style={{ ...actionBtn, background: "#0284c7", color: "#fff", borderColor: "#0284c7" }}>📥 Mark as Received</button>
+          )}
           {po.status !== "Cancelled" && <button onClick={() => changeStatus("Cancelled")} style={{ ...actionBtn, color: "#e74c3c" }}>Cancel</button>}
         </div>
       </div>

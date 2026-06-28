@@ -484,6 +484,92 @@ const convertPurchaseOrderToBill = async (req, res) => {
   }
 };
 
+// ================= MARK PURCHASE ORDER AS RECEIVED =================
+const receivePurchaseOrder = async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+    const poRes = await client.query(
+      `SELECT * FROM purchase_orders WHERE id = $1 AND user_id = $2`,
+      [id, req.user.id]
+    );
+
+    if (poRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Purchase Order not found" });
+    }
+
+    const po = poRes.rows[0];
+    if (po.status === 'Received' || po.status === 'Billed') {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "Purchase Order is already received or billed" });
+    }
+
+    const itemsRes = await client.query(
+      `SELECT * FROM purchase_order_items WHERE purchase_order_id = $1`,
+      [id]
+    );
+
+    for (const item of itemsRes.rows) {
+      if (item.item_id) {
+        const itemCheck = await client.query(`SELECT is_inventory_tracked, stock_quantity, reorder_level, current_valuation_rate, cost_price FROM items WHERE id = $1`, [item.item_id]);
+        if (itemCheck.rows.length > 0 && itemCheck.rows[0].is_inventory_tracked) {
+          const qty = parseFloat(item.quantity) || 0;
+          const rate = parseFloat(item.rate) || 0;
+          
+          const oldStock = parseFloat(itemCheck.rows[0].stock_quantity || 0);
+          const newStock = oldStock + qty;
+          const reorderLevel = parseFloat(itemCheck.rows[0].reorder_level || 0);
+
+          // Phase 3: Weighted Average Valuation
+          let oldValuationRate = parseFloat(itemCheck.rows[0].current_valuation_rate);
+          if (isNaN(oldValuationRate)) oldValuationRate = parseFloat(itemCheck.rows[0].cost_price || 0);
+          
+          let newValuationRate = oldValuationRate;
+          if (newStock > 0) {
+            newValuationRate = ((oldStock * oldValuationRate) + (qty * rate)) / newStock;
+          }
+
+          await client.query(`UPDATE items SET stock_quantity = $1, current_valuation_rate = $2 WHERE id = $3`, [newStock, newValuationRate, item.item_id]);
+          
+          await client.query(
+            `INSERT INTO inventory_movements 
+             (user_id, item_id, transaction_type, quantity_change, reference_type, reference_id, reference_number, entry_date, description, organization_id, rate)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9, $10)`,
+            [
+              req.user.id, item.item_id, 'purchase', qty, 'purchase_order', id, po.purchase_order_number, 
+              `Purchase via PO ${po.purchase_order_number}`, 
+              req.tenantId || po.organization_id || null,
+              rate
+            ]
+          );
+
+          // Phase 2: Debounce reset check
+          if (newStock > reorderLevel) {
+            await client.query(`UPDATE items SET is_low_stock_alert_sent = FALSE WHERE id = $1`, [item.item_id]);
+          }
+        }
+      }
+    }
+
+    await client.query(
+      `UPDATE purchase_orders SET status = 'Received', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [id]
+    );
+
+    await client.query("COMMIT");
+    res.json({ message: "Purchase Order marked as received successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("RECEIVE PO ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getPurchaseOrders,
   getPurchaseOrderById,
@@ -491,4 +577,5 @@ module.exports = {
   updatePurchaseOrder,
   deletePurchaseOrder,
   convertPurchaseOrderToBill,
+  receivePurchaseOrder,
 };

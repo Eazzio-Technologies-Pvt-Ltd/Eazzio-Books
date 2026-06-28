@@ -490,7 +490,7 @@ function PaymentsReceived() {
               <tbody>
                 {sortedPayments.map((payment) => {
                   return (
-                  <tr key={payment.id} onClick={() => payment.invoice_id ? navigate(`/invoices/${payment.invoice_id}`) : null} style={{ cursor: payment.invoice_id ? "pointer" : "default", background: selectedIds.includes(payment.id) ? "#fcfcfd" : "" }}>
+                  <tr key={payment.id} onClick={() => navigate(`/payments-received/${payment.id}`)} style={{ cursor: "pointer", background: selectedIds.includes(payment.id) ? "#fcfcfd" : "" }}>
                     <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}></td>
                     <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" style={{ accentColor: '#4a90e2', margin: 0 }} checked={selectedIds.includes(payment.id)} onChange={() => handleSelectOne(payment.id)} />
@@ -506,7 +506,7 @@ function PaymentsReceived() {
                     {visibleColumns.status && <td>{statusBadge(payment.status)}</td>}
                     {visibleColumns.receipt && (
                       <td style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => payment.invoice_id ? navigate(`/invoices/${payment.invoice_id}`) : null} style={{ background: "none", border: "none", color: "#006ee6", fontSize: "12px", cursor: "pointer", fontWeight: "500", textDecoration: "underline" }}>View Receipt</button>
+                        <button onClick={() => navigate(`/payments-received/${payment.id}`)} style={{ background: "none", border: "none", color: "#006ee6", fontSize: "12px", cursor: "pointer", fontWeight: "500", textDecoration: "underline" }}>View Receipt</button>
                       </td>
                     )}
                   </tr>
