@@ -118,6 +118,20 @@ const createItem = async (req, res) => {
          VALUES ($1, $2, $3, $4, CURRENT_DATE, $5)`,
         [req.user.id, newItem.id, "initial_stock", initialStock, "Initial stock added during item creation"]
       );
+      
+      const seedRate = parseFloat(opening_stock_rate) || parseFloat(cost_price) || 0;
+      await client.query(
+        `UPDATE items SET current_valuation_rate = $1 WHERE id = $2`,
+        [seedRate, newItem.id]
+      );
+      newItem.current_valuation_rate = seedRate;
+    } else if (trackInv) {
+      const seedRate = parseFloat(cost_price) || 0;
+      await client.query(
+        `UPDATE items SET current_valuation_rate = $1 WHERE id = $2`,
+        [seedRate, newItem.id]
+      );
+      newItem.current_valuation_rate = seedRate;
     }
 
     await client.query(
@@ -272,6 +286,59 @@ const getItemHistory = async (req, res) => {
   }
 };
 
+// ================= GET ITEM MOVEMENTS =================
+const getItemMovements = async (req, res) => {
+  const { id } = req.params;
+  try {
+    let checkQuery = `SELECT id FROM items WHERE id = $1`;
+    const checkValues = [id];
+    let paramIndex = 2;
+    if (req.tenantId) {
+      checkQuery += ` AND organization_id = $${paramIndex++}`;
+      checkValues.push(req.tenantId);
+    }
+    const itemCheck = await pool.query(checkQuery, checkValues);
+    if (itemCheck.rows.length === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    // Calculate running balance using a window function
+    const result = await pool.query(
+      `SELECT m.*, 
+              SUM(m.quantity_change) OVER (ORDER BY m.created_at ASC, m.id ASC) as running_balance
+       FROM inventory_movements m
+       WHERE m.item_id = $1
+       ORDER BY m.created_at DESC, m.id DESC`,
+      [id]
+    );
+    res.json({ movements: result.rows });
+  } catch (err) {
+    console.error("GET ITEM MOVEMENTS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ================= GET LOW STOCK ITEMS =================
+const getLowStockItems = async (req, res) => {
+  try {
+    let query = `SELECT * FROM items WHERE is_inventory_tracked = true AND stock_quantity <= reorder_level`;
+    const values = [];
+    
+    if (req.tenantId) {
+      query += ` AND organization_id = $1`;
+      values.push(req.tenantId);
+    }
+    
+    query += ` ORDER BY name ASC`;
+
+    const result = await pool.query(query, values);
+    res.json({ items: result.rows });
+  } catch (err) {
+    console.error("GET LOW STOCK ITEMS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   getItems,
   getItemById,
@@ -279,4 +346,6 @@ module.exports = {
   updateItem,
   deleteItem,
   getItemHistory,
+  getItemMovements,
+  getLowStockItems,
 };

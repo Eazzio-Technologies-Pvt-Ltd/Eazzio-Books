@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Admin Panel Blue
-  static const Color primary = Color(0xFF3B82F6);
+  // Brand Teal Primary & Navy Accent Colors
+  static const Color primary = Color(0xFF0CD693);
   static const Color onPrimary = Colors.white;
-  static const Color primaryContainer = Color(0xFFEFF6FF); // Blue-50
-  static const Color onPrimaryContainer = Color(0xFF1E3A8A); // Blue-900
+  static const Color primaryContainer = Color(0xFFE6FAF4);
+  static const Color onPrimaryContainer = Color(0xFF075B3F);
   
   // Admin Panel Green
   static const Color secondary = Color(0xFF22C55E);
@@ -15,7 +15,7 @@ class AppColors {
   static const Color secondaryContainer = Color(0xFFDCFCE7); // Green-50
   static const Color onSecondaryContainer = Color(0xFF14532D); // Green-900
   
-  static const Color tertiary = Color(0xFF0F172A); // Slate-900
+  static const Color tertiary = Color(0xFF0B093E); // Navy Blue Accent
   static const Color onTertiary = Colors.white;
   
   static const Color error = Color(0xFFEF4444); // Red-500

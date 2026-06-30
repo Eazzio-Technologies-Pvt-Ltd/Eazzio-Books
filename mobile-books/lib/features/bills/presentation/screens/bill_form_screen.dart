@@ -37,6 +37,26 @@ class _LineItem {
   double discount = 0.0;
   double taxRate = 0.0;
 
+  // Stable controllers so fields don't reset on setState
+  late final TextEditingController qtyController;
+  late final TextEditingController priceController;
+  late final TextEditingController discountController;
+  late final TextEditingController taxController;
+
+  _LineItem() {
+    qtyController = TextEditingController(text: quantity.toString());
+    priceController = TextEditingController(text: unitPrice.toString());
+    discountController = TextEditingController(text: discount.toString());
+    taxController = TextEditingController(text: taxRate.toString());
+  }
+
+  void dispose() {
+    qtyController.dispose();
+    priceController.dispose();
+    discountController.dispose();
+    taxController.dispose();
+  }
+
   double get lineTotal {
     double gross = quantity * unitPrice;
     double taxable = gross - discount;
@@ -93,7 +113,7 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
 
       _lineItems.clear();
       for (final item in details.items) {
-        _lineItems.add(_LineItem()
+        final li = _LineItem()
           ..itemId = item.itemId
           ..itemName = item.itemName
           ..description = item.description
@@ -102,7 +122,13 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
           ..quantity = item.quantity
           ..unitPrice = item.unitPrice
           ..discount = item.discount
-          ..taxRate = item.taxRate);
+          ..taxRate = item.taxRate;
+        // Sync controllers with loaded values
+        li.qtyController.text = item.quantity.toString();
+        li.priceController.text = item.unitPrice.toString();
+        li.discountController.text = item.discount.toString();
+        li.taxController.text = item.taxRate.toString();
+        _lineItems.add(li);
       }
     } catch (e) {
       if (!mounted) return;
@@ -221,6 +247,9 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
   void dispose() {
     _billNumberController.dispose();
     _notesController.dispose();
+    for (final li in _lineItems) {
+      li.dispose();
+    }
     super.dispose();
   }
 
@@ -527,6 +556,7 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                   final li = entry.value;
 
                   return Card(
+                    key: ValueKey('bill_item_$idx'),
                     margin: const EdgeInsets.only(bottom: AppSpacing.m),
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.s),
@@ -536,23 +566,37 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                             loading: () => const LinearProgressIndicator(),
                             error: (e, s) => Text('Error: $e'),
                             data: (items) => SearchableAutocompleteField<Item>(
+                              key: ValueKey(
+                                  'bill_item_picker_${li.itemId ?? 'new'}_$idx'),
                               labelText: 'Item ${idx + 1} *',
-                              initialValue: items.where((i) => i.id == li.itemId).firstOrNull,
+                              initialValue:
+                                  items.where((i) => i.id == li.itemId).firstOrNull,
                               items: items,
                               itemLabelBuilder: (i) => i.name,
                               searchMatcher: (i, query) {
-                                return i.name.toLowerCase().contains(query.toLowerCase());
+                                return i.name
+                                        .toLowerCase()
+                                        .contains(query.toLowerCase()) ||
+                                    (i.hsnCode ?? '')
+                                        .toLowerCase()
+                                        .contains(query.toLowerCase());
                               },
                               onChanged: (val) {
                                 setState(() {
                                   li.itemId = val?.id;
                                   if (val != null) {
                                     li.itemName = val.name;
-                                    li.unitPrice = val.costPrice; // Bill uses costPrice
+                                    li.unitPrice = val.costPrice;
                                     li.hsnCode = val.hsnCode;
                                     li.unit = val.unit;
                                     li.taxRate = val.taxRate;
-                                    li.description = val.purchaseDescription ?? val.description;
+                                    li.description =
+                                        val.purchaseDescription ?? val.description;
+                                    // Sync controllers
+                                    li.priceController.text =
+                                        val.costPrice.toStringAsFixed(2);
+                                    li.taxController.text =
+                                        val.taxRate.toStringAsFixed(2);
                                   } else {
                                     li.itemName = '';
                                     li.unitPrice = 0.0;
@@ -560,10 +604,13 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                                     li.unit = null;
                                     li.taxRate = 0.0;
                                     li.description = null;
+                                    li.priceController.text = '0.0';
+                                    li.taxController.text = '0.0';
                                   }
                                 });
                               },
-                              validator: (val) => val == null ? 'Item is required' : null,
+                              validator: (val) =>
+                                  val == null ? 'Item is required' : null,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -571,9 +618,10 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                             children: [
                               Expanded(
                                 child: TextFormField(
-                                  initialValue: li.quantity.toString(),
+                                  controller: li.qtyController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Quantity'),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Quantity'),
                                   onChanged: (val) {
                                     li.quantity = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -583,10 +631,11 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextFormField(
-                                  key: Key('price_${li.itemId}_${li.unitPrice}'),
-                                  initialValue: li.unitPrice.toString(),
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: const InputDecoration(labelText: 'Unit Price'),
+                                  controller: li.priceController,
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                      decimal: true),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Unit Price'),
                                   onChanged: (val) {
                                     li.unitPrice = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -599,9 +648,10 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                             children: [
                               Expanded(
                                 child: TextFormField(
-                                  initialValue: li.discount.toString(),
+                                  controller: li.discountController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Discount'),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Discount'),
                                   onChanged: (val) {
                                     li.discount = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -611,10 +661,10 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextFormField(
-                                  key: Key('tax_${li.itemId}_${li.taxRate}'),
-                                  initialValue: li.taxRate.toString(),
+                                  controller: li.taxController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Tax %'),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Tax %'),
                                   onChanged: (val) {
                                     li.taxRate = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -626,10 +676,12 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: IconButton(
-                              icon: const Icon(Icons.delete, color: AppColors.danger),
+                              icon:
+                                  const Icon(Icons.delete, color: AppColors.danger),
                               onPressed: () {
                                 setState(() {
-                                  _lineItems.removeAt(idx);
+                                  final removed = _lineItems.removeAt(idx);
+                                  removed.dispose();
                                 });
                               },
                             ),

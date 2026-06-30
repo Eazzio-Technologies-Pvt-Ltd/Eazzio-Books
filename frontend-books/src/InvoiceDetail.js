@@ -26,6 +26,7 @@ function InvoiceDetail() {
   // Selected Invoice details
   const [invoice, setInvoice] = useState(null);
   const [items, setItems] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [customer, setCustomer] = useState(null);
   const [fetching, setFetching] = useState(true);
   const [orgInfo, setOrgInfo] = useState({ name: "", address: "", email: "", phone: "", country: "", logo: "" });
@@ -95,6 +96,11 @@ function InvoiceDetail() {
           const custRes = await apiRequest(`/customers/${res.invoice.customer_id}`);
           if (custRes?.customer) setCustomer(custRes.customer);
         }
+
+        try {
+          const payRes = await apiRequest(`/invoices/${id}/payments`);
+          if (payRes?.payments) setPayments(payRes.payments);
+        } catch (e) {}
 
         const orgRes = await apiRequest("/organization-settings");
         if (orgRes?.settings) {
@@ -245,6 +251,9 @@ function InvoiceDetail() {
       const newStatus = newBalance <= 0 ? "paid" : "partially_paid";
       setInvoice({ ...invoice, balance_due: newBalance, status: newStatus });
       setInvoicesList((prev) => prev.map((s) => (s.id === parseInt(id) ? { ...s, status: newStatus, balance_due: newBalance } : s)));
+      if (res.payment) {
+        setPayments(prev => [res.payment, ...prev]);
+      }
       setShowPaymentModal(false);
     } catch (err) { toast.error("Failed to record payment"); }
   };
@@ -452,7 +461,7 @@ function InvoiceDetail() {
               return (
                 <div
                   key={s.id}
-                  onClick={() => navigate(`/invoices/${s.id}/document`)}
+                  onClick={() => navigate(`/invoices/${s.id}`)}
                   style={{
                     padding: "12px 16px", borderBottom: "1px solid #eaecf0", cursor: "pointer",
                     background: isSelected ? "#f0f9ff" : "#ffffff", borderLeft: isSelected ? "3px solid #0ba5ec" : "3px solid transparent",
@@ -725,6 +734,12 @@ function InvoiceDetail() {
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>Total</td>
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>₹{parseFloat(invoice.total_amount).toFixed(2)}</td>
                             </tr>
+                            {parseFloat(invoice.total_amount || 0) - parseFloat(invoice.balance_due || 0) > 0 && (
+                              <tr>
+                                <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>Amount Paid</td>
+                                <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>₹{(parseFloat(invoice.total_amount || 0) - parseFloat(invoice.balance_due || 0)).toFixed(2)}</td>
+                              </tr>
+                            )}
                             <tr>
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>Balance Due</td>
                               <td style={{ padding: "6px 0", textAlign: "right", fontWeight: "600", color: "#1d2939" }}>₹{parseFloat(invoice.balance_due).toFixed(2)}</td>
@@ -739,6 +754,36 @@ function InvoiceDetail() {
                     </div>
                   </div>
                 </div>
+
+                {payments.length > 0 && (
+                  <div className="print-hide" style={{ marginTop: "40px", borderTop: "1px solid #d0d5dd", paddingTop: "24px" }}>
+                    <h4 style={{ margin: "0 0 16px 0", color: "#1d2939", fontSize: "14px" }}>Payments Received</h4>
+                    <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc", textAlign: "left", color: "#64748b" }}>
+                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Date</th>
+                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Payment #</th>
+                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Mode</th>
+                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "right" }}>Amount</th>
+                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "center" }}>Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payments.map(p => (
+                          <tr key={p.id}>
+                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9" }}>{new Date(p.payment_date).toLocaleDateString("en-GB")}</td>
+                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9" }}>PR-{p.id.toString().padStart(5, '0')}</td>
+                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textTransform: "capitalize" }}>{p.payment_mode}</td>
+                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textAlign: "right", fontWeight: "600" }}>₹{parseFloat(p.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textAlign: "center" }}>
+                              <button onClick={() => navigate(`/payments-received/${p.id}`)} style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", textDecoration: "underline" }}>View Receipt</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
               </div>
             </div>

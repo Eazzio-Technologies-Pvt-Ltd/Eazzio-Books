@@ -197,6 +197,9 @@ class DashboardScreen extends ConsumerWidget {
                   _buildGreetingHeader(context, ref),
                   _buildQuickActions(context),
                   const SizedBox(height: AppSpacing.l),
+                  // 4. PROJECTIONS AND EXPECTED SURPLUS
+                  _buildProjectionsSection(context),
+                  const SizedBox(height: AppSpacing.l),
                   // 1. STAT CARDS (RECEIVABLES, PAYABLES, INCOME, EXPENSES)
                   _buildStatCards(context, summary.topSummary),
                   const SizedBox(height: AppSpacing.l),
@@ -252,10 +255,8 @@ class DashboardScreen extends ConsumerWidget {
 
                   // 3. MONTHLY METRICS GRID
                   _buildMonthlyMetricsGrid(context, summary.selectedMonth),
-                  const SizedBox(height: AppSpacing.l),
-
-                  // 4. PROJECTIONS AND EXPECTED SURPLUS
-                  _buildProjectionsSection(context),
+                  const SizedBox(height: AppSpacing.s),
+                  _buildIncomeExpenseProgress(context, summary.selectedMonth),
                   const SizedBox(height: AppSpacing.l),
 
                   // 5. CASH FLOW LINE CHART (Last 12 months)
@@ -428,6 +429,55 @@ class DashboardScreen extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildIncomeExpenseProgress(BuildContext context, SelectedMonthSummary selected) {
+    final double total = selected.incomeReceived + selected.expenses;
+    final double incomePercent = total > 0 ? (selected.incomeReceived / total) : 0.5;
+
+    final double totalSum = selected.incomeReceived + selected.expenses == 0 ? 1 : selected.incomeReceived + selected.expenses;
+    final String incomePercentageStr = ((selected.incomeReceived / totalSum) * 100).toStringAsFixed(0);
+    final String expensePercentageStr = ((selected.expenses / totalSum) * 100).toStringAsFixed(0);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.m),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Monthly Progress (Income vs Expenses)',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+            ),
+            const SizedBox(height: AppSpacing.s),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Income: $incomePercentageStr%',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF059669), fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Expenses: $expensePercentageStr%',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: incomePercent,
+                backgroundColor: const Color(0xFFDC2626), // Red for expenses
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)), // Green for income
+                minHeight: 8,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

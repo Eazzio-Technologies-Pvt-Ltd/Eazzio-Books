@@ -31,6 +31,7 @@ import InvoiceDocument from "./InvoiceDocument";
 import InvoicePreferences from "./InvoicePreferences";
 import Expenses from "./Expenses";
 import ProjectedPayments from "./ProjectedPayments";
+import Banking from "./Banking";
 import ProjectedExpenses from "./ProjectedExpenses";
 import ImportMore from "./ImportMore";
 // NewItem removed — AddItem handles both create and edit
@@ -64,6 +65,7 @@ import RecurringInvoiceDetail from "./RecurringInvoiceDetail";
 import Taxes from "./Taxes";
 import PaymentsReceived from "./PaymentsReceived";
 import AddPaymentReceived from "./AddPaymentReceived";
+import PaymentDetail from "./PaymentDetail";
 import ChartOfAccounts from "./ChartOfAccounts";
 import ManualJournals from "./ManualJournals";
 import AddManualJournal from "./AddManualJournal";
@@ -81,6 +83,8 @@ import PaymentsMade from "./PaymentsMade";
 import AddPaymentMade from "./AddPaymentMade";
 import InventoryMovements from "./InventoryMovements";
 import AddInventoryMovement from "./AddInventoryMovement";
+import LowStockAlerts from "./LowStockAlerts";
+import ItemValuationReport from "./ItemValuationReport";
 import BankReconciliation from "./BankReconciliation";
 import Documents from "./Documents";
 import UploadDocument from "./UploadDocument";
@@ -93,47 +97,15 @@ import LandingPage from "./components/LandingPage";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import AccessDenied from "./AccessDenied";
+import Pricing from "./Pricing";
 import { MODULES, ACTIONS } from "./utils/permissions";
-import { useState, useEffect } from "react";
-import { useAuth } from "./AuthContext";
-import SubscriptionExpiredOverlay from "./SubscriptionExpiredOverlay";
 
 function App() {
-  const { user } = useAuth();
-  const [isExpired, setIsExpired] = useState(false);
-
-  // 1. Listen for API 402 subscription expired events
-  useEffect(() => {
-    const handleExpired = () => {
-      setIsExpired(true);
-    };
-    window.addEventListener("subscription-expired", handleExpired);
-    return () => {
-      window.removeEventListener("subscription-expired", handleExpired);
-    };
-  }, []);
-
-  // 2. Check if the active organization is expired on load/user login
-  useEffect(() => {
-    if (user && user.plan_id !== 'free') {
-      const expiresAt = user.subscription_expires_at;
-      if (!expiresAt || new Date(expiresAt) < new Date()) {
-        setIsExpired(true);
-      } else {
-        setIsExpired(false);
-      }
-    } else {
-      setIsExpired(false);
-    }
-  }, [user]);
-
   return (
-    <>
-      {isExpired && <SubscriptionExpiredOverlay onRenewed={() => setIsExpired(false)} />}
-      <BrowserRouter>
-        <Routes>
-          {/* Public pages – NO sidebar, NO topbar */}
-          <Route path="/" element={<LandingPage />} />
+    <BrowserRouter>
+      <Routes>
+        {/* Public pages – NO sidebar, NO topbar */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -162,8 +134,8 @@ function App() {
           <Route path="/items/:id" element={<ProtectedRoute module={MODULES.ITEMS}><ItemDetail /></ProtectedRoute>} />
           <Route path="/inventory/stock" element={<ProtectedRoute module={MODULES.ITEMS}><AddInventoryMovement /></ProtectedRoute>} />
           <Route path="/inventory/movements" element={<ProtectedRoute module={MODULES.ITEMS}><InventoryMovements /></ProtectedRoute>} />
-          <Route path="/inventory/low-stock" element={<PlaceholderPage title="Low Stock Alerts" description="View items that are running low on stock." />} />
-          <Route path="/reports/item-valuation" element={<PlaceholderPage title="Item Valuation Report" description="View the valuation of your current inventory." />} />
+          <Route path="/inventory/low-stock" element={<ProtectedRoute module={MODULES.ITEMS}><LowStockAlerts /></ProtectedRoute>} />
+          <Route path="/reports/item-valuation" element={<ProtectedRoute module={MODULES.ITEMS}><ItemValuationReport /></ProtectedRoute>} />
           <Route path="/customers" element={<ProtectedRoute module={MODULES.CUSTOMERS}><Customers /></ProtectedRoute>} />
           <Route path="/customers/new" element={<ProtectedRoute module={MODULES.CUSTOMERS} action={ACTIONS.CREATE}><AddCustomer /></ProtectedRoute>} />
           <Route path="/customers/:id/edit" element={<ProtectedRoute module={MODULES.CUSTOMERS} action={ACTIONS.EDIT}><AddCustomer /></ProtectedRoute>} />
@@ -193,9 +165,11 @@ function App() {
           <Route path="/sales-orders/:id/document" element={<SalesOrderDetail />} />
           <Route path="/payments-received" element={<PaymentsReceived />} />
           <Route path="/payments-received/new" element={<AddPaymentReceived />} />
+          <Route path="/payments-received/:id" element={<PaymentDetail />} />
           <Route path="/delivery-challans" element={<DeliveryChallans />} />
           <Route path="/delivery-challans/new" element={<AddDeliveryChallan />} />
           <Route path="/delivery-challans/:id/edit" element={<AddDeliveryChallan />} />
+          <Route path="/delivery-challans/:id" element={<DeliveryChallanDetail />} />
           <Route path="/delivery-challans/:id/document" element={<DeliveryChallanDetail />} />
           <Route path="/recurring-invoices" element={<RecurringInvoices />} />
           <Route path="/recurring-invoices/new" element={<AddRecurringInvoice />} />
@@ -204,6 +178,7 @@ function App() {
           <Route path="/credit-notes" element={<CreditNotes />} />
           <Route path="/credit-notes/new" element={<AddCreditNote />} />
           <Route path="/credit-notes/:id/edit" element={<AddCreditNote />} />
+          <Route path="/credit-notes/:id" element={<CreditNoteDetail />} />
           <Route path="/credit-notes/:id/document" element={<CreditNoteDetail />} />
           <Route path="/vendors" element={<ProtectedRoute module={MODULES.VENDORS}><Vendors /></ProtectedRoute>} />
           <Route path="/vendors/new" element={<ProtectedRoute module={MODULES.VENDORS} action={ACTIONS.CREATE}><AddVendor /></ProtectedRoute>} />
@@ -216,16 +191,19 @@ function App() {
           <Route path="/purchase-orders" element={<PurchaseOrders />} />
           <Route path="/purchase-orders/new" element={<AddPurchaseOrder />} />
           <Route path="/purchase-orders/:id/edit" element={<AddPurchaseOrder />} />
+          <Route path="/purchase-orders/:id" element={<PurchaseOrderDetail />} />
           <Route path="/purchase-orders/:id/document" element={<PurchaseOrderDetail />} />
           <Route path="/bills" element={<ProtectedRoute module={MODULES.BILLS}><Bills /></ProtectedRoute>} />
           <Route path="/bills/new" element={<ProtectedRoute module={MODULES.BILLS} action={ACTIONS.CREATE}><AddBill /></ProtectedRoute>} />
           <Route path="/bills/:id/edit" element={<ProtectedRoute module={MODULES.BILLS} action={ACTIONS.EDIT}><AddBill /></ProtectedRoute>} />
+          <Route path="/bills/:id" element={<ProtectedRoute module={MODULES.BILLS}><BillDetail /></ProtectedRoute>} />
           <Route path="/bills/:id/document" element={<ProtectedRoute module={MODULES.BILLS}><BillDetail /></ProtectedRoute>} />
           <Route path="/payments-made" element={<PaymentsMade />} />
           <Route path="/payments-made/new" element={<AddPaymentMade />} />
           <Route path="/vendor-credits" element={<VendorCredits />} />
           <Route path="/vendor-credits/new" element={<AddVendorCredit />} />
           <Route path="/vendor-credits/:id/edit" element={<AddVendorCredit />} />
+          <Route path="/vendor-credits/:id" element={<VendorCreditDetail />} />
           <Route path="/vendor-credits/:id/document" element={<VendorCreditDetail />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/projects/new" element={<AddProject />} />
@@ -234,7 +212,7 @@ function App() {
           <Route path="/timesheets" element={<Timesheets />} />
           <Route path="/timesheets/new" element={<AddTimesheet />} />
           <Route path="/timesheets/:id/edit" element={<AddTimesheet />} />
-          <Route path="/bank-accounts" element={<ProjectedPayments />} />
+          <Route path="/bank-accounts" element={<ProtectedRoute module={MODULES.BANKING}><Banking /></ProtectedRoute>} />
           <Route path="/bank-rules" element={<PlaceholderPage title="Bank Rules" description="Set up rules to automatically categorize bank transactions." />} />
           <Route path="/chart-of-accounts" element={<ChartOfAccounts />} />
           <Route path="/manual-journals" element={<ManualJournals />} />
@@ -268,10 +246,10 @@ function App() {
           <Route path="/transaction-locking" element={<PlaceholderPage title="Transaction Locking" description="Lock transactions to prevent unauthorized changes." />} />
           <Route path="/composite-items" element={<PlaceholderPage title="Composite Items" description="Bundle multiple items into a single composite item." />} />
           <Route path="/price-lists" element={<PlaceholderPage title="Price Lists" description="Manage custom pricing for different customers." />} />
+          <Route path="/pricing" element={<Pricing />} />
         </Route>
       </Routes>
-      </BrowserRouter>
-    </>
+    </BrowserRouter>
   );
 }
 

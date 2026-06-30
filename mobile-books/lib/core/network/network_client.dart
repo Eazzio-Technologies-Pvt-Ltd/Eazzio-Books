@@ -1,6 +1,7 @@
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,7 +10,17 @@ final cookieJarProvider = Provider<CookieJar>((ref) {
 });
 
 final dioProvider = Provider<Dio>((ref) {
-  String baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:5000/api';
+  // Load configuration from environment variables (.env file).
+  // Do NOT hardcode the base URL in the source code.
+  final String? envUrl = dotenv.env['API_BASE_URL'];
+  if (envUrl == null || envUrl.isEmpty) {
+    debugPrint('WARNING: API_BASE_URL environment variable is missing from .env file.');
+  }
+  
+  final String defaultUrl = (kReleaseMode || kProfileMode)
+      ? 'https://eazzio-books.onrender.com/api'
+      : 'http://10.0.2.2:5000/api';
+  final String baseUrl = envUrl ?? defaultUrl;
 
   final dio = Dio(
     BaseOptions(

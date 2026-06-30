@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 
 function UploadDocument() {
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     document_name: "",
     category: "Other",
@@ -12,7 +12,7 @@ function UploadDocument() {
     related_record_id: "",
     notes: ""
   });
-  
+
   const [saving, setSaving] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -50,7 +50,7 @@ function UploadDocument() {
       });
 
       if (!res.ok) throw new Error('Upload failed');
-      
+
       toast.success("Document uploaded successfully");
       navigate("/documents");
     } catch (err) {
@@ -63,11 +63,11 @@ function UploadDocument() {
   return (
     <div style={{ padding: "30px", maxWidth: "800px", margin: "auto" }}>
       <h2>Upload Document</h2>
-      
+
       <div style={{ background: "#fff", padding: "30px", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginTop: "20px" }}>
-        
+
         <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          
+
           <div>
             <label style={labelStyle}>Select File *</label>
             <input type="file" onChange={handleFileChange} style={inputStyle} required />
@@ -76,11 +76,11 @@ function UploadDocument() {
 
           <div>
             <label style={labelStyle}>Document Name *</label>
-            <input 
-              type="text" 
-              value={formData.document_name} 
-              onChange={e => setFormData({...formData, document_name: e.target.value})}
-              style={inputStyle} 
+            <input
+              type="text"
+              value={formData.document_name}
+              onChange={e => setFormData({ ...formData, document_name: e.target.value })}
+              style={inputStyle}
               required
             />
           </div>
@@ -88,7 +88,7 @@ function UploadDocument() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div>
               <label style={labelStyle}>Category</label>
-              <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} style={inputStyle}>
+              <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} style={inputStyle}>
                 <option value="Invoice">Invoice</option>
                 <option value="Bill">Bill</option>
                 <option value="Expense">Expense</option>
@@ -98,10 +98,10 @@ function UploadDocument() {
                 <option value="Other">Other</option>
               </select>
             </div>
-            
+
             <div>
               <label style={labelStyle}>Related Module</label>
-              <select value={formData.related_module} onChange={e => setFormData({...formData, related_module: e.target.value})} style={inputStyle}>
+              <select value={formData.related_module} onChange={e => setFormData({ ...formData, related_module: e.target.value })} style={inputStyle}>
                 <option value="invoices">Invoices</option>
                 <option value="bills">Bills</option>
                 <option value="expenses">Expenses</option>
@@ -115,22 +115,22 @@ function UploadDocument() {
 
           <div>
             <label style={labelStyle}>Related Record ID (Optional)</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               placeholder="e.g. 104"
-              value={formData.related_record_id} 
-              onChange={e => setFormData({...formData, related_record_id: e.target.value})}
-              style={inputStyle} 
+              value={formData.related_record_id}
+              onChange={e => setFormData({ ...formData, related_record_id: e.target.value })}
+              style={inputStyle}
             />
           </div>
 
           <div>
             <label style={labelStyle}>Notes</label>
-            <textarea 
+            <textarea
               rows="3"
-              value={formData.notes} 
-              onChange={e => setFormData({...formData, notes: e.target.value})}
-              style={inputStyle} 
+              value={formData.notes}
+              onChange={e => setFormData({ ...formData, notes: e.target.value })}
+              style={inputStyle}
             />
           </div>
 

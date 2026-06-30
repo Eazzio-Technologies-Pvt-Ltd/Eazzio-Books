@@ -33,6 +33,11 @@ class _LineItem {
   String hsnCode;
   String unit;
 
+  // Stable controllers so fields don't reset on rebuild
+  late final TextEditingController qtyController;
+  late final TextEditingController rateController;
+  late final TextEditingController discountController;
+
   _LineItem({
     this.itemId,
     this.itemName = '',
@@ -44,7 +49,24 @@ class _LineItem {
     this.discountType = 'flat',
     this.hsnCode = '',
     this.unit = '',
-  });
+  }) {
+    qtyController = TextEditingController(text: quantity.toString());
+    rateController = TextEditingController(text: unitPrice.toString());
+    discountController = TextEditingController(text: discount.toString());
+  }
+
+  void dispose() {
+    qtyController.dispose();
+    rateController.dispose();
+    discountController.dispose();
+  }
+
+  /// Call this after auto-filling from an item selection to sync controllers.
+  void syncControllersFromItem() {
+    rateController.text = unitPrice.toString();
+    discountController.text = discount.toString();
+    // Keep qty as-is (user may have set it before selecting item)
+  }
 
   double get lineBase => quantity * unitPrice;
   double get discountAmount =>
@@ -106,6 +128,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   void dispose() {
     _notesController.dispose();
     _termsController.dispose();
+    for (final li in _lineItems) {
+      li.dispose();
+    }
     super.dispose();
   }
 
@@ -155,6 +180,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                   unit: i.unit ?? '',
                 ))
             .toList();
+      }
+      // Sync controllers with loaded values
+      for (final li in _lineItems) {
+        li.qtyController.text = li.quantity.toString();
+        li.rateController.text = li.unitPrice.toString();
+        li.discountController.text = li.discount.toString();
       }
       _isInit = true;
     } catch (e) {
@@ -994,24 +1025,29 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
 
   Widget _buildLineItemRow(int index, _LineItem li, List<Item> itemList) {
     return Column(
+      key: ValueKey('line_item_$index'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Item Picker + Qty ──────────────────────────────────
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               flex: 3,
               child: SearchableAutocompleteField<Item>(
+                key: ValueKey('item_picker_${li.itemId ?? 'new'}_$index'),
                 labelText: 'Item',
-                initialValue: itemList.where((i) => i.id == li.itemId).firstOrNull,
+                initialValue:
+                    itemList.where((i) => i.id == li.itemId).firstOrNull,
                 items: itemList,
                 itemLabelBuilder: (i) => i.name,
                 searchMatcher: (i, query) {
-                  return i.name.toLowerCase().contains(query.toLowerCase());
+                  return i.name.toLowerCase().contains(query.toLowerCase()) ||
+                      (i.hsnCode ?? '').toLowerCase().contains(query.toLowerCase());
                 },
                 onChanged: (item) {
-                  if (item != null) {
-                    setState(() {
+                  setState(() {
+                    if (item != null) {
                       li.itemId = item.id;
                       li.itemName = item.name;
                       li.unitPrice = item.sellingPrice;
@@ -1019,9 +1055,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       li.hsnCode = item.hsnCode ?? '';
                       li.unit = item.unit ?? '';
                       li.description = item.description ?? '';
-                    });
-                  } else {
-                    setState(() {
+                      // Sync rate/discount controllers with auto-filled values
+                      li.rateController.text =
+                          item.sellingPrice.toStringAsFixed(2);
+                      li.discountController.text =
+                          li.discount.toStringAsFixed(2);
+                    } else {
                       li.itemId = null;
                       li.itemName = '';
                       li.unitPrice = 0.0;
@@ -1029,23 +1068,25 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       li.hsnCode = '';
                       li.unit = '';
                       li.description = '';
-                    });
-                  }
+                      li.rateController.text = '0.0';
+                      li.discountController.text = '0.0';
+                    }
+                  });
                 },
-                validator: (val) => val == null ? 'Item is required' : null,
+                validator: (val) =>
+                    val == null ? 'Item is required' : null,
               ),
             ),
             const SizedBox(width: AppSpacing.s),
             Expanded(
               flex: 1,
               child: TextFormField(
+                controller: li.qtyController,
                 decoration: const InputDecoration(labelText: 'Qty'),
                 keyboardType: TextInputType.number,
-                initialValue: li.quantity.toString(),
                 onChanged: (val) {
-                  setState(() {
-                    li.quantity = double.tryParse(val) ?? 1.0;
-                  });
+                  li.quantity = double.tryParse(val) ?? 1.0;
+                  setState(() {});
                 },
               ),
             ),
@@ -1053,37 +1094,39 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
               icon: const Icon(Icons.delete, color: AppColors.danger),
               onPressed: () {
                 setState(() {
-                  _lineItems.removeAt(index);
+                  final removed = _lineItems.removeAt(index);
+                  removed.dispose();
                 });
               },
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.s),
+        // ── Rate + Discount ────────────────────────────────────
         Row(
           children: [
             Expanded(
               child: TextFormField(
+                controller: li.rateController,
                 decoration: const InputDecoration(labelText: 'Rate (₹)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                controller: TextEditingController(text: li.unitPrice.toString())..selection = TextSelection.collapsed(offset: li.unitPrice.toString().length),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (val) {
-                  setState(() {
-                    li.unitPrice = double.tryParse(val) ?? 0.0;
-                  });
+                  li.unitPrice = double.tryParse(val) ?? 0.0;
+                  setState(() {});
                 },
               ),
             ),
             const SizedBox(width: AppSpacing.s),
             Expanded(
               child: TextFormField(
+                controller: li.discountController,
                 decoration: const InputDecoration(labelText: 'Discount'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                initialValue: li.discount.toString(),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (val) {
-                  setState(() {
-                    li.discount = double.tryParse(val) ?? 0.0;
-                  });
+                  li.discount = double.tryParse(val) ?? 0.0;
+                  setState(() {});
                 },
               ),
             ),
@@ -1095,19 +1138,29 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                 DropdownMenuItem(value: 'percent', child: Text('%')),
               ],
               onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    li.discountType = val;
-                  });
-                }
+                if (val != null) setState(() => li.discountType = val);
               },
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.s),
-        Text(
-          'Line Total: ₹${li.getLineTotal(_gstType).toStringAsFixed(2)}  (Tax: ${li.taxRate}%)',
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondaryLight),
+        // ── Tax + Line total ───────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Tax: ${li.taxRate}%',
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textSecondaryLight),
+            ),
+            Text(
+              'Line Total: ₹${li.getLineTotal(_gstType).toStringAsFixed(2)}',
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondaryLight),
+            ),
+          ],
         ),
         const Divider(height: AppSpacing.l),
       ],

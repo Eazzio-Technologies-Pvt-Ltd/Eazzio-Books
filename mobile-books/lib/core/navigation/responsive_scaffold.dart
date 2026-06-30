@@ -874,6 +874,19 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
       primaryTextTheme: GoogleFonts.interTextTheme(baseTheme.primaryTextTheme),
     );
 
+    int currentBottomNavIndex = 0;
+    if (widget.currentRoute.startsWith('/dashboard')) {
+      currentBottomNavIndex = 0;
+    } else if (widget.currentRoute.startsWith('/customers')) {
+      currentBottomNavIndex = 1;
+    } else if (widget.currentRoute.startsWith('/invoices')) {
+      currentBottomNavIndex = 2;
+    } else if (widget.currentRoute.startsWith('/expenses')) {
+      currentBottomNavIndex = 3;
+    } else {
+      currentBottomNavIndex = 4; // More/Other categories
+    }
+
     return Theme(
       data: theme,
       child: isMobile
@@ -883,6 +896,58 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               drawer: AppNavigationDrawer(currentRoute: widget.currentRoute),
               floatingActionButton: widget.floatingActionButton,
               body: _buildAnimatedBody(widget.body),
+              bottomNavigationBar: BottomNavigationBar(
+                currentIndex: currentBottomNavIndex,
+                type: BottomNavigationBarType.fixed,
+                selectedItemColor: theme.colorScheme.primary,
+                unselectedItemColor: theme.colorScheme.secondary,
+                onTap: (index) {
+                  switch (index) {
+                    case 0:
+                      context.go('/dashboard');
+                      break;
+                    case 1:
+                      context.go('/customers');
+                      break;
+                    case 2:
+                      context.go('/invoices');
+                      break;
+                    case 3:
+                      context.go('/expenses');
+                      break;
+                    case 4:
+                      _scaffoldKey.currentState?.openDrawer();
+                      break;
+                  }
+                },
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home_outlined),
+                    activeIcon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.people_outline),
+                    activeIcon: Icon(Icons.people),
+                    label: 'Customers',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.receipt_long_outlined),
+                    activeIcon: Icon(Icons.receipt_long),
+                    label: 'Invoices',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.money_off_outlined),
+                    activeIcon: Icon(Icons.money_off),
+                    label: 'Expenses',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.menu_outlined),
+                    activeIcon: Icon(Icons.menu),
+                    label: 'More',
+                  ),
+                ],
+              ),
             )
           : Scaffold(
               body: Row(

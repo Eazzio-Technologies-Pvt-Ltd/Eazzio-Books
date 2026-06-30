@@ -19,11 +19,12 @@ class AppColors {
   static const Color borderDark = Color(0xFF334155); // Slate 700
 
   // 10% Accent: Call to actions, selected states, highlights
-  static const Color primaryBlue = Color(0xFF2563EB); // Vibrant Brand Blue
-  static const Color primaryBlueDark = Color(0xFF3B82F6); // Lighter blue for dark theme
-  static const Color success = Color(0xFF10B981); // Emerald 500
-  static const Color danger = Color(0xFFEF4444); // Red 500
-  static const Color warning = Color(0xFFF59E0B); // Amber 500
+  static const Color primaryBlue = Color(0xFF0CD693); // Eazzio Teal Green Primary
+  static const Color primaryBlueDark = Color(0xFF079968); // Lighter/darker teal
+  static const Color accentNavy = Color(0xFF0B093E); // Navy Blue Accent
+  static const Color success = Color(0xFF059669); // Green — punch in
+  static const Color danger = Color(0xFFDC2626); // Red
+  static const Color warning = Color(0xFFD97706); // Amber
 }
 
 class AppSpacing {
@@ -94,6 +95,7 @@ class AppTheme {
       colorScheme: const ColorScheme.light(
         primary: AppColors.primaryBlue,
         secondary: AppColors.textSecondaryLight,
+        tertiary: AppColors.accentNavy,
         surface: AppColors.surfaceLight,
         error: AppColors.danger,
       ),
@@ -153,6 +155,7 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryBlueDark,
         secondary: AppColors.textSecondaryDark,
+        tertiary: AppColors.accentNavy,
         surface: AppColors.surfaceDark,
         error: AppColors.danger,
       ),

@@ -73,6 +73,7 @@ const COLUMNS_DEFAULT = [
   { id:'sku', label:'SKU', visible:false },
   { id:'type', label:'Type', visible:false },
   { id:'vendor_name', label:'Vendor Name', visible:false },
+  { id:'stock', label:'Stock', visible:true },
 ];
 
 function Items() {
@@ -149,6 +150,21 @@ function Items() {
     if (col.id==='purchase_account_name') return <td key={col.id}>{item.purchase_account||'—'}</td>;
     if (col.id==='sku') return <td key={col.id}>{item.sku||'—'}</td>;
     if (col.id==='type') return <td key={col.id}>{item.item_type||'—'}</td>;
+    if (col.id==='stock') {
+      const isLowStock = item.is_inventory_tracked && (parseFloat(item.stock_quantity) <= parseFloat(item.reorder_level || 0));
+      return (
+        <td key={col.id}>
+          {item.is_inventory_tracked ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>{item.stock_quantity}</span>
+              {isLowStock && (
+                <span style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca', padding: '2px 6px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}>Low</span>
+              )}
+            </div>
+          ) : '—'}
+        </td>
+      );
+    }
     return <td key={col.id}>—</td>;
   };
 

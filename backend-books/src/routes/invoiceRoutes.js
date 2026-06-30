@@ -165,24 +165,4 @@ router.get("/customers/:id/invoices", authMiddleware, tenantMiddleware, requireP
   }
 });
 
-router.patch("/invoices/:id/mark-sent", authMiddleware, tenantMiddleware, requirePermission(MODULES.INVOICES, ACTIONS.EDIT), async (req, res) => {
-  const { id } = req.params;
-  try {
-    let query = "UPDATE invoices SET status = 'sent', updated_at = CURRENT_TIMESTAMP WHERE id = $1";
-    let vals = [id];
-    if (req.tenantId) {
-      query += " AND organization_id = $2";
-      vals.push(req.tenantId);
-    }
-    const result = await pool.query(query + " RETURNING *", vals);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Invoice not found" });
-    }
-    res.json({ message: "Invoice marked as sent", invoice: result.rows[0] });
-  } catch (err) {
-    console.error("MARK INVOICE SENT ERROR:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 module.exports = router;

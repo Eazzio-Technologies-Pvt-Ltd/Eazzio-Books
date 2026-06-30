@@ -27,6 +27,15 @@ class _LineItem {
   String hsnCode;
   String unit;
 
+  // Stable controllers so fields don't reset on rebuild
+  late final TextEditingController qtyController;
+  late final TextEditingController priceController;
+  late final TextEditingController taxController;
+  late final TextEditingController discountController;
+  late final TextEditingController hsnController;
+  late final TextEditingController nameController;
+  late final TextEditingController descController;
+
   _LineItem({
     this.itemId,
     this.itemName = '',
@@ -38,7 +47,34 @@ class _LineItem {
     this.discountType = 'flat',
     this.hsnCode = '',
     this.unit = '',
-  });
+  }) {
+    qtyController = TextEditingController(text: quantity.toString());
+    priceController = TextEditingController(text: unitPrice.toString());
+    taxController = TextEditingController(text: taxRate.toString());
+    discountController = TextEditingController(text: discount.toString());
+    hsnController = TextEditingController(text: hsnCode);
+    nameController = TextEditingController(text: itemName);
+    descController = TextEditingController(text: description);
+  }
+
+  void dispose() {
+    qtyController.dispose();
+    priceController.dispose();
+    taxController.dispose();
+    discountController.dispose();
+    hsnController.dispose();
+    nameController.dispose();
+    descController.dispose();
+  }
+
+  /// Sync all controllers after auto-fill from catalog item.
+  void syncControllers() {
+    priceController.text = unitPrice.toStringAsFixed(2);
+    taxController.text = taxRate.toString();
+    hsnController.text = hsnCode;
+    nameController.text = itemName;
+    descController.text = description;
+  }
 
   double get lineBase => quantity * unitPrice;
   double get discountAmount =>
@@ -85,6 +121,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
     _notesController.dispose();
     _termsController.dispose();
     _adjustmentController.dispose();
+    for (final li in _lineItems) {
+      li.dispose();
+    }
     super.dispose();
   }
 
@@ -116,18 +155,24 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
-            .map((i) => _LineItem(
-                  itemId: i.itemId,
-                  itemName: i.itemName ?? '',
-                  description: i.description ?? '',
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discount: i.discount,
-                  discountType: i.discountType,
-                  hsnCode: i.hsnCode ?? '',
-                  unit: i.unit ?? '',
-                ))
+            .map((i) {
+              final li = _LineItem(
+                itemId: i.itemId,
+                itemName: i.itemName ?? '',
+                description: i.description ?? '',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                taxRate: i.taxRate,
+                discount: i.discount,
+                discountType: i.discountType,
+                hsnCode: i.hsnCode ?? '',
+                unit: i.unit ?? '',
+              );
+              li.syncControllers();
+              li.qtyController.text = i.quantity.toString();
+              li.discountController.text = i.discount.toString();
+              return li;
+            })
             .toList();
       }
       _isInit = true;
@@ -581,6 +626,8 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       li.taxRate = catalogItem.taxRate;
       li.hsnCode = catalogItem.hsnCode ?? '';
       li.unit = catalogItem.unit ?? '';
+      // Sync controllers with new values
+      li.syncControllers();
     });
   }
 
@@ -1075,7 +1122,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
 
             // Item name (manual entry fallback)
             TextFormField(
-              initialValue: li.itemName,
+              controller: li.nameController,
               decoration:
                   const InputDecoration(labelText: 'Item Name'),
               onChanged: (val) => li.itemName = val,
@@ -1084,7 +1131,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
 
             // Description
             TextFormField(
-              initialValue: li.description,
+              controller: li.descController,
               decoration:
                   const InputDecoration(labelText: 'Description'),
               onChanged: (val) => li.description = val,
@@ -1096,7 +1143,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    initialValue: li.quantity.toString(),
+                    controller: li.qtyController,
                     decoration:
                         const InputDecoration(labelText: 'Quantity'),
                     keyboardType:
@@ -1119,7 +1166,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 const SizedBox(width: AppSpacing.s),
                 Expanded(
                   child: TextFormField(
-                    initialValue: li.unitPrice.toString(),
+                    controller: li.priceController,
                     decoration:
                         const InputDecoration(labelText: 'Unit Price'),
                     keyboardType:
@@ -1138,7 +1185,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    initialValue: li.taxRate.toString(),
+                    controller: li.taxController,
                     decoration:
                         const InputDecoration(labelText: 'Tax Rate %'),
                     keyboardType:
@@ -1151,7 +1198,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 const SizedBox(width: AppSpacing.s),
                 Expanded(
                   child: TextFormField(
-                    initialValue: li.hsnCode,
+                    controller: li.hsnController,
                     decoration:
                         const InputDecoration(labelText: 'HSN Code'),
                     onChanged: (val) => li.hsnCode = val,
@@ -1167,7 +1214,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 Expanded(
                   flex: 2,
                   child: TextFormField(
-                    initialValue: li.discount.toString(),
+                    controller: li.discountController,
                     decoration:
                         const InputDecoration(labelText: 'Discount'),
                     keyboardType:

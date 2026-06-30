@@ -8,3 +8,23 @@
 **/macos/Pods/
 **/*.apk
 **/*.aab
+
+# Antigravity working files (not project code)
+Plan.md
+Task/
+api-map.md
+architecture.md
+database-map.md
+dependency-graph.md
+icons/
+memory.md
+routes.md
+
+backend-books/
+frontend-books/
+icons/
+Task/
+
+.agents/
+.skills/
+*.json

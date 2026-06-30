@@ -222,6 +222,8 @@ export default function ItemSidePanel({ itemId, onClose, onUpdate }) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [movements, setMovements] = useState([]);
+  const [movementsLoading, setMovementsLoading] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -269,6 +271,23 @@ export default function ItemSidePanel({ itemId, onClose, onUpdate }) {
         }
       };
       fetchHistory();
+    }
+  }, [activeTab, itemId]);
+
+  useEffect(() => {
+    if (activeTab === 'Movements' && itemId) {
+      const fetchMovements = async () => {
+        setMovementsLoading(true);
+        try {
+          const res = await apiRequest(`/items/${itemId}/movements`);
+          setMovements(res.movements || []);
+        } catch (err) {
+          toast.error("Failed to load movements");
+        } finally {
+          setMovementsLoading(false);
+        }
+      };
+      fetchMovements();
     }
   }, [activeTab, itemId]);
 
@@ -359,7 +378,7 @@ export default function ItemSidePanel({ itemId, onClose, onUpdate }) {
             </div>
 
             <div className="side-tabs-container">
-              {['Overview', 'Transactions', 'History'].map(tab => (
+              {['Overview', 'Movements', 'Transactions', 'History'].map(tab => (
                 <div
                   key={tab}
                   className={`side-tab-item ${activeTab === tab ? 'active' : ''}`}
@@ -390,9 +409,20 @@ export default function ItemSidePanel({ itemId, onClose, onUpdate }) {
 
                   <h3 className="side-section-title">Purchase Information</h3>
                   <div className="side-detail-group">
-                    <div className="side-detail-label">Cost Price</div>
+                    <div className="side-detail-label">Default Cost Price</div>
                     <div className="side-detail-value">{formatCurrency(item.cost_price)}</div>
                   </div>
+                  {item.is_inventory_tracked && (
+                    <div className="side-detail-group" style={{ marginTop: '8px' }}>
+                      <div className="side-detail-label">
+                        <span style={{ background: '#dbeafe', color: '#1e40af', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', marginRight: '6px' }}>DYNAMIC</span>
+                        Current Valuation (Avg)
+                      </div>
+                      <div className="side-detail-value" style={{ fontWeight: '600', color: '#2563eb' }}>
+                        {formatCurrency(item.current_valuation_rate || item.cost_price || 0)}
+                      </div>
+                    </div>
+                  )}
                   <div className="side-detail-group">
                     <div className="side-detail-label">Purchase Account</div>
                     <div className="side-detail-value">{item.purchase_account || "—"}</div>
@@ -481,6 +511,53 @@ export default function ItemSidePanel({ itemId, onClose, onUpdate }) {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'Movements' && (
+                <div className="history-container">
+                  {movementsLoading ? (
+                    <div style={{ color: '#64748b', marginTop: '20px' }}>Loading movements...</div>
+                  ) : movements.length === 0 ? (
+                    <div style={{ color: '#64748b', marginTop: '20px' }}>No movements found for this item.</div>
+                  ) : (
+                    <div className="history-list">
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
+                            <th style={{ padding: '8px' }}>Date</th>
+                            <th style={{ padding: '8px' }}>Type</th>
+                            <th style={{ padding: '8px' }}>Reference</th>
+                            <th style={{ padding: '8px', textAlign: 'right' }}>Qty</th>
+                            <th style={{ padding: '8px', textAlign: 'right' }}>Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {movements.map(record => (
+                            <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '8px', color: '#334155' }}>
+                                {new Date(record.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </td>
+                              <td style={{ padding: '8px', textTransform: 'capitalize' }}>
+                                <span style={{ padding: '2px 6px', borderRadius: '4px', background: record.quantity_change > 0 ? '#dcfce7' : '#fee2e2', color: record.quantity_change > 0 ? '#166534' : '#991b1b', fontSize: '12px', fontWeight: '500' }}>
+                                  {record.transaction_type}
+                                </span>
+                              </td>
+                              <td style={{ padding: '8px', color: '#2563eb' }}>
+                                {record.reference_number || record.description || '—'}
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', fontWeight: '500', color: record.quantity_change > 0 ? '#16a34a' : '#dc2626' }}>
+                                {record.quantity_change > 0 ? '+' : ''}{record.quantity_change}
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold' }}>
+                                {record.running_balance}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>

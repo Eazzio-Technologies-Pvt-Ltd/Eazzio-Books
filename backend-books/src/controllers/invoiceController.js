@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const sendEmail = require("../utils/sendEmail");
 const { checkTransactionLock } = require("../utils/lockHelper");
 
 // ---- ensure extra columns exist (safe to re-run) ----
@@ -139,6 +140,49 @@ const createInvoice = async (req, res) => {
            taxableValue, cgstRate, cgstAmount, sgstRate, sgstAmount, igstRate, igstAmount]
         );
         total += lineTotal;
+
+        // Inventory processing
+        if (item.item_id) {
+          const itemCheck = await client.query(`SELECT is_inventory_tracked, stock_quantity, reorder_level, name, is_low_stock_alert_sent, organization_id FROM items WHERE id = $1`, [item.item_id]);
+          if (itemCheck.rows.length > 0) {
+            const itemData = itemCheck.rows[0];
+            if (itemData.is_inventory_tracked) {
+              if (itemData.stock_quantity < qty) {
+                throw new Error(`Insufficient stock for item: ${itemData.name}. Available: ${itemData.stock_quantity}, Requested: ${qty}`);
+              }
+              const newStock = itemData.stock_quantity - qty;
+              await client.query(`UPDATE items SET stock_quantity = $1 WHERE id = $2`, [newStock, item.item_id]);
+              await client.query(
+                `INSERT INTO inventory_movements 
+                 (user_id, item_id, transaction_type, quantity_change, reference_type, reference_id, reference_number, entry_date, description, organization_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9)`,
+                [req.user.id, item.item_id, 'sale', -qty, 'invoice', invoiceId, invNumber, `Sale via Invoice ${invNumber}`, req.tenantId || null]
+              );
+              
+              // Phase 2: Low-Stock Alert Check
+              const reorderLevel = parseFloat(itemData.reorder_level) || 0;
+              if (newStock <= reorderLevel && !itemData.is_low_stock_alert_sent) {
+                // Set flag to true to debounce
+                await client.query(`UPDATE items SET is_low_stock_alert_sent = TRUE WHERE id = $1`, [item.item_id]);
+                
+                // Fetch org users
+                const orgId = itemData.organization_id || req.tenantId;
+                if (orgId) {
+                  const usersRes = await client.query(`SELECT email FROM users WHERE organization_id = $1`, [orgId]);
+                  const emails = usersRes.rows.map(u => u.email).filter(Boolean);
+                  if (emails.length > 0) {
+                    const subject = `Low Stock Alert: ${itemData.name}`;
+                    const text = `The stock quantity for ${itemData.name} has dropped to ${newStock} (Reorder Level: ${reorderLevel}). Please reorder soon.`;
+                    for (const email of emails) {
+                      // Fire and forget (don't await to avoid blocking invoice creation if SMTP fails)
+                      sendEmail(email, subject, text).catch(e => console.error("Low stock email failed", e));
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
     await client.query("UPDATE invoices SET total_amount = $1, balance_due = $2 WHERE id = $3", [total, total, invoiceId]);

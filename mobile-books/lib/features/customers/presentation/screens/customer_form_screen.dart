@@ -429,11 +429,11 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
       if (isEdit) {
         await ref.read(customersProvider.notifier).updateCustomer(widget.customerId!, payload);
       } else {
-        final mockCustomer = Customer.fromJson({
+        final customer = Customer.fromJson({
           'id': 0,
           ...payload,
         });
-        await ref.read(customersProvider.notifier).createCustomer(mockCustomer);
+        await ref.read(customersProvider.notifier).createCustomer(customer);
       }
 
         if (mounted) {

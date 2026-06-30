@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:mobile_books/features/items/data/services/item_service.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
+import 'package:mobile_books/features/documents/data/services/document_service.dart';
 
 class ItemFormScreen extends ConsumerStatefulWidget {
   final int? itemId;
@@ -160,11 +161,35 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
       final image = await picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
         setState(() {
-          _imageUrl = image.name;
+          _isLoading = true;
+        });
+        final documentService = ref.read(documentServiceProvider);
+        final doc = await documentService.uploadDocument(
+          filePath: image.path,
+          fileName: image.name,
+          documentName: 'Item Image ${DateTime.now().millisecondsSinceEpoch}',
+          category: 'receipt',
+          relatedModule: 'items',
+        );
+        // Build download URL from the returned document model
+        final downloadUrl = documentService.getDownloadUrl(doc.id);
+        setState(() {
+          _imageUrl = downloadUrl;
         });
       }
     } catch (e) {
-      debugPrint('Failed to pick image: $e');
+      debugPrint('Failed to pick and upload image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload image: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

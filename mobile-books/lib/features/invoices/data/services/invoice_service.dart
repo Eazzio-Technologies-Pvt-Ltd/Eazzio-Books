@@ -5,6 +5,7 @@ import 'package:mobile_books/core/network/network_client.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice_item.dart';
 import 'package:mobile_books/features/invoices/data/models/payment.dart';
+import 'package:mobile_books/features/invoices/data/models/invoice_preferences.dart';
 
 class InvoiceException implements Exception {
   final String message;
@@ -207,6 +208,35 @@ class InvoiceService {
       await _networkClient.patch('/invoices/$id/mark-sent');
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to mark invoice as sent.';
+      throw InvoiceException(message);
+    } catch (e) {
+      throw InvoiceException(e.toString());
+    }
+  }
+
+  /// Fetches invoice template preferences
+  Future<InvoicePreferences> getInvoicePreferences() async {
+    try {
+      final response = await _networkClient.get('/invoice-preferences');
+      final data = response.data as Map<String, dynamic>;
+      if (data['preferences'] != null) {
+        return InvoicePreferences.fromJson(data['preferences'] as Map<String, dynamic>);
+      }
+      return InvoicePreferences();
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to fetch invoice preferences.';
+      throw InvoiceException(message);
+    } catch (e) {
+      throw InvoiceException(e.toString());
+    }
+  }
+
+  /// Saves/updates invoice template preferences
+  Future<void> saveInvoicePreferences(InvoicePreferences preferences) async {
+    try {
+      await _networkClient.post('/invoice-preferences', data: preferences.toJson());
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to save invoice preferences.';
       throw InvoiceException(message);
     } catch (e) {
       throw InvoiceException(e.toString());

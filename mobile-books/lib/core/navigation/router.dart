@@ -24,6 +24,7 @@ import 'package:mobile_books/features/invoices/presentation/screens/invoice_form
 import 'package:mobile_books/features/invoices/presentation/screens/invoice_document_preview_screen.dart';
 import 'package:mobile_books/features/invoices/presentation/screens/payments_received_list_screen.dart';
 import 'package:mobile_books/features/invoices/presentation/screens/payment_received_form_screen.dart';
+import 'package:mobile_books/features/invoices/presentation/screens/invoice_preferences_screen.dart';
 import 'package:mobile_books/features/quotes/presentation/screens/quote_document_preview_screen.dart';
 import 'package:mobile_books/features/items/presentation/screens/low_stock_alerts_screen.dart';
 import 'package:mobile_books/features/reports/presentation/screens/item_valuation_report_screen.dart';
@@ -44,6 +45,7 @@ import 'package:mobile_books/features/reports/presentation/screens/customer_agin
 import 'package:mobile_books/features/reports/presentation/screens/vendor_aging_screen.dart';
 import 'package:mobile_books/features/tasks/presentation/screens/tasks_screen.dart';
 import 'package:mobile_books/core/widgets/placeholder_page.dart';
+import 'package:mobile_books/features/settings/presentation/screens/users_roles_screen.dart';
 import 'package:mobile_books/features/banking/presentation/screens/reconciliation_selector_screen.dart';
 import 'package:mobile_books/features/sales_orders/presentation/screens/sales_orders_list_screen.dart';
 import 'package:mobile_books/features/sales_orders/presentation/screens/sales_order_detail_screen.dart';
@@ -306,6 +308,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/invoices',
         builder: (context, state) => const InvoicesScreen(),
         routes: [
+          GoRoute(
+            path: 'preferences',
+            builder: (context, state) => const InvoicePreferencesScreen(),
+          ),
           GoRoute(
             path: 'new',
             builder: (context, state) {
@@ -784,11 +790,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/settings/users',
-        builder: (context, state) => const PlaceholderPage(
-          title: 'Users & Roles',
-          message: 'Manage users and roles configuration is coming soon to mobile!',
-          currentRoute: '/dashboard',
-        ),
+        builder: (context, state) => const UsersRolesScreen(),
       ),
       GoRoute(
         path: '/salespersons',

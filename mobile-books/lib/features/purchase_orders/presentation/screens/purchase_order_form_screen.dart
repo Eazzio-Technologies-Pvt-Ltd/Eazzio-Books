@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/utils/gst_calculator.dart';
+import 'package:mobile_books/core/widgets/searchable_autocomplete_field.dart';
 import 'package:mobile_books/core/widgets/state_dropdown_field.dart';
+import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:mobile_books/features/purchase_orders/data/models/purchase_order.dart';
 import 'package:mobile_books/features/purchase_orders/data/models/purchase_order_item.dart';
 import 'package:mobile_books/features/purchase_orders/presentation/providers/purchase_order_provider.dart';
@@ -33,6 +35,26 @@ class _LineItem {
   double discount = 0.0;
   String discountType = 'flat';
   double taxRate = 0.0;
+
+  // Stable controllers so fields don't reset on setState
+  late final TextEditingController qtyController;
+  late final TextEditingController rateController;
+  late final TextEditingController discountController;
+  late final TextEditingController taxController;
+
+  _LineItem() {
+    qtyController = TextEditingController(text: quantity.toString());
+    rateController = TextEditingController(text: rate.toString());
+    discountController = TextEditingController(text: discount.toString());
+    taxController = TextEditingController(text: taxRate.toString());
+  }
+
+  void dispose() {
+    qtyController.dispose();
+    rateController.dispose();
+    discountController.dispose();
+    taxController.dispose();
+  }
 
   double get lineTotal {
     double gross = quantity * rate;
@@ -93,7 +115,7 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
 
       _lineItems.clear();
       for (final item in details.items) {
-        _lineItems.add(_LineItem()
+        final li = _LineItem()
           ..itemId = item.itemId
           ..itemName = item.itemName
           ..description = item.description
@@ -103,7 +125,13 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
           ..rate = item.rate
           ..discount = item.discount
           ..discountType = item.discountType
-          ..taxRate = item.taxRate);
+          ..taxRate = item.taxRate;
+        // Sync controllers with loaded values
+        li.qtyController.text = item.quantity.toString();
+        li.rateController.text = item.rate.toString();
+        li.discountController.text = item.discount.toString();
+        li.taxController.text = item.taxRate.toString();
+        _lineItems.add(li);
       }
     } catch (e) {
       if (!mounted) return;
@@ -224,6 +252,9 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
     _refController.dispose();
     _notesController.dispose();
     _termsController.dispose();
+    for (final li in _lineItems) {
+      li.dispose();
+    }
     super.dispose();
   }
 
@@ -510,6 +541,7 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                   final li = entry.value;
 
                   return Card(
+                    key: ValueKey('po_item_$idx'),
                     margin: const EdgeInsets.only(bottom: AppSpacing.m),
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.s),
@@ -518,29 +550,52 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                           itemsState.when(
                             loading: () => const LinearProgressIndicator(),
                             error: (e, s) => Text('Error: $e'),
-                            data: (items) => DropdownButtonFormField<int>(
-                              initialValue: li.itemId,
-                              decoration: InputDecoration(labelText: 'Item ${idx + 1} *'),
-                              items: items.map((item) {
-                                return DropdownMenuItem<int>(
-                                  value: item.id,
-                                  child: Text(item.name),
-                                );
-                              }).toList(),
+                            data: (items) => SearchableAutocompleteField<Item>(
+                              key: ValueKey(
+                                  'po_item_picker_${li.itemId ?? 'new'}_$idx'),
+                              labelText: 'Item ${idx + 1} *',
+                              initialValue:
+                                  items.where((i) => i.id == li.itemId).firstOrNull,
+                              items: items,
+                              itemLabelBuilder: (i) => i.name,
+                              searchMatcher: (i, query) {
+                                return i.name
+                                        .toLowerCase()
+                                        .contains(query.toLowerCase()) ||
+                                    (i.hsnCode ?? '')
+                                        .toLowerCase()
+                                        .contains(query.toLowerCase());
+                              },
                               onChanged: (val) {
                                 setState(() {
-                                  li.itemId = val;
+                                  li.itemId = val?.id;
                                   if (val != null) {
-                                    final selected = items.firstWhere((i) => i.id == val);
-                                    li.itemName = selected.name;
-                                    li.rate = selected.costPrice; // PO uses costPrice
-                                    li.hsnCode = selected.hsnCode;
-                                    li.unit = selected.unit;
-                                    li.taxRate = selected.taxRate;
-                                    li.description = selected.purchaseDescription ?? selected.description;
+                                    li.itemName = val.name;
+                                    li.rate = val.costPrice; // PO uses costPrice
+                                    li.hsnCode = val.hsnCode;
+                                    li.unit = val.unit;
+                                    li.taxRate = val.taxRate;
+                                    li.description =
+                                        val.purchaseDescription ?? val.description;
+                                    // Sync controllers
+                                    li.rateController.text =
+                                        val.costPrice.toStringAsFixed(2);
+                                    li.taxController.text =
+                                        val.taxRate.toStringAsFixed(2);
+                                  } else {
+                                    li.itemName = '';
+                                    li.rate = 0.0;
+                                    li.hsnCode = null;
+                                    li.unit = null;
+                                    li.taxRate = 0.0;
+                                    li.description = null;
+                                    li.rateController.text = '0.0';
+                                    li.taxController.text = '0.0';
                                   }
                                 });
                               },
+                              validator: (val) =>
+                                  val == null ? 'Item is required' : null,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -548,9 +603,10 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                             children: [
                               Expanded(
                                 child: TextFormField(
-                                  initialValue: li.quantity.toString(),
+                                  controller: li.qtyController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Quantity'),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Quantity'),
                                   onChanged: (val) {
                                     li.quantity = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -560,10 +616,11 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextFormField(
-                                  key: Key('rate_${li.itemId}_${li.rate}'),
-                                  initialValue: li.rate.toString(),
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: const InputDecoration(labelText: 'Rate'),
+                                  controller: li.rateController,
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                      decimal: true),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Rate'),
                                   onChanged: (val) {
                                     li.rate = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -576,9 +633,10 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                             children: [
                               Expanded(
                                 child: TextFormField(
-                                  initialValue: li.discount.toString(),
+                                  controller: li.discountController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Discount'),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Discount'),
                                   onChanged: (val) {
                                     li.discount = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -589,24 +647,25 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                               DropdownButton<String>(
                                 value: li.discountType,
                                 items: const [
-                                  DropdownMenuItem(value: 'flat', child: Text('₹ (Flat)')),
-                                  DropdownMenuItem(value: 'percent', child: Text('% (Percent)')),
+                                  DropdownMenuItem(
+                                      value: 'flat', child: Text('₹ (Flat)')),
+                                  DropdownMenuItem(
+                                      value: 'percent',
+                                      child: Text('% (Percent)')),
                                 ],
                                 onChanged: (val) {
                                   if (val != null) {
-                                    setState(() {
-                                      li.discountType = val;
-                                    });
+                                    setState(() => li.discountType = val);
                                   }
                                 },
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextFormField(
-                                  key: Key('tax_${li.itemId}_${li.taxRate}'),
-                                  initialValue: li.taxRate.toString(),
+                                  controller: li.taxController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Tax %'),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Tax %'),
                                   onChanged: (val) {
                                     li.taxRate = double.tryParse(val) ?? 0.0;
                                     setState(() {});
@@ -618,10 +677,12 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                           Align(
                             alignment: Alignment.centerRight,
                             child: IconButton(
-                              icon: const Icon(Icons.delete, color: AppColors.danger),
+                              icon:
+                                  const Icon(Icons.delete, color: AppColors.danger),
                               onPressed: () {
                                 setState(() {
-                                  _lineItems.removeAt(idx);
+                                  final removed = _lineItems.removeAt(idx);
+                                  removed.dispose();
                                 });
                               },
                             ),

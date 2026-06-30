@@ -314,6 +314,11 @@ function InvoiceDocument() {
         <p style={{ margin: "3px 0" }}>
           <strong>Total:</strong> ₹{total.toFixed(2)}
         </p>
+        {total - balanceDue > 0 && (
+          <p style={{ margin: "3px 0" }}>
+            <strong>Amount Paid:</strong> ₹{(total - balanceDue).toFixed(2)}
+          </p>
+        )}
         <p style={{ margin: "3px 0" }}>
           <strong>Balance Due:</strong> ₹{balanceDue.toFixed(2)}
         </p>

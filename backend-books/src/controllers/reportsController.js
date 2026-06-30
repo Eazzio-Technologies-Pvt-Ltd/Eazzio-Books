@@ -7,7 +7,7 @@ const getTrialBalance = async (req, res) => {
   try {
     let dateFilter = "";
     const params = [user_id];
-    if (start_date && end_date && start_date.trim() !== "" && end_date.trim() !== "") {
+    if (start_date && end_date) {
       dateFilter = " AND j.entry_date BETWEEN $2 AND $3";
       params.push(start_date + " 00:00:00", end_date + " 23:59:59");
     }
@@ -39,7 +39,7 @@ const getProfitAndLoss = async (req, res) => {
   try {
     let dateFilter = "";
     const params = [user_id];
-    if (start_date && end_date && start_date.trim() !== "" && end_date.trim() !== "") {
+    if (start_date && end_date) {
       dateFilter = " AND j.entry_date BETWEEN $2 AND $3";
       params.push(start_date + " 00:00:00", end_date + " 23:59:59");
     }
@@ -153,7 +153,7 @@ const getCashFlow = async (req, res) => {
   try {
     let dateFilter = "";
     const params = [user_id];
-    if (start_date && end_date && start_date.trim() !== "" && end_date.trim() !== "") {
+    if (start_date && end_date) {
       dateFilter = " AND j.entry_date BETWEEN $2 AND $3";
       params.push(start_date + " 00:00:00", end_date + " 23:59:59");
     }

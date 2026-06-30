@@ -74,9 +74,12 @@ const processRecurringExpenses = async () => {
       if (nextDueDate <= now) {
         
         // 1. Insert into expenses table
+        const userRes = await pool.query("SELECT organization_id FROM users WHERE id = $1", [expense.created_by]);
+        const orgId = userRes.rows[0] ? userRes.rows[0].organization_id : null;
+
         const insertQuery = `
-          INSERT INTO expenses (expense_date, category, amount, user_id, description) 
-          VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO expenses (expense_date, category, amount, user_id, description, organization_id) 
+          VALUES ($1, $2, $3, $4, $5, $6)
         `;
         const descriptionText = expense.notes ? `[Auto-Generated Recurring Expense]\n${expense.notes}` : `[Auto-Generated Recurring Expense] ${expense.expense_name}`;
         
@@ -85,7 +88,8 @@ const processRecurringExpenses = async () => {
           expense.category,
           expense.amount,
           expense.created_by,
-          descriptionText
+          descriptionText,
+          orgId
         ]);
 
         // 2. Update last_processed_date
