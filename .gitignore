@@ -27,4 +27,4 @@ Task/
 
 .agents/
 .skills/
-*.json
+*.json.agents/
