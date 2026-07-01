@@ -567,6 +567,8 @@ class DashboardScreen extends ConsumerWidget {
     BuildContext context, {
     required double amount,
     required bool isPositive,
+    required String monthName,
+    required int year,
   }) {
     return Card(
       margin: EdgeInsets.zero,
@@ -605,9 +607,9 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.s),
-            const Text(
-              'This represents your expected cash position after receiving projected income and paying projected expenses next month.',
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
+            Text(
+              'This represents your expected cash position after receiving projected income and paying projected expenses for $monthName $year.',
+              style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
             ),
           ],
         ),
@@ -660,27 +662,37 @@ class DashboardScreen extends ConsumerWidget {
 
         final isMobile = MediaQuery.of(context).size.width <= 768;
 
+        final monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        final selectedMonth = ref.watch(dashboardMonthProvider);
+        final selectedYear = ref.watch(dashboardYearProvider);
+        final monthStr = monthNames[selectedMonth - 1];
+
         final cards = [
           _buildProjectionCard(
             context,
             title: 'Projected Income',
             amount: totalProjIncome,
             amountColor: const Color(0xFF059669),
-            subtext: totalProjIncome == 0 ? 'No projected income.' : 'Expected income payments next month.',
-            onViewTap: () => context.push('/invoices'),
+            subtext: totalProjIncome == 0 ? 'No projected income.' : 'Expected income payments for $monthStr $selectedYear.',
+            onViewTap: () => context.push('/projected-payments'),
           ),
           _buildProjectionCard(
             context,
             title: 'Projected Expense',
             amount: totalProjExpense,
             amountColor: const Color(0xFFDC2626),
-            subtext: totalProjExpense == 0 ? 'No projected expenses.' : 'Expected expense payments next month.',
-            onViewTap: () => context.push('/bills'),
+            subtext: totalProjExpense == 0 ? 'No projected expenses.' : 'Expected expense payments for $monthStr $selectedYear.',
+            onViewTap: () => context.push('/projected-expenses'),
           ),
           _buildExpectedNetCashCard(
             context,
             amount: surplus,
             isPositive: isPositive,
+            monthName: monthStr,
+            year: selectedYear,
           ),
         ];
 

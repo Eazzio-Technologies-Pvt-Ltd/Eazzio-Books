@@ -761,11 +761,32 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
           if (isMobile && originalAppBar.actions != null && originalAppBar.actions!.isNotEmpty)
             ...?originalAppBar.actions,
           
+          // Upgrade Button
+          TextButton.icon(
+            key: const Key('appbarUpgradeButton'),
+            icon: const Icon(Icons.workspace_premium, color: Colors.amber, size: 16),
+            label: const Text(
+              'Upgrade',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            onPressed: () => context.push('/pricing'),
+          ),
+          const SizedBox(width: 4),
           _buildOrgSwitcherButton(context, isMobile),
           _buildProfileAvatarButton(context),
         ];
 
-        final isDark = Theme.of(context).brightness == Brightness.dark;
         final titleWidget = FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -774,11 +795,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
 
         return AppBar(
           key: originalAppBar.key,
-          leading: isMobile ? IconButton(
-            key: const Key('drawerOpenButton'),
-            icon: const Icon(Icons.menu),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-          ) : originalAppBar.leading,
+          leading: isMobile ? null : originalAppBar.leading,
           title: titleWidget,
           actions: mergedActions,
           automaticallyImplyLeading: isMobile ? false : originalAppBar.automaticallyImplyLeading,
@@ -883,8 +900,10 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
       currentBottomNavIndex = 2;
     } else if (widget.currentRoute.startsWith('/expenses')) {
       currentBottomNavIndex = 3;
+    } else if (widget.currentRoute == '/more') {
+      currentBottomNavIndex = 4;
     } else {
-      currentBottomNavIndex = 4; // More/Other categories
+      currentBottomNavIndex = 0; // Default or fallback, keep active tab highlighted if child route, or 0.
     }
 
     return Theme(
@@ -893,7 +912,6 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
           ? Scaffold(
               key: _scaffoldKey,
               appBar: _buildAppBar(context, true),
-              drawer: AppNavigationDrawer(currentRoute: widget.currentRoute),
               floatingActionButton: widget.floatingActionButton,
               body: _buildAnimatedBody(widget.body),
               bottomNavigationBar: BottomNavigationBar(
@@ -916,7 +934,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                       context.go('/expenses');
                       break;
                     case 4:
-                      _scaffoldKey.currentState?.openDrawer();
+                      context.go('/more');
                       break;
                   }
                 },

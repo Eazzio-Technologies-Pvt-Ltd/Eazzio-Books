@@ -13,6 +13,10 @@ import 'package:mobile_books/features/customers/presentation/screens/customer_fo
 import 'package:mobile_books/features/items/presentation/screens/items_screen.dart';
 import 'package:mobile_books/features/items/presentation/screens/item_detail_screen.dart';
 import 'package:mobile_books/features/items/presentation/screens/item_form_screen.dart';
+import 'package:mobile_books/features/settings/presentation/screens/pricing_screen.dart';
+import 'package:mobile_books/features/settings/presentation/screens/more_screen.dart';
+import 'package:mobile_books/features/dashboard/presentation/screens/projected_payments_screen.dart';
+import 'package:mobile_books/features/dashboard/presentation/screens/projected_expenses_screen.dart';
 import 'package:mobile_books/features/items/presentation/screens/stock_adjustment_form_screen.dart';
 import 'package:mobile_books/features/items/presentation/screens/inventory_movements_screen.dart';
 import 'package:mobile_books/features/quotes/presentation/screens/quotes_screen.dart';
@@ -801,6 +805,22 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SalespersonFormScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/pricing',
+        builder: (context, state) => const PricingScreen(),
+      ),
+      GoRoute(
+        path: '/more',
+        builder: (context, state) => const MoreScreen(),
+      ),
+      GoRoute(
+        path: '/projected-payments',
+        builder: (context, state) => const ProjectedPaymentsScreen(),
+      ),
+      GoRoute(
+        path: '/projected-expenses',
+        builder: (context, state) => const ProjectedExpensesScreen(),
       ),
     ],
   );

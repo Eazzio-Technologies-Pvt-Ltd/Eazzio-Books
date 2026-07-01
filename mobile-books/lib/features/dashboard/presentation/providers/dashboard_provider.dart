@@ -63,11 +63,15 @@ final dashboardSummaryProvider = AsyncNotifierProvider<DashboardNotifier, Dashbo
 /// Fetches projected accounts payments (income)
 final projectedPaymentsProvider = FutureProvider<Map<String, dynamic>>((ref) {
   ref.watch(authNotifierProvider);
-  return ref.watch(dashboardServiceProvider).getProjectedPayments();
+  final month = ref.watch(dashboardMonthProvider);
+  final year = ref.watch(dashboardYearProvider);
+  return ref.watch(dashboardServiceProvider).getProjectedPayments(month: month, year: year);
 });
 
 /// Fetches projected accounts expenses
 final projectedExpensesProvider = FutureProvider<Map<String, dynamic>>((ref) {
   ref.watch(authNotifierProvider);
-  return ref.watch(dashboardServiceProvider).getProjectedExpenses();
+  final month = ref.watch(dashboardMonthProvider);
+  final year = ref.watch(dashboardYearProvider);
+  return ref.watch(dashboardServiceProvider).getProjectedExpenses(month: month, year: year);
 });
