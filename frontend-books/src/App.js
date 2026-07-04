@@ -97,6 +97,7 @@ import LandingPage from "./components/LandingPage";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import AccessDenied from "./AccessDenied";
+import Pricing from "./Pricing";
 import { MODULES, ACTIONS } from "./utils/permissions";
 
 function App() {
@@ -245,6 +246,7 @@ function App() {
           <Route path="/transaction-locking" element={<PlaceholderPage title="Transaction Locking" description="Lock transactions to prevent unauthorized changes." />} />
           <Route path="/composite-items" element={<PlaceholderPage title="Composite Items" description="Bundle multiple items into a single composite item." />} />
           <Route path="/price-lists" element={<PlaceholderPage title="Price Lists" description="Manage custom pricing for different customers." />} />
+          <Route path="/pricing" element={<Pricing />} />
         </Route>
       </Routes>
     </BrowserRouter>
