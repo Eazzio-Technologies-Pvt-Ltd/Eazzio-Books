@@ -76,6 +76,9 @@ function AddInvoice() {
     { item_id: "", item_name: "", description: "", quantity: 1, unit_price: 0, tax_rate: 0, discount: 0, discount_type: "flat", hsn_code: "", unit: "" }
   ]);
 
+  // --- Payment Schedule ---
+  const [paymentSchedules, setPaymentSchedules] = useState([]);
+
   // --- Dropdown data ---
   const [customers, setCustomers] = useState([]);
   const [catalogItems, setCatalogItems] = useState([]);
@@ -143,6 +146,12 @@ function AddInvoice() {
                 discount_type: item.discount_type  || "flat",
                 hsn_code:      item.hsn_code       || "",
                 unit:          item.unit           || "",
+              })));
+            }
+            if (inv.payment_schedules && inv.payment_schedules.length > 0) {
+              setPaymentSchedules(inv.payment_schedules.map(ps => ({
+                due_date: ps.due_date ? ps.due_date.slice(0, 10) : "",
+                due_amount: ps.due_amount || 0
               })));
             }
           }
@@ -249,10 +258,17 @@ function AddInvoice() {
   const totalTax = totalCGST + totalSGST + totalIGST;
   const grandTotal = subtotal - totalDiscount + totalTax + parseFloat(adjustment || 0);
 
+  const totalScheduled = paymentSchedules.reduce((sum, sch) => sum + (parseFloat(sch.due_amount) || 0), 0);
+  const isScheduleInvalid = paymentSchedules.length > 0 && Math.abs(totalScheduled - grandTotal) > 0.01;
+
   const handleSave = async (status = "draft") => {
     if (!customerId) { toast.error("Please select a customer"); return; }
     if (items.length === 0 || items.every(item => !item.description && !item.item_id)) {
       toast.error("Add at least one item"); return;
+    }
+    if (isScheduleInvalid) {
+      toast.error("Total scheduled amount must exactly equal the invoice grand total.");
+      return;
     }
     setLoading(true);
     try {
@@ -291,6 +307,7 @@ function AddInvoice() {
             igst_amount: gst.igst_amount
           };
         }),
+        payment_schedules: paymentSchedules
       };
 
       if (isEditMode) {
@@ -541,6 +558,45 @@ function AddInvoice() {
                 <button type="button" onClick={() => toast("Bulk add feature coming soon")} style={{ background: "#f0f6ff", color: "#4a90e2", border: "none", padding: "10px 16px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "500", display: "flex", alignItems: "center", gap: "8px", transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background="#e0edff"} onMouseLeave={e => e.currentTarget.style.background="#f0f6ff"}>
                   <span style={{ background: "#4a90e2", color: "#fff", borderRadius: "50%", width: "16px", height: "16px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "12px", paddingBottom: "2px" }}>+</span> Add Items in Bulk
                 </button>
+              </div>
+
+              {/* Payment Schedule Section */}
+              <div className="form-row" style={{ display: "block", marginBottom: "30px", background: "#f8fafc", padding: "20px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                  <label className="form-label" style={{ width: "auto", margin: 0, color: "#334155", fontWeight: "600", fontSize: "14px" }}>Payment Schedule (Optional)</label>
+                  <button type="button" onClick={() => setPaymentSchedules([...paymentSchedules, { due_date: "", due_amount: 0 }])} className="btn-new-link" style={{ background: "#fff" }}>+ Add Installment</button>
+                </div>
+                {paymentSchedules.length > 0 ? (
+                  <div>
+                    {paymentSchedules.map((sch, idx) => (
+                      <div key={idx} style={{ display: "flex", gap: "15px", marginBottom: "10px", alignItems: "center" }}>
+                        <div style={{ flex: 1 }}>
+                          <input type="date" value={sch.due_date} onChange={e => {
+                            const updated = [...paymentSchedules];
+                            updated[idx].due_date = e.target.value;
+                            setPaymentSchedules(updated);
+                          }} className="input-field" />
+                        </div>
+                        <div style={{ flex: 1, position: "relative" }}>
+                          <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b", fontSize: "13px" }}>₹</span>
+                          <input type="number" min="0" step="0.01" value={sch.due_amount} onChange={e => {
+                            const updated = [...paymentSchedules];
+                            updated[idx].due_amount = parseFloat(e.target.value) || 0;
+                            setPaymentSchedules(updated);
+                          }} className="input-field" style={{ paddingLeft: "24px" }} />
+                        </div>
+                        <button type="button" onClick={() => setPaymentSchedules(paymentSchedules.filter((_, i) => i !== idx))} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "16px" }}>&times;</button>
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "15px", paddingTop: "10px", borderTop: "1px solid #cbd5e1", fontSize: "13px", color: isScheduleInvalid ? "#ef4444" : "#10b981", fontWeight: "500" }}>
+                      <span>Total Scheduled: ₹{totalScheduled.toFixed(2)}</span>
+                      <span>Invoice Total: ₹{grandTotal.toFixed(2)}</span>
+                    </div>
+                    {isScheduleInvalid && <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "5px" }}>Warning: Total scheduled amount must match the invoice total.</div>}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "13px", color: "#64748b" }}>Add a payment schedule if the customer will pay in installments.</div>
+                )}
               </div>
 
               <div className="form-row" style={{ display: "block", marginBottom: "20px" }}>

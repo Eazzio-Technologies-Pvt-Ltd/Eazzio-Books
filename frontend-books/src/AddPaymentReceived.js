@@ -23,6 +23,7 @@ function AddPaymentReceived() {
   // Mapping of invoice ID to the payment amount allocated to it
   const [paymentsMap, setPaymentsMap] = useState({});
   const [paymentDatesMap, setPaymentDatesMap] = useState({});
+  const [transferShortfalls, setTransferShortfalls] = useState({});
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -60,6 +61,7 @@ function AddPaymentReceived() {
       setInvoices([]);
       setPaymentsMap({});
       setPaymentDatesMap({});
+      setTransferShortfalls({});
       setAmountReceived("");
     }
   }, [customerId]);
@@ -100,6 +102,7 @@ function AddPaymentReceived() {
 
   const clearAppliedAmount = () => {
     setPaymentsMap({});
+    setTransferShortfalls({});
     setAmountReceived("");
   };
 
@@ -125,7 +128,8 @@ function AddPaymentReceived() {
               payment_date: paymentDatesMap[invId] || paymentDate,
               payment_mode: paymentMode,
               reference: reference || null,
-              notes: notes || null
+              notes: notes || null,
+              transfer_shortfall: !!transferShortfalls[invId]
             }),
           });
         }
@@ -270,13 +274,26 @@ function AddPaymentReceived() {
                 </tr>
               </thead>
               <tbody>
-                {invoices.map(inv => (
+                {invoices.map(inv => {
+                  const pendingSchedules = (inv.payment_schedules || []).filter(s => s.status !== 'paid');
+                  const nextSch = pendingSchedules.length > 0 ? pendingSchedules[0] : null;
+                  const amtApplied = parseFloat(paymentsMap[inv.id]) || 0;
+                  const currBal = nextSch ? parseFloat(nextSch.balance_amount) : 0;
+                  const shortfall = currBal - amtApplied;
+                  return (
                   <tr key={inv.id} style={{ borderBottom: "1px solid #f2f4f7" }}>
                     <td style={{ padding: "12px 8px" }}>
                       <div>{new Date(inv.invoice_date).toLocaleDateString("en-GB")}</div>
                       <div style={{ color: "#98a2b3", fontSize: "10px", marginTop: "2px" }}>Due Date: {new Date(inv.due_date || inv.invoice_date).toLocaleDateString("en-GB")}</div>
                     </td>
-                    <td style={{ padding: "12px 8px", color: "#344054" }}>{inv.invoice_number}</td>
+                    <td style={{ padding: "12px 8px", color: "#344054" }}>
+                      <div>{inv.invoice_number}</div>
+                      {nextSch && (
+                        <div style={{ background: "#e0f2fe", color: "#075985", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", marginTop: "4px", display: "inline-block", fontWeight: "500" }}>
+                          Next Installment: ₹{parseFloat(nextSch.balance_amount).toLocaleString('en-IN', {minimumFractionDigits:2})} due {new Date(nextSch.due_date).toLocaleDateString("en-GB")}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: "12px 8px", textAlign: "right", color: "#344054" }}>{parseFloat(inv.total_amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
                     <td style={{ padding: "12px 8px", textAlign: "right", color: "#344054" }}>
                       <div style={{ color: "#667085" }}>₹{parseFloat(inv.balance_due).toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
@@ -300,10 +317,29 @@ function AddPaymentReceived() {
                           style={{ width: "120px", padding: "6px", borderRadius: "4px", border: "1px solid #d0d5dd", textAlign: "right", fontSize: "12px" }} 
                         />
                         <button type="button" onClick={() => handlePayInFull(inv)} style={{ background: "none", border: "none", color: "#006ee6", fontSize: "11px", cursor: "pointer", padding: 0 }}>Pay in Full</button>
+                        {nextSch && shortfall > 0 && shortfall < currBal && (
+                          <div style={{ marginTop: "4px", background: "#f8fafc", padding: "6px", borderRadius: "4px", border: "1px solid #e2e8f0", fontSize: "10px", width: "140px" }}>
+                            <label style={{ display: "flex", alignItems: "flex-start", gap: "4px", color: "#344054", cursor: "pointer", margin: 0, textAlign: "left", lineHeight: "1.2" }}>
+                              <input 
+                                type="checkbox" 
+                                checked={!!transferShortfalls[inv.id]} 
+                                onChange={e => setTransferShortfalls({...transferShortfalls, [inv.id]: e.target.checked})} 
+                                style={{ margin: 0, marginTop: "2px" }} 
+                              />
+                              <span>Transfer shortfall (₹{shortfall.toFixed(2)}) to next month</span>
+                            </label>
+                          </div>
+                        )}
+                        {!nextSch && amtApplied > 0 && (
+                          <div style={{ marginTop: "4px", color: "#d92d20", fontSize: "10px", width: "140px", textAlign: "left" }}>
+                            (No installment schedule exists for this invoice to transfer a balance to)
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}

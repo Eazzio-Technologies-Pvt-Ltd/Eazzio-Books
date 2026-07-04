@@ -134,8 +134,20 @@ function Sidebar({ onCollapseChange }) {
 
   /* Toggle dropdown inside sidebar */
   const toggleDropdown = (menuName) => {
-    if (collapsed && !isMobile) return;
-    setOpenDropdown(openDropdown === menuName ? null : menuName);
+    if (collapsed && !isMobile) {
+      handleCollapse(false);
+      setOpenDropdown(menuName);
+      return;
+    }
+    
+    if (openDropdown === menuName) {
+      setOpenDropdown(null);
+      if (!isMobile) {
+        handleCollapse(true);
+      }
+    } else {
+      setOpenDropdown(menuName);
+    }
   };
 
   /* Check if a menu item or any of its children match the current path */

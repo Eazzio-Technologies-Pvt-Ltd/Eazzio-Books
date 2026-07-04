@@ -44,6 +44,7 @@ function InvoiceDetail() {
   const [paymentMode, setPaymentMode] = useState("cash");
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [transferShortfall, setTransferShortfall] = useState(false);
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailTo, setEmailTo] = useState("");
@@ -244,12 +245,15 @@ function InvoiceDetail() {
           payment_mode: paymentMode,
           reference: paymentReference,
           notes: paymentNotes,
+          transfer_shortfall: transferShortfall
         }),
       });
       toast.success("Payment recorded");
       const newBalance = res.newBalanceDue;
       const newStatus = newBalance <= 0 ? "paid" : "partially_paid";
-      setInvoice({ ...invoice, balance_due: newBalance, status: newStatus });
+      // Update local invoice state
+      const updatedSchedules = res.updated_schedules || invoice.payment_schedules;
+      setInvoice({ ...invoice, balance_due: newBalance, status: newStatus, payment_schedules: updatedSchedules });
       setInvoicesList((prev) => prev.map((s) => (s.id === parseInt(id) ? { ...s, status: newStatus, balance_due: newBalance } : s)));
       if (res.payment) {
         setPayments(prev => [res.payment, ...prev]);
@@ -332,6 +336,25 @@ function InvoiceDetail() {
 
   const ribbonColor = STATUS_COLORS[invoice?.status]?.bg || STATUS_COLORS.draft.bg;
   const ribbonTextColor = STATUS_COLORS[invoice?.status]?.color || STATUS_COLORS.draft.color;
+
+  const pendingSchedules = (invoice?.payment_schedules || []).filter(s => s.status !== 'paid').sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
+  const currentInstallment = pendingSchedules.length > 0 ? pendingSchedules[0] : null;
+  const nextInstallment = pendingSchedules.length > 1 ? pendingSchedules[1] : null;
+  const amt = parseFloat(paymentAmount) || 0;
+  const currBal = currentInstallment ? parseFloat(currentInstallment.balance_amount) : invoice ? parseFloat(invoice.balance_due) : 0;
+  const shortfall = currBal - amt;
+  let nextDateStr = "";
+  if (nextInstallment) {
+    nextDateStr = new Date(nextInstallment.due_date).toLocaleDateString("en-GB");
+  } else if (currentInstallment) {
+    const d = new Date(currentInstallment.due_date);
+    d.setMonth(d.getMonth() + 1);
+    nextDateStr = d.toLocaleDateString("en-GB");
+  } else {
+    const d = new Date(paymentDate || new Date());
+    d.setMonth(d.getMonth() + 1);
+    nextDateStr = d.toLocaleDateString("en-GB");
+  }
 
   return (
     <div className="invoice-split-container" style={{ display: "flex", height: "100vh", background: "#ffffff", fontFamily: "system-ui, -apple-system, sans-serif", overflow: "hidden" }}>
@@ -755,35 +778,71 @@ function InvoiceDetail() {
                   </div>
                 </div>
 
-                {payments.length > 0 && (
+                {(invoice.payment_schedules && invoice.payment_schedules.length > 0) || payments.length > 0 ? (
                   <div className="print-hide" style={{ marginTop: "40px", borderTop: "1px solid #d0d5dd", paddingTop: "24px" }}>
-                    <h4 style={{ margin: "0 0 16px 0", color: "#1d2939", fontSize: "14px" }}>Payments Received</h4>
-                    <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
-                      <thead>
-                        <tr style={{ background: "#f8fafc", textAlign: "left", color: "#64748b" }}>
-                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Date</th>
-                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Payment #</th>
-                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Mode</th>
-                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "right" }}>Amount</th>
-                          <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "center" }}>Receipt</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {payments.map(p => (
-                          <tr key={p.id}>
-                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9" }}>{new Date(p.payment_date).toLocaleDateString("en-GB")}</td>
-                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9" }}>PR-{p.id.toString().padStart(5, '0')}</td>
-                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textTransform: "capitalize" }}>{p.payment_mode}</td>
-                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textAlign: "right", fontWeight: "600" }}>₹{parseFloat(p.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                            <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textAlign: "center" }}>
-                              <button onClick={() => navigate(`/payments-received/${p.id}`)} style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", textDecoration: "underline" }}>View Receipt</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <h4 style={{ margin: "0 0 16px 0", color: "#1d2939", fontSize: "14px" }}>Payment Schedule & History</h4>
+                    
+                    {invoice.payment_schedules && invoice.payment_schedules.length > 0 && (
+                      <div style={{ marginBottom: "24px" }}>
+                        <h5 style={{ margin: "0 0 12px 0", color: "#475569", fontSize: "13px" }}>Installments</h5>
+                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                          {invoice.payment_schedules.map((sch, idx) => (
+                            <div key={sch.id || idx} style={{ width: "200px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px", fontSize: "12px" }}>
+                              <div style={{ fontWeight: "600", color: "#1d2939", marginBottom: "8px" }}>
+                                {new Date(sch.due_date).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", color: "#475569" }}>
+                                <span>Due Date:</span> <span>{new Date(sch.due_date).toLocaleDateString("en-GB")}</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", color: "#475569" }}>
+                                <span>Amount:</span> <span>₹{parseFloat(sch.due_amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", color: "#475569" }}>
+                                <span>Paid:</span> <span>₹{parseFloat(sch.paid_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", color: "#475569", fontWeight: "600" }}>
+                                <span>Balance:</span> <span>₹{parseFloat(sch.balance_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div style={{ textAlign: "center", padding: "4px", borderRadius: "4px", background: sch.status === 'paid' ? '#dcfce7' : sch.status === 'partially_paid' ? '#e0f2fe' : '#f1f5f9', color: sch.status === 'paid' ? '#166534' : sch.status === 'partially_paid' ? '#075985' : '#475569', fontWeight: "600", textTransform: "capitalize" }}>
+                                {sch.status.replace("_", " ")}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {payments.length > 0 && (
+                      <div>
+                        <h5 style={{ margin: "0 0 12px 0", color: "#475569", fontSize: "13px" }}>Payment Receipts</h5>
+                        <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ background: "#f8fafc", textAlign: "left", color: "#64748b" }}>
+                              <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Date</th>
+                              <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Payment #</th>
+                              <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0" }}>Mode</th>
+                              <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "right" }}>Amount</th>
+                              <th style={{ padding: "10px", borderBottom: "1px solid #e2e8f0", textAlign: "center" }}>Receipt</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {payments.map(p => (
+                              <tr key={p.id}>
+                                <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9" }}>{new Date(p.payment_date).toLocaleDateString("en-GB")}</td>
+                                <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9" }}>PR-{p.id.toString().padStart(5, '0')}</td>
+                                <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textTransform: "capitalize" }}>{p.payment_mode}</td>
+                                <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textAlign: "right", fontWeight: "600" }}>₹{parseFloat(p.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                                <td style={{ padding: "10px", borderBottom: "1px solid #f1f5f9", textAlign: "center" }}>
+                                  <button onClick={() => navigate(`/payments-received/${p.id}`)} style={{ background: "none", border: "none", color: "#006ee6", cursor: "pointer", textDecoration: "underline" }}>View Receipt</button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
-                )}
+                ) : null}
 
               </div>
             </div>
@@ -795,7 +854,20 @@ function InvoiceDetail() {
                   <h3 style={{ marginTop: 0, color: "#1d2939", fontSize: "18px", marginBottom: "20px" }}>Record Payment</h3>
                   <div>
                     <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#344054" }}>Amount Received</label>
-                    <input type="number" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} className="input-style" />
+                    <input type="number" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} className="input-style" style={{ marginBottom: (shortfall > 0 && shortfall < currBal) ? "0" : "16px" }} />
+                    {shortfall > 0 && shortfall < currBal && (
+                      <div style={{ marginTop: "12px", marginBottom: "16px", padding: "12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#344054", cursor: "pointer", margin: 0 }}>
+                          <input type="checkbox" checked={transferShortfall} onChange={e => setTransferShortfall(e.target.checked)} style={{ margin: 0 }} />
+                          Transfer remaining balance (₹{shortfall.toFixed(2)}) to next month
+                        </label>
+                        {transferShortfall && (
+                          <div style={{ marginTop: "8px", fontSize: "12px", color: "#0ba5ec", fontWeight: "500", paddingLeft: "24px" }}>
+                             This ₹{shortfall.toFixed(2)} will be shifted to the installment due on {nextDateStr}.
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: "flex", gap: "16px" }}>
                     <div style={{ flex: 1 }}>

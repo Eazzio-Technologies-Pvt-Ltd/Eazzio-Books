@@ -29,6 +29,24 @@ const ensureColumns = async () => {
   for (const sql of alterStatements) {
     try { await pool.query(sql); } catch (_) { /* column may already exist */ }
   }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS invoice_payment_schedules (
+        id SERIAL PRIMARY KEY,
+        organization_id INTEGER,
+        invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+        customer_id INTEGER,
+        due_date DATE,
+        due_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        paid_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        balance_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (err) { console.error("ensureColumns payment_schedules error:", err); }
 };
 ensureColumns();
 
@@ -46,7 +64,23 @@ const getInvoices = async (req, res) => {
     query += " ORDER BY created_at DESC";
 
     const result = await pool.query(query, values);
-    res.json({ invoices: result.rows });
+    const invoices = result.rows;
+
+    // Fetch schedules for all these invoices
+    if (invoices.length > 0) {
+      const invoiceIds = invoices.map(i => i.id);
+      const schedulesRes = await pool.query(`SELECT * FROM invoice_payment_schedules WHERE invoice_id = ANY($1) ORDER BY due_date ASC`, [invoiceIds]);
+      const schedulesByInv = {};
+      schedulesRes.rows.forEach(sch => {
+        if (!schedulesByInv[sch.invoice_id]) schedulesByInv[sch.invoice_id] = [];
+        schedulesByInv[sch.invoice_id].push(sch);
+      });
+      invoices.forEach(inv => {
+        inv.payment_schedules = schedulesByInv[inv.id] || [];
+      });
+    }
+
+    res.json({ invoices });
   } catch (err) {
     console.error("GET INVOICES ERROR:", err);
     res.status(500).json({ message: "Server error" });
@@ -79,7 +113,13 @@ const getInvoiceById = async (req, res) => {
        WHERE ii.invoice_id = $1`,
       [id]
     );
-    res.json({ invoice: invoice.rows[0], items: items.rows });
+    
+    const schedules = await pool.query(`SELECT * FROM invoice_payment_schedules WHERE invoice_id = $1 ORDER BY due_date ASC`, [id]);
+    
+    const inv = invoice.rows[0];
+    inv.payment_schedules = schedules.rows;
+    
+    res.json({ invoice: inv, items: items.rows });
   } catch (err) {
     console.error("GET INVOICE ERROR:", err);
     res.status(500).json({ message: "Server error" });
@@ -88,7 +128,7 @@ const getInvoiceById = async (req, res) => {
 
 // CREATE invoice
 const createInvoice = async (req, res) => {
-  const { customer_id, invoice_date, due_date, status, notes, terms, items, salesperson_id, project_id, supplier_state, place_of_supply, customer_gstin, gst_type } = req.body;
+  const { customer_id, invoice_date, due_date, status, notes, terms, items, salesperson_id, project_id, supplier_state, place_of_supply, customer_gstin, gst_type, payment_schedules } = req.body;
 
   const client = await pool.connect();
   try {
@@ -187,6 +227,23 @@ const createInvoice = async (req, res) => {
     }
     await client.query("UPDATE invoices SET total_amount = $1, balance_due = $2 WHERE id = $3", [total, total, invoiceId]);
 
+    if (Array.isArray(payment_schedules) && payment_schedules.length > 0) {
+      let sumSchedule = 0;
+      for (const sch of payment_schedules) {
+        const dAmt = parseFloat(sch.due_amount) || 0;
+        sumSchedule += dAmt;
+        await client.query(
+          `INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status)
+           VALUES ($1, $2, $3, $4, $5, 0, $6, 'pending')`,
+          [req.tenantId || null, invoiceId, customer_id, sch.due_date || null, dAmt, dAmt]
+        );
+      }
+      if (sumSchedule > total + 0.01) {
+        // Warning log, frontend handles validation
+        console.warn(`Payment schedules sum (${sumSchedule}) exceeds total (${total}) for invoice ${invoiceId}`);
+      }
+    }
+
     await client.query("COMMIT");
     res.json({ message: "Invoice created", invoice: { ...invResult.rows[0], total_amount: total, balance_due: total } });
   } catch (err) {
@@ -203,7 +260,7 @@ const updateInvoice = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   delete updates.id; delete updates.user_id; delete updates.created_at; delete updates.updated_at;
-  const { items, ...fields } = updates;
+  const { items, payment_schedules, ...fields } = updates;
 
   const client = await pool.connect();
   try {
@@ -292,6 +349,21 @@ const updateInvoice = async (req, res) => {
         }
       }
       await client.query("UPDATE invoices SET total_amount = $1, balance_due = $2 WHERE id = $3", [total, total, id]);
+    }
+
+    if (payment_schedules !== undefined) {
+      // For simplicity, recreate unpaid schedules.
+      await client.query("DELETE FROM invoice_payment_schedules WHERE invoice_id = $1", [id]);
+      if (Array.isArray(payment_schedules)) {
+        for (const sch of payment_schedules) {
+          const dAmt = parseFloat(sch.due_amount) || 0;
+          await client.query(
+            `INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status)
+             VALUES ($1, $2, $3, $4, $5, 0, $6, 'pending')`,
+            [req.tenantId || null, id, updates.customer_id || null, sch.due_date || null, dAmt, dAmt]
+          );
+        }
+      }
     }
 
     await client.query("COMMIT");
