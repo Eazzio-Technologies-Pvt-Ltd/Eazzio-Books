@@ -8,20 +8,20 @@ const getTrialBalance = async (req, res) => {
     let dateFilter = "";
     const params = [user_id];
     if (start_date && end_date) {
-      dateFilter = " AND j.entry_date BETWEEN $2 AND $3";
+      dateFilter = " AND j.journal_date BETWEEN $2 AND $3";
       params.push(start_date + " 00:00:00", end_date + " 23:59:59");
     }
 
     const sql = `
-      SELECT c.account_number AS account_code, c.account_name, c.account_type, 
+      SELECT c.account_code, c.account_name, c.account_type, 
              COALESCE(SUM(jl.debit), 0) as total_debit, COALESCE(SUM(jl.credit), 0) as total_credit
       FROM chart_of_accounts c
       LEFT JOIN journal_entry_lines jl ON c.id = jl.account_id
       LEFT JOIN journal_entries j ON jl.journal_entry_id = j.id ${dateFilter}
-      WHERE c.user_id = $1 AND c.is_active = true
-      GROUP BY c.id, c.account_number, c.account_name, c.account_type
+      WHERE c.user_id = $1 AND c.is_deleted = false AND c.status = 'active'
+      GROUP BY c.id, c.account_code, c.account_name, c.account_type
       HAVING COALESCE(SUM(jl.debit), 0) > 0 OR COALESCE(SUM(jl.credit), 0) > 0
-      ORDER BY c.account_number, c.account_name
+      ORDER BY c.account_code, c.account_name
     `;
     
     const result = await pool.query(sql, params);
@@ -40,18 +40,18 @@ const getProfitAndLoss = async (req, res) => {
     let dateFilter = "";
     const params = [user_id];
     if (start_date && end_date) {
-      dateFilter = " AND j.entry_date BETWEEN $2 AND $3";
+      dateFilter = " AND j.journal_date BETWEEN $2 AND $3";
       params.push(start_date + " 00:00:00", end_date + " 23:59:59");
     }
 
     const sql = `
-      SELECT c.account_number AS account_code, c.account_name, c.account_type, 
+      SELECT c.account_code, c.account_name, c.account_type, 
              COALESCE(SUM(jl.debit), 0) as total_debit, COALESCE(SUM(jl.credit), 0) as total_credit
       FROM chart_of_accounts c
       JOIN journal_entry_lines jl ON c.id = jl.account_id
       JOIN journal_entries j ON jl.journal_entry_id = j.id ${dateFilter}
-      WHERE c.user_id = $1 AND c.is_active = true AND c.account_type IN ('Income', 'Expense')
-      GROUP BY c.id, c.account_number, c.account_name, c.account_type
+      WHERE c.user_id = $1 AND c.is_deleted = false AND c.status = 'active' AND c.account_type IN ('Income', 'Expense')
+      GROUP BY c.id, c.account_code, c.account_name, c.account_type
       HAVING COALESCE(SUM(jl.debit), 0) > 0 OR COALESCE(SUM(jl.credit), 0) > 0
     `;
     
@@ -94,18 +94,18 @@ const getBalanceSheet = async (req, res) => {
     let dateFilter = "";
     const params = [user_id];
     if (end_date) {
-      dateFilter = " AND j.entry_date <= $2";
+      dateFilter = " AND j.journal_date <= $2";
       params.push(end_date + " 23:59:59");
     }
 
     const sql = `
-      SELECT c.account_number AS account_code, c.account_name, c.account_type, 
+      SELECT c.account_code, c.account_name, c.account_type, 
              COALESCE(SUM(jl.debit), 0) as total_debit, COALESCE(SUM(jl.credit), 0) as total_credit
       FROM chart_of_accounts c
       JOIN journal_entry_lines jl ON c.id = jl.account_id
       JOIN journal_entries j ON jl.journal_entry_id = j.id ${dateFilter}
-      WHERE c.user_id = $1 AND c.is_active = true AND c.account_type IN ('Asset', 'Liability', 'Equity')
-      GROUP BY c.id, c.account_number, c.account_name, c.account_type
+      WHERE c.user_id = $1 AND c.is_deleted = false AND c.status = 'active' AND c.account_type IN ('Asset', 'Liability', 'Equity')
+      GROUP BY c.id, c.account_code, c.account_name, c.account_type
       HAVING COALESCE(SUM(jl.debit), 0) > 0 OR COALESCE(SUM(jl.credit), 0) > 0
     `;
     
@@ -154,7 +154,7 @@ const getCashFlow = async (req, res) => {
     let dateFilter = "";
     const params = [user_id];
     if (start_date && end_date) {
-      dateFilter = " AND j.entry_date BETWEEN $2 AND $3";
+      dateFilter = " AND j.journal_date BETWEEN $2 AND $3";
       params.push(start_date + " 00:00:00", end_date + " 23:59:59");
     }
 
@@ -163,7 +163,7 @@ const getCashFlow = async (req, res) => {
       FROM chart_of_accounts c
       JOIN journal_entry_lines jl ON c.id = jl.account_id
       JOIN journal_entries j ON jl.journal_entry_id = j.id ${dateFilter}
-      WHERE c.user_id = $1 AND c.is_active = true AND (c.account_name ILIKE '%cash%' OR c.account_name ILIKE '%bank%')
+      WHERE c.user_id = $1 AND c.is_deleted = false AND c.status = 'active' AND (c.account_name ILIKE '%cash%' OR c.account_name ILIKE '%bank%')
       GROUP BY jl.description
     `;
     

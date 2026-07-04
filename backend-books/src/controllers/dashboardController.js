@@ -30,27 +30,32 @@ exports.getMonthlyFinanceSummary = async (req, res) => {
     const label = `${monthNames[month]} ${year}`;
     const nextLabel = `${monthNames[nextMonth]} ${nextYear}`;
 
-    // 1. TOP SUMMARY (All-Time Unpaid & Aggregates)
+    // 1. TOP SUMMARY (Current Financial Year)
+    const currentMonthForFY = now.getMonth();
+    const currentYearForFY = now.getFullYear();
+    const fyStartYear = currentMonthForFY >= 3 ? currentYearForFY : currentYearForFY - 1;
+    const fyStartStr = `${fyStartYear}-04-01`;
+
     const topRecRes = await pool.query(
-      `SELECT COALESCE(SUM(balance_due), 0) AS total FROM invoices WHERE user_id = $1 AND status != 'Paid'`,
-      [userId]
+      `SELECT COALESCE(SUM(balance_due), 0) AS total FROM invoices WHERE user_id = $1 AND status != 'Paid' AND invoice_date >= $2`,
+      [userId, fyStartStr]
     );
     const total_receivables = parseFloat(topRecRes.rows[0].total);
 
     const topPayRes = await pool.query(
-      `SELECT COALESCE(SUM(balance_due), 0) AS total FROM bills WHERE user_id = $1 AND status != 'Paid' AND is_deleted = false`,
-      [userId]
+      `SELECT COALESCE(SUM(balance_due), 0) AS total FROM bills WHERE user_id = $1 AND status != 'Paid' AND is_deleted = false AND bill_date >= $2`,
+      [userId, fyStartStr]
     );
     const total_payables = parseFloat(topPayRes.rows[0].total);
 
     const topIncRes = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE user_id = $1`,
-      [userId]
+      `SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE user_id = $1 AND payment_date >= $2`,
+      [userId, fyStartStr]
     );
     const total_income = parseFloat(topIncRes.rows[0].total);
 
-    const topExpRes = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE user_id = $1`, [userId]);
-    const topPmtMadeRes = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS total FROM payments_made WHERE user_id = $1`, [userId]);
+    const topExpRes = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE user_id = $1 AND expense_date >= $2`, [userId, fyStartStr]);
+    const topPmtMadeRes = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS total FROM payments_made WHERE user_id = $1 AND payment_date >= $2`, [userId, fyStartStr]);
     const total_expenses = parseFloat(topExpRes.rows[0].total) + parseFloat(topPmtMadeRes.rows[0].total);
 
     const net_profit = total_income - total_expenses;

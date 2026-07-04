@@ -371,14 +371,28 @@ const deleteJournal = async (req, res) => {
 // GET Projected Payments (Pending Bills)
 const getProjectedPayments = async (req, res) => {
   try {
-    const today = new Date();
-    let projMonth = today.getMonth() + 2; // Next month (0-indexed, so +2)
-    let projYear = today.getFullYear();
-    if (projMonth > 12) {
-      projMonth = 1;
-      projYear += 1;
+    const reqMonth = parseInt(req.query.month);
+    const reqYear = parseInt(req.query.year);
+
+    let projMonth, projYear;
+    if (reqMonth && reqYear) {
+      projMonth = reqMonth + 1;
+      projYear = reqYear;
+      if (projMonth > 12) {
+        projMonth = 1;
+        projYear += 1;
+      }
+    } else {
+      const today = new Date();
+      projMonth = today.getMonth() + 2; // Next month (0-indexed, so +2)
+      projYear = today.getFullYear();
+      if (projMonth > 12) {
+        projMonth = 1;
+        projYear += 1;
+      }
     }
 
+    const projEndDate = new Date(projYear, projMonth, 0); // Last day of the projected month
     const result = await pool.query(`
       SELECT b.id as bill_id, b.invoice_number as bill_number, v.display_name as vendor_name, b.invoice_date as bill_date, b.due_date, 
              b.total_amount, (b.total_amount - b.balance_due) as paid_amount, b.balance_due as pending_amount, 
@@ -388,8 +402,9 @@ const getProjectedPayments = async (req, res) => {
       WHERE b.user_id = $1 
         AND b.balance_due > 0
         AND LOWER(b.status) NOT IN ('paid', 'cancelled', 'void', 'written off', 'write off', 'written_off')
+        AND b.due_date <= $2
       ORDER BY b.due_date ASC
-    `, [req.user.id]);
+    `, [req.user.id, projEndDate]);
 
     let total_projected_payment = 0;
     const bills = result.rows.map(bill => {
@@ -419,14 +434,28 @@ const getProjectedPayments = async (req, res) => {
 // GET Projected Expenses (Upcoming Bills and Recurring)
 const getProjectedExpenses = async (req, res) => {
   try {
-    const today = new Date();
-    let projMonth = today.getMonth() + 2; 
-    let projYear = today.getFullYear();
-    if (projMonth > 12) {
-      projMonth = 1;
-      projYear += 1;
+    const reqMonth = parseInt(req.query.month);
+    const reqYear = parseInt(req.query.year);
+
+    let projMonth, projYear;
+    if (reqMonth && reqYear) {
+      projMonth = reqMonth + 1;
+      projYear = reqYear;
+      if (projMonth > 12) {
+        projMonth = 1;
+        projYear += 1;
+      }
+    } else {
+      const today = new Date();
+      projMonth = today.getMonth() + 2; 
+      projYear = today.getFullYear();
+      if (projMonth > 12) {
+        projMonth = 1;
+        projYear += 1;
+      }
     }
 
+    const projEndDate = new Date(projYear, projMonth, 0); // Last day of the projected month
     // 1. Fetch pending bills
     const billsResult = await pool.query(`
       SELECT b.id as expense_id, b.bill_number as reference_number, v.display_name as vendor_name, 
@@ -439,8 +468,9 @@ const getProjectedExpenses = async (req, res) => {
         AND b.balance_due > 0
         AND b.is_deleted = false
         AND LOWER(b.status) NOT IN ('paid', 'cancelled', 'void')
+        AND b.due_date <= $2
       ORDER BY b.due_date ASC
-    `, [req.user.id]);
+    `, [req.user.id, projEndDate]);
 
     // 2. Fetch recurring expenses hitting next month
     const recurringResult = await pool.query(`
