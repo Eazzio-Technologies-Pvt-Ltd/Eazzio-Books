@@ -195,14 +195,6 @@ function Sidebar({ onCollapseChange }) {
       )}
 
       <aside className={sidebarClass}>
-        {/* Brand */}
-        <div className="sidebar-brand" style={{ padding: "10px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          {showLabels ? (
-            <img src="/logo.png" alt="Logo" style={{ height: "40px", maxWidth: "100%", objectFit: "contain" }} />
-          ) : (
-            <img src="/favicon.ico" alt="Icon" style={{ height: "34px", width: "34px", objectFit: "contain", borderRadius: "4px" }} />
-          )}
-        </div>
 
         {/* Desktop collapse button */}
         {!isMobile && (
@@ -280,13 +272,7 @@ function Sidebar({ onCollapseChange }) {
           })}
         </nav>
 
-        {/* Sidebar footer */}
-        {showLabels && (
-          <div className="sidebar-footer">
-            <button className="sidebar-configure-btn">Configure Features ›</button>
-            <button className="sidebar-tour-btn">● TAKE A LIVE PRODUCT TOUR</button>
-          </div>
-        )}
+
       </aside>
     </>
   );
