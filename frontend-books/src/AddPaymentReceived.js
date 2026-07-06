@@ -11,14 +11,17 @@ function AddPaymentReceived() {
   const [invoices, setInvoices] = useState([]);
   
   const [customerId, setCustomerId] = useState("");
-  const [amountReceived, setAmountReceived] = useState("");
+  
+  const [paymentSplits, setPaymentSplits] = useState([
+    { id: Date.now(), amount: "", payment_mode: "Cash", deposit_to: "Petty Cash", reference: "" }
+  ]);
+  
   const [bankCharges, setBankCharges] = useState("");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
-  const [paymentMode, setPaymentMode] = useState("Cash");
-  const [depositTo, setDepositTo] = useState("Petty Cash");
-  const [reference, setReference] = useState("");
   const [taxDeducted, setTaxDeducted] = useState("No Tax deducted");
   const [notes, setNotes] = useState("");
+  
+  const amountReceived = paymentSplits.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
   
   // Mapping of invoice ID to the payment amount allocated to it
   const [paymentsMap, setPaymentsMap] = useState({});
@@ -53,7 +56,6 @@ function AddPaymentReceived() {
              setInvoices(activeInvoices);
              setPaymentsMap({});
              setPaymentDatesMap({});
-             setAmountReceived("");
           }
         })
         .catch(() => toast.error("Failed to load invoices"));
@@ -62,16 +64,11 @@ function AddPaymentReceived() {
       setPaymentsMap({});
       setPaymentDatesMap({});
       setTransferShortfalls({});
-      setAmountReceived("");
     }
   }, [customerId]);
 
-  const handleAmountReceivedChange = (e) => {
-    const val = e.target.value;
-    setAmountReceived(val);
-    
-    // Auto-distribute logic
-    let remaining = parseFloat(val) || 0;
+  const autoDistribute = (totalAmount) => {
+    let remaining = totalAmount || 0;
     const newMap = {};
     for (const inv of invoices) {
       if (remaining <= 0) break;
@@ -87,13 +84,32 @@ function AddPaymentReceived() {
     setPaymentsMap(newMap);
   };
 
+  const updateSplit = (id, field, value) => {
+    const updated = paymentSplits.map(s => s.id === id ? { ...s, [field]: value } : s);
+    setPaymentSplits(updated);
+    
+    if (field === 'amount') {
+      const totalAmount = updated.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+      autoDistribute(totalAmount);
+    }
+  };
+
+  const addSplit = () => {
+    setPaymentSplits([...paymentSplits, { id: Date.now(), amount: "", payment_mode: "Bank Transfer", deposit_to: "Undeposited Funds", reference: "" }]);
+  };
+
+  const removeSplit = (id) => {
+    const updated = paymentSplits.filter(s => s.id !== id);
+    setPaymentSplits(updated);
+    const totalAmount = updated.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+    autoDistribute(totalAmount);
+  };
+
   const handlePaymentMapChange = (invId, val) => {
     const newMap = { ...paymentsMap, [invId]: val };
     setPaymentsMap(newMap);
     
-    // Auto-update total amount received
-    const total = Object.values(newMap).reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
-    setAmountReceived(total > 0 ? total.toFixed(2) : "");
+    // If they manually change the map, we don't change the amountReceived (since it's driven by splits now)
   };
   
   const handlePayInFull = (inv) => {
@@ -103,7 +119,6 @@ function AddPaymentReceived() {
   const clearAppliedAmount = () => {
     setPaymentsMap({});
     setTransferShortfalls({});
-    setAmountReceived("");
   };
 
   const amountUsed = Object.values(paymentsMap).reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
@@ -126,8 +141,7 @@ function AddPaymentReceived() {
               customer_id: parseInt(customerId),
               amount: val,
               payment_date: paymentDatesMap[invId] || paymentDate,
-              payment_mode: paymentMode,
-              reference: reference || null,
+              splits: paymentSplits, // Send the splits to the backend
               notes: notes || null,
               transfer_shortfall: !!transferShortfalls[invId]
             }),
@@ -181,52 +195,52 @@ function AddPaymentReceived() {
             </select>
           </div>
 
-          <div style={rowStyle}>
-            <label style={labelStyle}>Amount Received*</label>
-            <div style={{ position: "relative", width: "100%" }}>
-              <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#667085", fontSize: "13px" }}>₹</span>
-              <input type="number" step="0.01" min="0" value={amountReceived} onChange={handleAmountReceivedChange} style={{...inputStyle, paddingLeft: "24px"}} />
+          {paymentSplits.map((split, index) => (
+            <div key={split.id} style={{ padding: "16px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #eaecf0", position: "relative", marginBottom: "16px" }}>
+              <h4 style={{ margin: "0 0 16px 0", fontSize: "14px", color: "#1d2939" }}>Payment Split {index + 1}</h4>
+              {paymentSplits.length > 1 && (
+                <button onClick={() => removeSplit(split.id)} style={{ position: "absolute", top: "16px", right: "16px", background: "none", border: "none", color: "#d92d20", cursor: "pointer", fontSize: "13px" }}>Remove</button>
+              )}
+              
+              <div style={{ ...rowStyle, marginBottom: "16px" }}>
+                <label style={labelStyle}>Amount*</label>
+                <div style={{ position: "relative", width: "100%", flex: 1 }}>
+                  <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#667085", fontSize: "13px" }}>₹</span>
+                  <input type="number" step="0.01" min="0" value={split.amount} onChange={e => updateSplit(split.id, 'amount', e.target.value)} style={{...inputStyle, paddingLeft: "24px", width: "100%"}} />
+                </div>
+              </div>
+
+              <div style={{ ...rowStyle, marginBottom: "16px" }}>
+                <label style={labelStyle}>Payment Mode</label>
+                <select value={split.payment_mode} onChange={e => updateSplit(split.id, 'payment_mode', e.target.value)} style={inputStyle}>
+                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="UPI">UPI</option>
+                </select>
+              </div>
+
+              {split.payment_mode === "Cash" && (
+              <div style={{ ...rowStyle, marginBottom: "16px" }}>
+                <label style={labelStyle}>Deposit To*</label>
+                <select value={split.deposit_to} onChange={e => updateSplit(split.id, 'deposit_to', e.target.value)} style={inputStyle}>
+                  <option value="Petty Cash">Petty Cash</option>
+                  <option value="Undeposited Funds">Undeposited Funds</option>
+                </select>
+              </div>
+              )}
+
+              <div style={rowStyle}>
+                <label style={labelStyle}>Reference#</label>
+                <input type="text" value={split.reference} onChange={e => updateSplit(split.id, 'reference', e.target.value)} style={inputStyle} />
+              </div>
             </div>
-          </div>
+          ))}
 
-          <div style={rowStyle}>
-            <label style={labelStyle}>Bank Charges (if any)</label>
-            <input type="text" value={bankCharges} onChange={e => setBankCharges(e.target.value)} style={inputStyle} />
-          </div>
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>Payment Date*</label>
-            <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)} style={{...inputStyle, width: "160px"}} />
-          </div>
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>Payment #</label>
-            <input type="text" value="Auto-generated" disabled style={{...inputStyle, background: "#f9fafb", color: "#667085"}} />
-          </div>
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>Payment Mode</label>
-            <select value={paymentMode} onChange={e => setPaymentMode(e.target.value)} style={inputStyle}>
-              <option value="Cash">Cash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Cheque">Cheque</option>
-              <option value="Credit Card">Credit Card</option>
-              <option value="UPI">UPI</option>
-            </select>
-          </div>
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>Deposit To*</label>
-            <select value={depositTo} onChange={e => setDepositTo(e.target.value)} style={inputStyle}>
-              <option value="Petty Cash">Petty Cash</option>
-              <option value="Undeposited Funds">Undeposited Funds</option>
-            </select>
-          </div>
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>Reference#</label>
-            <input type="text" value={reference} onChange={e => setReference(e.target.value)} style={inputStyle} />
-          </div>
+          <button onClick={addSplit} style={{ background: "none", border: "1px dashed #d0d5dd", color: "#006ee6", padding: "12px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "500", width: "100%" }}>
+            + Add another payment method
+          </button>
 
           <div style={rowStyle}>
             <label style={labelStyle}>Tax deducted?</label>

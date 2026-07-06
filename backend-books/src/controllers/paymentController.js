@@ -24,6 +24,7 @@ const ensurePaymentsTable = async () => {
     try {
       await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS customer_id INTEGER`);
       await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'received'`);
+      await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS deposit_to VARCHAR(100)`);
     } catch (_) {}
   } catch (err) {
     console.error("ensurePaymentsTable error:", err);
@@ -34,7 +35,16 @@ ensurePaymentsTable();
 // Record a payment against an invoice
 const recordPayment = async (req, res) => {
   const { id: invoiceId } = req.params;
-  const { amount, payment_date, payment_mode, reference, notes, customer_id, transfer_shortfall } = req.body;
+  const { amount, payment_date, payment_mode, reference, notes, customer_id, transfer_shortfall, deposit_to, splits } = req.body;
+  
+  const paymentSplits = splits && Array.isArray(splits) && splits.length > 0 ? splits : [{
+    amount: amount,
+    payment_mode: payment_mode || "cash",
+    deposit_to: deposit_to || null,
+    reference: reference || null
+  }];
+  
+  const totalAmountToPay = paymentSplits.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
 
   const client = await pool.connect();
   try {
@@ -54,17 +64,23 @@ const recordPayment = async (req, res) => {
     }
 
     const currentBalance = parseFloat(invCheck.rows[0].balance_due);
-    if (parseFloat(amount) > currentBalance) {
+    if (totalAmountToPay > currentBalance) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: `Payment amount (₹${amount}) exceeds remaining balance (₹${currentBalance})` });
+      return res.status(400).json({ message: `Payment amount (₹${totalAmountToPay}) exceeds remaining balance (₹${currentBalance})` });
     }
 
-    // Insert payment record
-    const paymentResult = await client.query(
-      `INSERT INTO payments (invoice_id, user_id, customer_id, amount, payment_date, payment_mode, reference, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [invoiceId, req.user.id, finalCustomerId, amount, payment_date || new Date(), payment_mode || "cash", reference, notes]
-    );
+    // Insert payment records for each split
+    const paymentRecords = [];
+    for (const split of paymentSplits) {
+      if (parseFloat(split.amount) > 0) {
+        const pRes = await client.query(
+          `INSERT INTO payments (invoice_id, user_id, customer_id, amount, payment_date, payment_mode, deposit_to, reference, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+          [invoiceId, req.user.id, finalCustomerId, split.amount, payment_date || new Date(), split.payment_mode || "cash", split.deposit_to || null, split.reference || reference, notes]
+        );
+        paymentRecords.push(pRes.rows[0]);
+      }
+    }
 
     // Update invoice balance_due
     const invResult = await client.query(
@@ -72,7 +88,7 @@ const recordPayment = async (req, res) => {
        SET balance_due = balance_due - $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2 AND user_id = $3
        RETURNING balance_due, total_amount`,
-      [amount, invoiceId, req.user.id]
+      [totalAmountToPay, invoiceId, req.user.id]
     );
 
     if (invResult.rows.length === 0) {
@@ -98,7 +114,7 @@ const recordPayment = async (req, res) => {
     );
 
     // Update payment schedules
-    let remainingPayment = parseFloat(amount);
+    let remainingPayment = totalAmountToPay;
     if (remainingPayment > 0) {
       const schedulesRes = await client.query(
         `SELECT id, balance_amount, paid_amount, due_amount, due_date, organization_id, customer_id FROM invoice_payment_schedules 
@@ -180,7 +196,7 @@ const recordPayment = async (req, res) => {
     const updatedSchRes = await client.query(`SELECT * FROM invoice_payment_schedules WHERE invoice_id = $1 ORDER BY due_date ASC`, [invoiceId]);
 
     await client.query("COMMIT");
-    res.json({ payment: paymentResult.rows[0], newBalanceDue: finalBalance, updated_schedules: updatedSchRes.rows });
+    res.json({ payment: paymentRecords[0], payments: paymentRecords, newBalanceDue: finalBalance, updated_schedules: updatedSchRes.rows });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("RECORD PAYMENT ERROR:", err);
@@ -251,4 +267,28 @@ const getPaymentById = async (req, res) => {
   }
 };
 
-module.exports = { recordPayment, getPayments, getAllPayments, getPaymentById };
+// GET deposit balances for Dashboard
+const getDepositBalances = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT deposit_to, SUM(amount) as total_balance 
+       FROM payments 
+       WHERE user_id = $1 AND deposit_to IN ('Petty Cash', 'Undeposited Funds') 
+       GROUP BY deposit_to`,
+      [req.user.id]
+    );
+    
+    let balances = { petty_cash: 0, undeposited_funds: 0 };
+    result.rows.forEach(row => {
+      if (row.deposit_to === 'Petty Cash') balances.petty_cash = parseFloat(row.total_balance);
+      if (row.deposit_to === 'Undeposited Funds') balances.undeposited_funds = parseFloat(row.total_balance);
+    });
+    
+    res.json({ balances });
+  } catch (err) {
+    console.error("GET DEPOSIT BALANCES ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { recordPayment, getPayments, getAllPayments, getPaymentById, getDepositBalances };
