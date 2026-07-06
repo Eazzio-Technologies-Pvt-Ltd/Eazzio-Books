@@ -7,7 +7,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Legend, PieChart, Pie, Cell
 } from 'recharts';
-import { IndianRupee, CreditCard, TrendingUp, TrendingDown } from 'lucide-react';
+import { IndianRupee, CreditCard, TrendingUp, TrendingDown, Wallet, Banknote, Briefcase } from 'lucide-react';
 import "./Dashboard.css";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -24,6 +24,7 @@ function Dashboard() {
   const [financeData, setFinanceData] = useState(null);
   const [projectedData, setProjectedData] = useState(null);
   const [projectedExpensesData, setProjectedExpensesData] = useState(null);
+  const [depositBalances, setDepositBalances] = useState({ petty_cash: 0, undeposited_funds: 0 });
   const [loading, setLoading] = useState(true);
 
   const handleApply = () => {
@@ -85,9 +86,21 @@ function Dashboard() {
       }
     };
 
+    const fetchDepositBalances = async () => {
+      try {
+        const res = await apiRequest(`/payments/deposit-balances`);
+        if (res && res.balances) {
+          setDepositBalances(res.balances);
+        }
+      } catch (err) {
+        console.error("Failed to load deposit balances:", err);
+      }
+    };
+
     fetchDashboardData();
     fetchProjectedPayments();
     fetchProjectedExpenses();
+    fetchDepositBalances();
   }, [selectedMonth, selectedYear]);
 
   const formatCurrency = (amount) => {
@@ -137,6 +150,31 @@ function Dashboard() {
         <div className="dash-loading">Error loading dashboard data. Please refresh.</div>
       ) : (
         <>
+          {/* DEPOSIT ACCOUNTS WIDGETS */}
+          <section className="dash-stats-grid" style={{ marginBottom: "24px" }}>
+            <div className="dash-stat-card" style={{ cursor: "pointer", transition: "transform 0.15s ease" }} onClick={() => navigate("/banking/petty-cash")}>
+              <div className="dash-stat-header">
+                <div className="dash-stat-icon" style={{ background: "#ecfdf5", color: "#10b981" }}><Wallet size={20} /></div>
+                <p>Petty Cash Balance</p>
+              </div>
+              <div className="dash-stat-content">
+                <h3>{formatCurrency(depositBalances.petty_cash)}</h3>
+                <span className="dash-stat-trend" style={{ fontSize: "11px", color: "#6b7280" }}>Click to view ledger</span>
+              </div>
+            </div>
+
+            <div className="dash-stat-card" style={{ cursor: "pointer", transition: "transform 0.15s ease" }} onClick={() => navigate("/banking/undeposited-funds")}>
+              <div className="dash-stat-header">
+                <div className="dash-stat-icon" style={{ background: "#f0f9ff", color: "#0ea5e9" }}><Banknote size={20} /></div>
+                <p>Undeposited Funds</p>
+              </div>
+              <div className="dash-stat-content">
+                <h3>{formatCurrency(depositBalances.undeposited_funds)}</h3>
+                <span className="dash-stat-trend" style={{ fontSize: "11px", color: "#6b7280" }}>Click to view ledger</span>
+              </div>
+            </div>
+          </section>
+
           {/* TOP OVERALL SUMMARY CARDS */}
           <section className="dash-stats-grid">
             <div className="dash-stat-card">
@@ -234,7 +272,7 @@ function Dashboard() {
             </div>
           </section>
 
-          {/* THREE-COLUMN PROJECTIONS */}
+          {/* PROJECTIONS & DEPOSIT WIDGETS */}
           <section className="dash-projections-grid">
 
             {/* 1. Projected Income */}
@@ -306,6 +344,31 @@ function Dashboard() {
                 )}
               </div>
             </div>
+            
+            {/* 3. Petty Cash */}
+            <div className="dash-stat-card" onClick={() => navigate('/banking/petty-cash')} style={{ cursor: "pointer", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", margin: 0 }}>
+              <div className="dash-stat-header">
+                <div className="dash-stat-icon" style={{ background: "#f0fdf4", color: "#166534" }}><Wallet size={20} /></div>
+                <p>Petty Cash Balance</p>
+              </div>
+              <div className="dash-stat-content">
+                <h3>{formatCurrency(depositBalances.petty_cash)}</h3>
+                <span className="dash-stat-trend" style={{ fontSize: "11px", color: "#6b7280" }}>Click to view ledger &rarr;</span>
+              </div>
+            </div>
+
+            {/* 4. Undeposited Funds */}
+            <div className="dash-stat-card" onClick={() => navigate('/banking/undeposited-funds')} style={{ cursor: "pointer", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", margin: 0 }}>
+              <div className="dash-stat-header">
+                <div className="dash-stat-icon" style={{ background: "#eff6ff", color: "#1e40af" }}><Briefcase size={20} /></div>
+                <p>Undeposited Funds</p>
+              </div>
+              <div className="dash-stat-content">
+                <h3>{formatCurrency(depositBalances.undeposited_funds)}</h3>
+                <span className="dash-stat-trend" style={{ fontSize: "11px", color: "#6b7280" }}>Click to view ledger &rarr;</span>
+              </div>
+            </div>
+
           </section>
 
 

@@ -39,12 +39,18 @@ function InvoiceDetail() {
 
   // Modals & Menu dropdowns
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentSplits, setPaymentSplits] = useState([
+    { id: Date.now(), amount: "", payment_mode: "Cash", deposit_to: "Petty Cash", reference: "" }
+  ]);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
-  const [paymentMode, setPaymentMode] = useState("cash");
-  const [paymentReference, setPaymentReference] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
   const [transferShortfall, setTransferShortfall] = useState(false);
+  
+  const addSplit = () => setPaymentSplits([...paymentSplits, { id: Date.now(), amount: "", payment_mode: "Cash", deposit_to: "Petty Cash", reference: "" }]);
+  const removeSplit = (id) => setPaymentSplits(paymentSplits.filter(s => s.id !== id));
+  const updateSplit = (id, field, value) => setPaymentSplits(paymentSplits.map(s => s.id === id ? { ...s, [field]: value } : s));
+  
+  const paymentAmount = paymentSplits.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailTo, setEmailTo] = useState("");
@@ -235,15 +241,14 @@ function InvoiceDetail() {
   };
 
   const handleRecordPayment = async () => {
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) { toast.error("Enter a valid amount"); return; }
+    if (paymentAmount <= 0) { toast.error("Enter a valid amount"); return; }
     try {
       const res = await apiRequest(`/invoices/${id}/payments`, {
         method: "POST",
         body: JSON.stringify({
-          amount: parseFloat(paymentAmount),
+          amount: paymentAmount,
           payment_date: paymentDate,
-          payment_mode: paymentMode,
-          reference: paymentReference,
+          splits: paymentSplits,
           notes: paymentNotes,
           transfer_shortfall: transferShortfall
         }),
@@ -255,10 +260,14 @@ function InvoiceDetail() {
       const updatedSchedules = res.updated_schedules || invoice.payment_schedules;
       setInvoice({ ...invoice, balance_due: newBalance, status: newStatus, payment_schedules: updatedSchedules });
       setInvoicesList((prev) => prev.map((s) => (s.id === parseInt(id) ? { ...s, status: newStatus, balance_due: newBalance } : s)));
-      if (res.payment) {
+      if (res.payments && res.payments.length > 0) {
+        setPayments(prev => [...res.payments, ...prev]);
+      } else if (res.payment) {
         setPayments(prev => [res.payment, ...prev]);
       }
       setShowPaymentModal(false);
+      setPaymentSplits([{ id: Date.now(), amount: "", payment_mode: "Cash", deposit_to: "Petty Cash", reference: "" }]);
+      setPaymentNotes("");
     } catch (err) { toast.error("Failed to record payment"); }
   };
 
@@ -849,43 +858,77 @@ function InvoiceDetail() {
 
             {/* RECORD PAYMENT MODAL */}
             {showPaymentModal && (
-              <div className="modal-overlay">
-                <div className="modal-box">
+              <div className="modal-overlay" style={{ overflowY: "auto" }}>
+                <div className="modal-box" style={{ width: "550px", maxHeight: "90vh", overflowY: "auto" }}>
                   <h3 style={{ marginTop: 0, color: "#1d2939", fontSize: "18px", marginBottom: "20px" }}>Record Payment</h3>
-                  <div>
-                    <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#344054" }}>Amount Received</label>
-                    <input type="number" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} className="input-style" style={{ marginBottom: (shortfall > 0 && shortfall < currBal) ? "0" : "16px" }} />
-                    {shortfall > 0 && shortfall < currBal && (
-                      <div style={{ marginTop: "12px", marginBottom: "16px", padding: "12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#344054", cursor: "pointer", margin: 0 }}>
-                          <input type="checkbox" checked={transferShortfall} onChange={e => setTransferShortfall(e.target.checked)} style={{ margin: 0 }} />
-                          Transfer remaining balance (₹{shortfall.toFixed(2)}) to next month
-                        </label>
-                        {transferShortfall && (
-                          <div style={{ marginTop: "8px", fontSize: "12px", color: "#0ba5ec", fontWeight: "500", paddingLeft: "24px" }}>
-                             This ₹{shortfall.toFixed(2)} will be shifted to the installment due on {nextDateStr}.
-                          </div>
-                        )}
+                  
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", padding: "12px", background: "#f0f9ff", borderRadius: "6px", border: "1px solid #bae6fd" }}>
+                    <span style={{ fontSize: "13px", color: "#0369a1", fontWeight: "500" }}>Total Amount to Apply:</span>
+                    <span style={{ fontSize: "14px", color: "#0369a1", fontWeight: "700" }}>₹{paymentAmount.toFixed(2)}</span>
+                  </div>
+
+                  {paymentSplits.map((split, idx) => (
+                    <div key={split.id} style={{ padding: "16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", marginBottom: "16px", position: "relative" }}>
+                      <h4 style={{ margin: "0 0 12px 0", fontSize: "13px", color: "#344054" }}>Payment Split {idx + 1}</h4>
+                      {paymentSplits.length > 1 && (
+                        <button onClick={() => removeSplit(split.id)} style={{ position: "absolute", top: "16px", right: "16px", background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "12px" }}>Remove</button>
+                      )}
+                      
+                      <div style={{ display: "flex", gap: "12px", marginBottom: "12px" }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", fontWeight: "600", color: "#344054" }}>Amount*</label>
+                          <input type="number" step="0.01" min="0" value={split.amount} onChange={e => updateSplit(split.id, 'amount', e.target.value)} className="input-style" style={{ marginBottom: 0 }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", fontWeight: "600", color: "#344054" }}>Payment Mode</label>
+                          <select value={split.payment_mode} onChange={e => updateSplit(split.id, 'payment_mode', e.target.value)} className="input-style" style={{ marginBottom: 0 }}>
+                            <option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option>
+                            <option value="UPI">UPI</option><option value="Cheque">Cheque</option><option value="Credit Card">Credit Card</option>
+                          </select>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: "16px" }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#344054" }}>Payment Date</label>
-                      <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)} className="input-style" />
+                      
+                      <div style={{ display: "flex", gap: "12px" }}>
+                        {split.payment_mode === "Cash" && (
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", fontWeight: "600", color: "#344054" }}>Deposit To*</label>
+                          <select value={split.deposit_to} onChange={e => updateSplit(split.id, 'deposit_to', e.target.value)} className="input-style" style={{ marginBottom: 0 }}>
+                            <option value="Petty Cash">Petty Cash</option>
+                            <option value="Undeposited Funds">Undeposited Funds</option>
+                          </select>
+                        </div>
+                        )}
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", fontWeight: "600", color: "#344054" }}>Reference#</label>
+                          <input type="text" value={split.reference} onChange={e => updateSplit(split.id, 'reference', e.target.value)} className="input-style" style={{ marginBottom: 0 }} placeholder="e.g. Txn ID" />
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#344054" }}>Payment Mode</label>
-                      <select value={paymentMode} onChange={e => setPaymentMode(e.target.value)} className="input-style" style={{ appearance: "auto" }}>
-                        <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option>
-                        <option value="upi">UPI</option><option value="cheque">Cheque</option>
-                      </select>
+                  ))}
+
+                  <button onClick={addSplit} style={{ background: "none", border: "1px dashed #cbd5e1", color: "#0ba5ec", padding: "10px", borderRadius: "6px", cursor: "pointer", fontSize: "12px", fontWeight: "500", width: "100%", marginBottom: "20px" }}>
+                    + Add another payment method
+                  </button>
+
+                  {shortfall > 0 && shortfall < currBal && (
+                    <div style={{ marginBottom: "16px", padding: "12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#344054", cursor: "pointer", margin: 0 }}>
+                        <input type="checkbox" checked={transferShortfall} onChange={e => setTransferShortfall(e.target.checked)} style={{ margin: 0 }} />
+                        Transfer remaining balance (₹{shortfall.toFixed(2)}) to next month
+                      </label>
+                      {transferShortfall && (
+                        <div style={{ marginTop: "8px", fontSize: "12px", color: "#0ba5ec", fontWeight: "500", paddingLeft: "24px" }}>
+                           This ₹{shortfall.toFixed(2)} will be shifted to the installment due on {nextDateStr}.
+                        </div>
+                      )}
                     </div>
+                  )}
+
+                  <div style={{ marginBottom: "16px" }}>
+                    <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#344054" }}>Payment Date</label>
+                    <input type="date" value={paymentDate} onChange={e => setPaymentDate(e.target.value)} className="input-style" style={{ width: "200px" }} />
                   </div>
-                  <div>
-                    <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#344054" }}>Reference#</label>
-                    <input type="text" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} className="input-style" placeholder="e.g. Transaction ID" />
-                  </div>
+
                   <div>
                     <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600", color: "#344054" }}>Notes (Internal)</label>
                     <textarea value={paymentNotes} onChange={e => setPaymentNotes(e.target.value)} rows={2} className="input-style" />
