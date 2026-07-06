@@ -150,30 +150,7 @@ function Dashboard() {
         <div className="dash-loading">Error loading dashboard data. Please refresh.</div>
       ) : (
         <>
-          {/* DEPOSIT ACCOUNTS WIDGETS */}
-          <section className="dash-stats-grid" style={{ marginBottom: "24px" }}>
-            <div className="dash-stat-card" style={{ cursor: "pointer", transition: "transform 0.15s ease" }} onClick={() => navigate("/banking/petty-cash")}>
-              <div className="dash-stat-header">
-                <div className="dash-stat-icon" style={{ background: "#ecfdf5", color: "#10b981" }}><Wallet size={20} /></div>
-                <p>Petty Cash Balance</p>
-              </div>
-              <div className="dash-stat-content">
-                <h3>{formatCurrency(depositBalances.petty_cash)}</h3>
-                <span className="dash-stat-trend" style={{ fontSize: "11px", color: "#6b7280" }}>Click to view ledger</span>
-              </div>
-            </div>
 
-            <div className="dash-stat-card" style={{ cursor: "pointer", transition: "transform 0.15s ease" }} onClick={() => navigate("/banking/undeposited-funds")}>
-              <div className="dash-stat-header">
-                <div className="dash-stat-icon" style={{ background: "#f0f9ff", color: "#0ea5e9" }}><Banknote size={20} /></div>
-                <p>Undeposited Funds</p>
-              </div>
-              <div className="dash-stat-content">
-                <h3>{formatCurrency(depositBalances.undeposited_funds)}</h3>
-                <span className="dash-stat-trend" style={{ fontSize: "11px", color: "#6b7280" }}>Click to view ledger</span>
-              </div>
-            </div>
-          </section>
 
           {/* TOP OVERALL SUMMARY CARDS */}
           <section className="dash-stats-grid">
@@ -371,6 +348,87 @@ function Dashboard() {
 
           </section>
 
+          {/* CHARTS SECTION */}
+          {financeData.chartData && (
+            <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "24px", marginTop: "24px" }}>
+              
+              <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Cash Flow (Last 12 Months)</h3>
+                <div style={{ height: "300px", width: "100%" }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={financeData.chartData.cashFlowYearly} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} tickFormatter={(value) => `₹${value >= 1000 ? (value/1000).toFixed(0) + 'k' : value}`} />
+                      <RechartsTooltip content={<CustomTooltip />} />
+                      <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '13px', color: '#374151' }}/>
+                      <Area type="monotone" dataKey="income" name="Income" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
+                      <Area type="monotone" dataKey="expense" name="Expense" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Income vs Expense (Last 6 Months)</h3>
+                <div style={{ height: "300px", width: "100%" }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={financeData.chartData.incomeExpense6Months} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} tickFormatter={(value) => `₹${value >= 1000 ? (value/1000).toFixed(0) + 'k' : value}`} />
+                      <RechartsTooltip content={<CustomTooltip />} />
+                      <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '13px', color: '#374151' }}/>
+                      <Bar dataKey="income" name="Income" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                      <Bar dataKey="expense" name="Expense" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+            </section>
+          )}
+
+          {financeData.chartData && financeData.chartData.topExpenses && financeData.chartData.topExpenses.length > 0 && (
+            <section style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", marginTop: "24px", marginBottom: "32px" }}>
+              <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", display: "flex", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Expenses Breakdown</h3>
+                  <div style={{ height: "300px", width: "100%" }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={financeData.chartData.topExpenses}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={80}
+                          outerRadius={110}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {financeData.chartData.topExpenses.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip formatter={(value) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                        <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: '13px' }}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
 
         </>
       )}
