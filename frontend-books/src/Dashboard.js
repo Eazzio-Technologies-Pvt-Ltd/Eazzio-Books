@@ -350,11 +350,11 @@ function Dashboard() {
 
           {/* CHARTS SECTION */}
           {financeData.chartData && (
-            <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "24px", marginTop: "24px" }}>
+            <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "32px", marginTop: "24px" }}>
               
               <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Cash Flow (Last 12 Months)</h3>
-                <div style={{ height: "300px", width: "100%" }}>
+                <div style={{ height: "500px", width: "100%" }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={financeData.chartData.cashFlowYearly} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
@@ -381,7 +381,7 @@ function Dashboard() {
 
               <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Income vs Expense (Last 6 Months)</h3>
-                <div style={{ height: "300px", width: "100%" }}>
+                <div style={{ height: "500px", width: "100%" }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={financeData.chartData.incomeExpense6Months} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -399,36 +399,7 @@ function Dashboard() {
             </section>
           )}
 
-          {financeData.chartData && financeData.chartData.topExpenses && financeData.chartData.topExpenses.length > 0 && (
-            <section style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", marginTop: "24px", marginBottom: "32px" }}>
-              <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", display: "flex", alignItems: "center" }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Expenses Breakdown</h3>
-                  <div style={{ height: "300px", width: "100%" }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={financeData.chartData.topExpenses}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={80}
-                          outerRadius={110}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          {financeData.chartData.topExpenses.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip formatter={(value) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                        <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: '13px' }}/>
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
+
 
         </>
       )}
