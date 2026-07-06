@@ -6,10 +6,10 @@
 /* ── Base sidebar: FIXED to fill entire viewport height ── */
 .sidebar {
   width: 240px;
-  height: 100%;
+  height: calc(100vh - 60px);
   position: fixed;
   left: 0;
-  top: 0;
+  top: 60px;
   bottom: 0;
   background: #1b2337;
   border-right: 1px solid #283352;
@@ -67,7 +67,7 @@
 .sidebar-collapse-btn {
   position: absolute;
   right: -14px;
-  top: 76px;
+  top: 24px;
   width: 28px;
   height: 28px;
   border: 1px solid #e4e8f2;
@@ -97,16 +97,16 @@
 /* ── Hamburger button (mobile only) ── */
 .sidebar-hamburger {
   position: fixed;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   width: 40px;
   height: 40px;
   border: 0;
   border-radius: 8px;
-  background: #1b2337;
-  color: white;
+  background: transparent;
+  color: #c0c8e0;
   font-size: 20px;
-  z-index: 50;
+  z-index: 105;
   cursor: pointer;
   display: grid;
   place-items: center;

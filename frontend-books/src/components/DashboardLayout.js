@@ -24,9 +24,9 @@ function DashboardLayout() {
 
   return (
     <div className={`dashboard-layout ${sidebarCollapsed && !isMobile ? "sidebar-collapsed" : ""}`}>
+      <Topbar />
       <Sidebar onCollapseChange={setSidebarCollapsed} />
       <main className="dashboard-main">
-        <Topbar />
         <div className="dashboard-page-content">
           <Outlet />
         </div>

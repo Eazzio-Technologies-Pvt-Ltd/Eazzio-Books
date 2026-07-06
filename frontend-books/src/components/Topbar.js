@@ -5,6 +5,7 @@ import { useTheme } from "../ThemeContext";
 import { apiRequest } from "../api";
 import "./Topbar.css";
 import CreateOrganizationForm from "./CreateOrganizationForm";
+import { Search, RefreshCw, Users, Plus } from "lucide-react";
 
 function Topbar() {
   const navigate = useNavigate();
@@ -106,14 +107,19 @@ function Topbar() {
     <>
       <header className="topbar">
         <div className="topbar-left">
+          {/* Brand Logo */}
+          <div className="topbar-brand" style={{ display: "flex", alignItems: "center", marginRight: "16px" }}>
+            <img src="/logo.png" alt="Logo" style={{ height: "30px", objectFit: "contain" }} />
+          </div>
+
           {/* Refresh icon */}
           <button className="topbar-icon-btn" aria-label="Refresh" onClick={() => window.location.reload()}>
-            ↻
+            <RefreshCw size={18} />
           </button>
 
           {/* Search bar */}
           <div className="topbar-search" ref={searchRef}>
-            <span className="topbar-search-icon">⌕</span>
+            <span className="topbar-search-icon"><Search size={16} /></span>
             <input
               type="text"
               placeholder="Search customers, items, invoices..."
@@ -287,12 +293,12 @@ function Topbar() {
 
           {/* Plus / Create button */}
           <button className="topbar-plus-btn" aria-label="Create new" onClick={() => navigate("/invoices/new")}>
-            +
+            <Plus size={20} />
           </button>
 
           {/* Notification / users icons */}
           <button className="topbar-icon-btn" aria-label="Users" onClick={() => navigate("/users-roles")}>
-            👤
+            <Users size={18} />
           </button>
 
           {/* Profile Dropdown */}
