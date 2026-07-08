@@ -23,6 +23,8 @@ function Topbar() {
   const [globalResults, setGlobalResults] = useState(null);
   const searchTimeout = useRef(null);
   const searchRef = useRef(null);
+  const orgMenuRef = useRef(null);
+  const profileMenuRef = useRef(null);
 
   const [organizations, setOrganizations] = useState([]);
 
@@ -55,6 +57,12 @@ function Topbar() {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setGlobalResults(null);
+      }
+      if (orgMenuRef.current && !orgMenuRef.current.contains(e.target)) {
+        setShowOrgMenu(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -238,10 +246,13 @@ function Topbar() {
           <span className="topbar-separator">|</span>
 
           {/* Organization Dropdown */}
-          <div className="topbar-dropdown-container">
+          <div className="topbar-dropdown-container" ref={orgMenuRef}>
             <button 
               className="topbar-org-name" 
-              onClick={() => setShowOrgMenu(!showOrgMenu)}
+              onClick={() => {
+                setShowOrgMenu(!showOrgMenu);
+                setShowProfileMenu(false);
+              }}
             >
               {user?.organization_name || user?.business_type || "My Organization"} ▾
             </button>
@@ -302,11 +313,14 @@ function Topbar() {
           </button>
 
           {/* Profile Dropdown */}
-          <div className="topbar-dropdown-container">
+          <div className="topbar-dropdown-container" ref={profileMenuRef}>
             <button 
               className="topbar-account-btn" 
               aria-label="Account"
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              onClick={() => {
+                setShowProfileMenu(!showProfileMenu);
+                setShowOrgMenu(false);
+              }}
             >
               {user?.email?.[0]?.toUpperCase() || "U"}
             </button>
