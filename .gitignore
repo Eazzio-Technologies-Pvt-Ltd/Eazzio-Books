@@ -1,0 +1,10 @@
+# Flutter build artifacts at repo root level
+.dart_tool/
+android/
+build/
+ios/
+macos/
+linux/
+windows/
+web/
+*.lock
