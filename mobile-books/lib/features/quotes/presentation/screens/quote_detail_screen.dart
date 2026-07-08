@@ -8,6 +8,8 @@ import 'package:mobile_books/features/quotes/data/models/quote_item.dart';
 import 'package:mobile_books/features/quotes/presentation/providers/quote_provider.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/features/settings/data/services/settings_service.dart';
+import 'package:mobile_books/core/utils/sharing_helper.dart';
+import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
 
 /// Status badge color configuration (duplicated from QuotesScreen for standalone use)
 const Map<String, _StatusStyle> _statusStyles = {
@@ -396,6 +398,46 @@ class QuoteDetailScreen extends ConsumerWidget {
                   tooltip: 'Send Quote via Email',
                   onPressed: () =>
                       _showSendEmailSheet(context, ref, quote),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chat_outlined),
+                  tooltip: 'WhatsApp Reminder',
+                  onPressed: () async {
+                    final customers = ref.read(customersProvider).value ?? [];
+                    final customer = customers.where((c) => c.id == quote.customerId).firstOrNull;
+                    final phone = customer?.mobile ?? customer?.phone ?? customer?.workPhone ?? '';
+                    if (phone.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Phone number not available'), backgroundColor: AppColors.danger),
+                      );
+                      return;
+                    }
+                    final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                    final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
+                    final totalAmt = quote.total.toStringAsFixed(2);
+                    final msg = "Dear $customerName, please find your quote ${quote.quoteNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";
+                    await SharingHelper.sendWhatsApp(phone: phone, message: msg);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.sms_outlined),
+                  tooltip: 'SMS Reminder',
+                  onPressed: () async {
+                    final customers = ref.read(customersProvider).value ?? [];
+                    final customer = customers.where((c) => c.id == quote.customerId).firstOrNull;
+                    final phone = customer?.mobile ?? customer?.phone ?? customer?.workPhone ?? '';
+                    if (phone.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Phone number not available'), backgroundColor: AppColors.danger),
+                      );
+                      return;
+                    }
+                    final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                    final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
+                    final totalAmt = quote.total.toStringAsFixed(2);
+                    final msg = "Dear $customerName, please find your quote ${quote.quoteNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";
+                    await SharingHelper.sendSMS(phone: phone, message: msg);
+                  },
                 ),
                 // PDF view document preview action
                 IconButton(

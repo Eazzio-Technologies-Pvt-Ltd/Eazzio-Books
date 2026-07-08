@@ -10,6 +10,9 @@ import 'package:mobile_books/features/invoices/presentation/providers/invoice_pr
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/features/quotes/presentation/providers/quote_provider.dart'; // For salespersons & projects
 
+import 'package:mobile_books/core/utils/sharing_helper.dart';
+import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
+
 const Map<String, _StatusStyle> _statusStyles = {
   'draft':          _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',          Icons.edit_note),
   'sent':           _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',           Icons.send),
@@ -440,6 +443,46 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     icon: const Icon(Icons.email_outlined),
                     tooltip: 'Email Statement',
                     onPressed: () => _showSendEmailSheet(context, ref, invoice),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chat_outlined),
+                    tooltip: 'WhatsApp Reminder',
+                    onPressed: () async {
+                      final customers = ref.read(customersProvider).value ?? [];
+                      final customer = customers.where((c) => c.id == invoice.customerId).firstOrNull;
+                      final phone = customer?.mobile ?? customer?.phone ?? customer?.workPhone ?? '';
+                      if (phone.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Phone number not available'), backgroundColor: AppColors.danger),
+                        );
+                        return;
+                      }
+                      final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                      final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
+                      final totalAmt = invoice.totalAmount.toStringAsFixed(2);
+                      final msg = "Dear $customerName, please find your invoice ${invoice.invoiceNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";
+                      await SharingHelper.sendWhatsApp(phone: phone, message: msg);
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.sms_outlined),
+                    tooltip: 'SMS Reminder',
+                    onPressed: () async {
+                      final customers = ref.read(customersProvider).value ?? [];
+                      final customer = customers.where((c) => c.id == invoice.customerId).firstOrNull;
+                      final phone = customer?.mobile ?? customer?.phone ?? customer?.workPhone ?? '';
+                      if (phone.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Phone number not available'), backgroundColor: AppColors.danger),
+                        );
+                        return;
+                      }
+                      final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                      final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
+                      final totalAmt = invoice.totalAmount.toStringAsFixed(2);
+                      final msg = "Dear $customerName, please find your invoice ${invoice.invoiceNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";
+                      await SharingHelper.sendSMS(phone: phone, message: msg);
+                    },
                   ),
                   IconButton(
                     icon: const Icon(Icons.picture_as_pdf_outlined),
