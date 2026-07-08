@@ -1,8 +1,9 @@
 /* Dashboard.css - Premium UI Overhaul */
 
 .dashboard-container {
-  padding: 15px 30px;
-  max-width: 1500px;
+  padding: 24px 40px;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   color: var(--text-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -64,12 +65,14 @@
 
 .dash-stat-card {
   background: var(--bg-card); 
-  padding: 18px; 
+  padding: 20px; 
   border-radius: 14px; 
   border: 1px solid var(--border-color);
   display: flex; 
   flex-direction: column; 
+  justify-content: space-between;
   gap: 12px; 
+  min-height: 140px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   transition: all 0.25s ease;
 }
@@ -134,10 +137,14 @@
 
 .mo-card {
   background: var(--bg-card);
-  padding: 12px;
+  padding: 20px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .mo-label {
@@ -243,10 +250,11 @@
   border-radius: 14px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-md);
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 140px;
   min-width: 0;
 }
 
