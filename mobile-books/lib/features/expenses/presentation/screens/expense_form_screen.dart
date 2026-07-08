@@ -266,7 +266,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     if (_isLoading && _isEdit) {
       return Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: true,
           title: Text(_isEdit ? 'Edit Expense' : 'Record Expense'),
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -275,7 +275,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         title: Text(_isEdit ? 'Edit Expense' : 'Record Expense'),
         actions: [
           IconButton(
@@ -302,19 +302,19 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   data: (vendors) => Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<int>(
+                        child: DropdownButtonFormField<int?>(
                           initialValue: _vendorId,
                           decoration: const InputDecoration(
                             labelText: 'Vendor',
                           ),
                           isExpanded: true,
                           items: [
-                            const DropdownMenuItem<int>(
+                            const DropdownMenuItem<int?>(
                               value: null,
                               child: Text('No Vendor'),
                             ),
                             ...vendors.map(
-                              (v) => DropdownMenuItem<int>(
+                              (v) => DropdownMenuItem<int?>(
                                 value: v.id,
                                 child: Text(v.displayName),
                               ),

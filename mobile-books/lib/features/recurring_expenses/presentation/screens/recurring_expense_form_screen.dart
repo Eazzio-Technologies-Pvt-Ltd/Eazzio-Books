@@ -50,7 +50,9 @@ class _RecurringExpenseFormScreenState extends ConsumerState<RecurringExpenseFor
     super.initState();
     _isEdit = widget.expenseId != null;
     if (_isEdit) {
-      _loadExpenseData();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadExpenseData();
+      });
     }
   }
 

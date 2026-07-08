@@ -5,6 +5,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+import 'package:mobile_books/features/reports/data/models/pnl_report.dart';
 
 import 'package:mobile_books/core/network/network_client.dart';
 
@@ -87,8 +88,8 @@ class PnlScreen extends ConsumerWidget {
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ReportNavBar(currentRoute: '/reports/profit-loss'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -151,34 +152,75 @@ class PnlScreen extends ConsumerWidget {
                     ),
                   );
                 }
+                // Split Income into Revenue from Operations and Other Income
+                final revenueAccounts = <PnlAccount>[];
+                final otherIncomeAccounts = <PnlAccount>[];
+                double totalRevenue = 0.0;
+                double totalOtherIncome = 0.0;
+
+                for (final acc in report.income.accounts) {
+                  final lower = acc.accountName.toLowerCase();
+                  final isOther = lower.contains('other income') ||
+                      lower.contains('interest') ||
+                      lower.contains('dividend') ||
+                      lower.contains('discount received') ||
+                      lower.contains('commission') ||
+                      lower.contains('gain') ||
+                      lower.contains('rent received') ||
+                      lower.contains('bad debts') ||
+                      lower.contains('insurance claim') ||
+                      lower.contains('scrap') ||
+                      lower.contains('refund');
+                  if (isOther) {
+                    otherIncomeAccounts.add(acc);
+                    totalOtherIncome += acc.balance;
+                  } else {
+                    revenueAccounts.add(acc);
+                    totalRevenue += acc.balance;
+                  }
+                }
+
                 final netProfitColor = report.netProfit >= 0 ? AppColors.success : AppColors.danger;
 
                 return ListView(
                   padding: const EdgeInsets.all(AppSpacing.m),
                   children: [
-                    // Operating Income Section
-                    _buildSectionHeader('Operating Income', AppColors.success),
-                    ...report.income.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
-                    _buildTotalRow('Total Operating Income', report.income.total),
+                    // Incomes Main Section
+                    _buildSectionHeader('Incomes', AppColors.success),
+                    
+                    // A) Revenue from Operations
+                    _buildSubSectionHeader('A) Revenue from Operations'),
+                    if (revenueAccounts.isEmpty)
+                      _buildEmptyRow('No revenue from operations accounts found.')
+                    else
+                      ...revenueAccounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
+                    _buildTotalRow('Total Revenue from Operations', totalRevenue),
                     const SizedBox(height: AppSpacing.m),
 
-                    // Gross Profit Banner
-                    Container(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.05),
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Total Gross Profit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text(_formatCurrency(report.income.total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        ],
-                      ),
-                    ),
+                    // B) Other Income
+                    _buildSubSectionHeader('B) Other Income'),
+                    if (otherIncomeAccounts.isEmpty)
+                      _buildEmptyRow('No other income accounts found.')
+                    else
+                      ...otherIncomeAccounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
+                    _buildTotalRow('Total Other Income', totalOtherIncome),
+                    const SizedBox(height: AppSpacing.m),
+
+                    // Total Incomes (A + B)
+                    _buildGrandTotalRow('Total Incomes (A + B)', totalRevenue + totalOtherIncome),
+                    const SizedBox(height: AppSpacing.l),
+
+                    // Gross Profit Section
+                    _buildSectionHeader('Gross Profit', Colors.blue.shade700),
+                    _buildTotalRow('Total Gross Profit', totalRevenue + totalOtherIncome),
                     const SizedBox(height: AppSpacing.l),
 
                     // Operating Expenses Section
                     _buildSectionHeader('Operating Expenses', AppColors.danger),
-                    ...report.expense.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
+                    if (report.expense.accounts.isEmpty)
+                      _buildEmptyRow('No operating expenses accounts found.')
+                    else
+                      ...report.expense.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
                     _buildTotalRow('Total Operating Expenses', report.expense.total),
                     const SizedBox(height: AppSpacing.xl),
 
@@ -270,6 +312,72 @@ class PnlScreen extends ConsumerWidget {
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           Text(_formatCurrency(total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: Colors.teal.shade700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyRow(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: AppSpacing.m),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+          const Text(
+            '0.00',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrandTotalRow(String label, double total) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: AppColors.borderLight, width: 1),
+          bottom: BorderSide(color: AppColors.borderLight, width: 2),
+        ),
+      ),
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          Text(
+            _formatCurrency(total),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
         ],
       ),
     );

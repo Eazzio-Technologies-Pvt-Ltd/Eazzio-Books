@@ -10,6 +10,7 @@ import 'package:mobile_books/features/dashboard/presentation/providers/dashboard
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mobile_books/features/dashboard/presentation/providers/deposit_balances_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -185,24 +186,24 @@ class DashboardScreen extends ConsumerWidget {
           await ref.read(dashboardSummaryProvider.notifier).refresh();
           ref.invalidate(projectedPaymentsProvider);
           ref.invalidate(projectedExpensesProvider);
+          ref.invalidate(depositBalancesProvider);
         },
         child: summaryState.when(
           data: (summary) {
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(AppSpacing.m),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildGreetingHeader(context, ref),
-                  _buildQuickActions(context),
-                  const SizedBox(height: AppSpacing.l),
+                  const SizedBox(height: AppSpacing.s),
                   // 4. PROJECTIONS AND EXPECTED SURPLUS
                   _buildProjectionsSection(context),
-                  const SizedBox(height: AppSpacing.l),
+                  const SizedBox(height: AppSpacing.s),
                   // 1. STAT CARDS (RECEIVABLES, PAYABLES, INCOME, EXPENSES)
                   _buildStatCards(context, summary.topSummary),
-                  const SizedBox(height: AppSpacing.l),
+                  const SizedBox(height: AppSpacing.s),
 
                   // 2. MONTHLY FILTER BAR
                   Wrap(
@@ -251,24 +252,20 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.s),
+                  const SizedBox(height: AppSpacing.xs),
 
                   // 3. MONTHLY METRICS GRID
                   _buildMonthlyMetricsGrid(context, summary.selectedMonth),
-                  const SizedBox(height: AppSpacing.s),
+                  const SizedBox(height: AppSpacing.xs),
                   _buildIncomeExpenseProgress(context, summary.selectedMonth),
-                  const SizedBox(height: AppSpacing.l),
-
-                  // 5. CASH FLOW LINE CHART (Last 12 months)
-                  _buildCashFlowChart(context, summary.chartData.cashFlowYearly),
-                  const SizedBox(height: AppSpacing.l),
-
-                  // 6. INCOME VS EXPENSE BAR CHART (Last 6 months)
-                  _buildBarChart(context, summary.chartData.incomeExpense6Months),
-                  const SizedBox(height: AppSpacing.l),
+                  const SizedBox(height: AppSpacing.s),
 
                   // 7. EXPENSES BY CATEGORY AND BANK ACCOUNTS (Row on large screens, Column on mobile)
                   _buildBottomLists(context, summary.chartData),
+                  const SizedBox(height: AppSpacing.s),
+
+                  // Quick Actions at the bottom
+                  _buildQuickActions(context),
                 ],
               ),
             );
@@ -670,6 +667,8 @@ class DashboardScreen extends ConsumerWidget {
         final selectedYear = ref.watch(dashboardYearProvider);
         final monthStr = monthNames[selectedMonth - 1];
 
+        final depositBalancesAsync = ref.watch(depositBalancesProvider);
+
         final cards = [
           _buildProjectionCard(
             context,
@@ -694,6 +693,86 @@ class DashboardScreen extends ConsumerWidget {
             monthName: monthStr,
             year: selectedYear,
           ),
+          // Petty Cash Card
+          Card(
+            margin: EdgeInsets.zero,
+            child: InkWell(
+              onTap: () => context.push('/banking/petty-cash'),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Petty Cash Balance',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                        ),
+                        Icon(Icons.wallet, size: 16, color: const Color(0xFF059669)),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    depositBalancesAsync.when(
+                      data: (balances) => Text(
+                        _formatCurrency(context, balances.pettyCash),
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
+                      ),
+                      loading: () => const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                      error: (e, s) => const Text('₹0.00'),
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    const Text(
+                      'Click to view ledger',
+                      style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Undeposited Funds Card
+          Card(
+            margin: EdgeInsets.zero,
+            child: InkWell(
+              onTap: () => context.push('/banking/undeposited-funds'),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Undeposited Funds',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                        ),
+                        Icon(Icons.business_center, size: 16, color: AppColors.primaryBlue),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    depositBalancesAsync.when(
+                      data: (balances) => Text(
+                        _formatCurrency(context, balances.undepositedFunds),
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
+                      ),
+                      loading: () => const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                      error: (e, s) => const Text('₹0.00'),
+                    ),
+                    const SizedBox(height: AppSpacing.s),
+                    const Text(
+                      'Click to view ledger',
+                      style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ];
 
         if (isMobile) {
@@ -704,17 +783,34 @@ class DashboardScreen extends ConsumerWidget {
               cards[1],
               const SizedBox(height: AppSpacing.s),
               cards[2],
+              const SizedBox(height: AppSpacing.s),
+              cards[3],
+              const SizedBox(height: AppSpacing.s),
+              cards[4],
             ],
           );
         } else {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
             children: [
-              Expanded(child: cards[0]),
-              const SizedBox(width: AppSpacing.s),
-              Expanded(child: cards[1]),
-              const SizedBox(width: AppSpacing.s),
-              Expanded(child: cards[2]),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(child: cards[1]),
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(child: cards[2]),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: cards[3]),
+                  const SizedBox(width: AppSpacing.s),
+                  Expanded(child: cards[4]),
+                ],
+              ),
             ],
           );
         }

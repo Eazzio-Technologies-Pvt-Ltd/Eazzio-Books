@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/vendor_credits/presentation/providers/vendor_credit_provider.dart';
 import 'package:mobile_books/features/vendor_credits/data/services/vendor_credit_service.dart';
@@ -263,21 +265,21 @@ class _VendorCreditDetailScreenState extends ConsumerState<VendorCreditDetailScr
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: 'Export PDF',
-            onPressed: () {
+            onPressed: () async {
               final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Vendor Credit PDF Link'),
-                  content: SelectableText('$baseUrl/vendor-credits/${widget.vendorCreditId}/pdf'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              );
+              final pdfUrl = '$baseUrl/vendor-credits/${widget.vendorCreditId}/pdf';
+              final uri = Uri.parse(pdfUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } else {
+                // fallback: let user copy the URL
+                if (context.mounted) {
+                  await Clipboard.setData(ClipboardData(text: pdfUrl));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PDF URL copied to clipboard')),
+                  );
+                }
+              }
             },
           ),
         ],

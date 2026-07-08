@@ -100,7 +100,7 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
     return ResponsiveScaffold(
       currentRoute: '/inventory/stock',
       appBar: AppBar(
-        title: const Text('Stock In / Stock Out'),
+        title: const Text('New Inventory Adjustment'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -110,7 +110,7 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
         data: (items) {
           final physicalItems = items.where((i) => i.itemType.toLowerCase() != 'service').toList();
           final selectedItem = _selectedItemId != null
-              ? physicalItems.firstWhere((i) => i.id == _selectedItemId)
+              ? physicalItems.firstWhere((i) => i.id == _selectedItemId, orElse: () => physicalItems.first)
               : null;
 
           return SingleChildScrollView(
@@ -118,35 +118,57 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
             child: Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Form Card
                   Card(
-                    elevation: 2,
+                    elevation: 1,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.borderLight),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.m),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
-                            'Quick Stock Adjustment',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimaryLight,
-                            ),
+                          const Row(
+                            children: [
+                              Icon(Icons.inventory_2_outlined, color: AppColors.primaryBlue, size: 24),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'New Inventory Adjustment',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimaryLight,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'Adjust item quantities, record stock movements, or align current levels',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondaryLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: AppSpacing.m),
+                          const SizedBox(height: AppSpacing.l),
                           
                           // Item dropdown
                           DropdownButtonFormField<int>(
                             initialValue: _selectedItemId,
                             decoration: const InputDecoration(
                               labelText: 'Item *',
-                              hintText: 'Select an inventory item',
+                              hintText: 'Select an Item',
                             ),
                             items: physicalItems.map((item) {
                               return DropdownMenuItem<int>(
@@ -215,20 +237,65 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                           ],
 
                           // Movement Type selector
-                          DropdownButtonFormField<String>(
-                            initialValue: _movementType,
-                            decoration: const InputDecoration(
-                              labelText: 'Movement Type *',
+                          const Text(
+                            'Movement Type *',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondaryLight,
                             ),
-                            items: const [
-                              DropdownMenuItem(value: 'stock_in', child: Text('Stock In (Increase)')),
-                              DropdownMenuItem(value: 'stock_out', child: Text('Stock Out (Decrease)')),
-                              DropdownMenuItem(value: 'adjustment', child: Text('Absolute Adjustment (Set to)')),
-                            ],
-                            onChanged: (val) {
-                              setState(() {
-                                _movementType = val ?? 'stock_in';
-                              });
+                          ),
+                          const SizedBox(height: 8),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return ToggleButtons(
+                                isSelected: [
+                                  _movementType == 'stock_in',
+                                  _movementType == 'stock_out',
+                                  _movementType == 'adjustment',
+                                ],
+                                onPressed: (index) {
+                                  setState(() {
+                                    if (index == 0) _movementType = 'stock_in';
+                                    if (index == 1) _movementType = 'stock_out';
+                                    if (index == 2) _movementType = 'adjustment';
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                selectedColor: Colors.white,
+                                fillColor: AppColors.primaryBlue,
+                                color: AppColors.textSecondaryLight,
+                                constraints: BoxConstraints.expand(
+                                  width: (constraints.maxWidth - 4) / 3,
+                                  height: 46,
+                                ),
+                                children: const [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.arrow_downward, size: 16),
+                                      SizedBox(width: 4),
+                                      Text('Stock In', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.arrow_upward, size: 16),
+                                      SizedBox(width: 4),
+                                      Text('Stock Out', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.sync_alt, size: 16),
+                                      SizedBox(width: 4),
+                                      Text('Adjustment', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ],
+                              );
                             },
                           ),
                           const SizedBox(height: AppSpacing.m),
@@ -238,10 +305,8 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             controller: _quantityController,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             decoration: InputDecoration(
-                              labelText: _movementType == 'adjustment'
-                                  ? 'New Absolute Stock Level *'
-                                  : 'Quantity *',
-                              hintText: '0.00',
+                              labelText: 'Quantity *',
+                              hintText: 'e.g. 10',
                             ),
                             validator: (val) {
                               if (val == null || val.isEmpty) {
@@ -261,7 +326,7 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             controller: _referenceController,
                             decoration: const InputDecoration(
                               labelText: 'Reference Number',
-                              hintText: 'e.g. PO-12345',
+                              hintText: 'e.g. ADJ-2026-001',
                             ),
                           ),
                           const SizedBox(height: AppSpacing.m),
@@ -270,8 +335,8 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                           TextFormField(
                             controller: _reasonController,
                             decoration: const InputDecoration(
-                              labelText: 'Reason',
-                              hintText: 'e.g. Received from Supplier, Damaged, Sample',
+                              labelText: 'Reason for Adjustment',
+                              hintText: 'e.g. Received from Supplier, Damaged Stock, Inventory Audit, Sample Given',
                             ),
                           ),
                           const SizedBox(height: AppSpacing.m),
@@ -281,8 +346,8 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             controller: _notesController,
                             maxLines: 3,
                             decoration: const InputDecoration(
-                              labelText: 'Notes',
-                              hintText: 'Provide any additional notes...',
+                              labelText: 'Notes / Description',
+                              hintText: 'Provide additional details about this inventory movement...',
                               alignLabelWithHint: true,
                             ),
                           ),
@@ -292,7 +357,7 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              TextButton(
+                              OutlinedButton(
                                 onPressed: _isLoading ? null : () => context.pop(),
                                 child: const Text('Cancel'),
                               ),

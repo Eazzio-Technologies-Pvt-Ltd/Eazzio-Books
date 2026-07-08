@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // --- PRIMARY COLORS (Mint Green Accent / Navy Text) ---
-  static const Color primaryBlue = Color(0xFF3DDC97);        // Mint green CTA
-  static const Color primaryBlueDark = Color(0xFF160B45);    // Navy text on button
+  // --- PRIMARY COLORS (Teal Green CTA) ---
+  static const Color primaryBlue = Color(0xFF0D9488);        // Teal green CTA
+  static const Color primaryBlueDark = Color(0xFFFFFFFF);    // White text on button
 
   // --- ACCENT COLORS (Navy System) ---
   static const Color accentNavy = Color(0xFF160B45);         // Solid Navy Blue
@@ -17,13 +17,13 @@ class AppColors {
 
   // --- NEUTRAL COLORS ---
   static const Color backgroundLight = Color(0xFFFFFFFF);         // Page background: WHITE
-  static const Color surfaceLight = Color(0xFFF7F8FA);         // Card background: Faint off-white
+  static const Color surfaceLight = Color(0xFFFFFFFF);         // Card background: WHITE
   static const Color backgroundDark = Color(0xFF0F172A); // Slate 900
   static const Color surfaceDark = Color(0xFF1E293B); // Slate 800
 
   // --- TEXT COLORS ---
-  static const Color textPrimaryLight = Color(0xFF160B45);    // Solid Navy (100% opacity)
-  static const Color textSecondaryLight = Color(0xCC160B45);  // Navy at 80% opacity
+  static const Color textPrimaryLight = Color(0xFF000000);    // Solid Black (100% opacity)
+  static const Color textSecondaryLight = Color(0xFF333333);  // Dark grey at 80% opacity
   static const Color textPrimaryDark = Color(0xFFF8FAFC); // Slate 50
   static const Color textSecondaryDark = Color(0xFF94A3B8); // Slate 400
 

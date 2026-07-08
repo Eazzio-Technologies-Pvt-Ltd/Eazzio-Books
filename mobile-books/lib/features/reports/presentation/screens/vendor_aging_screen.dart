@@ -91,8 +91,8 @@ class _VendorAgingScreenState extends ConsumerState<VendorAgingScreen> {
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ReportNavBar(currentRoute: '/reports/vendor-aging'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),

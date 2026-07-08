@@ -1,3 +1,13 @@
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
+}
+
 class BankAccount {
   final int id;
   final int userId;
@@ -31,8 +41,8 @@ class BankAccount {
       bankName: json['bank_name'] as String? ?? json['bankName'] as String? ?? '',
       accountNumber: json['account_number'] as String? ?? json['accountNumber'] as String? ?? '',
       ifscCode: json['ifsc_code'] as String? ?? json['ifscCode'] as String? ?? '',
-      openingBalance: (json['opening_balance'] as num? ?? json['openingBalance'] as num? ?? 0.0).toDouble(),
-      currentBalance: (json['current_balance'] as num? ?? json['currentBalance'] as num? ?? 0.0).toDouble(),
+      openingBalance: _parseDouble(json['opening_balance'] ?? json['openingBalance']),
+      currentBalance: _parseDouble(json['current_balance'] ?? json['currentBalance']),
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
     );

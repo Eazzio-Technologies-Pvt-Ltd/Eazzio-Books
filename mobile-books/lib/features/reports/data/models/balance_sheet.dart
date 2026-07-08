@@ -1,3 +1,10 @@
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class BalanceSheetAccount {
   final String accountCode;
   final String accountName;
@@ -20,9 +27,9 @@ class BalanceSheetAccount {
       accountCode: json['account_code'] as String? ?? '',
       accountName: json['account_name'] as String? ?? '',
       accountType: json['account_type'] as String? ?? '',
-      totalDebit: (json['total_debit'] as num?)?.toDouble() ?? 0.0,
-      totalCredit: (json['total_credit'] as num?)?.toDouble() ?? 0.0,
-      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      totalDebit: _parseDouble(json['total_debit']),
+      totalCredit: _parseDouble(json['total_credit']),
+      balance: _parseDouble(json['balance']),
     );
   }
 }
@@ -40,7 +47,7 @@ class BalanceSheetSection {
     final list = json['accounts'] as List? ?? [];
     return BalanceSheetSection(
       accounts: list.map((e) => BalanceSheetAccount.fromJson(e as Map<String, dynamic>)).toList(),
-      total: (json['total'] as num?)?.toDouble() ?? 0.0,
+      total: _parseDouble(json['total']),
     );
   }
 }

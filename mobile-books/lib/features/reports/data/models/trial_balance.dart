@@ -1,3 +1,10 @@
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class TrialBalanceAccount {
   final String accountCode;
   final String accountName;
@@ -18,8 +25,8 @@ class TrialBalanceAccount {
       accountCode: json['account_code'] as String? ?? '',
       accountName: json['account_name'] as String? ?? '',
       accountType: json['account_type'] as String? ?? '',
-      totalDebit: (json['total_debit'] as num?)?.toDouble() ?? 0.0,
-      totalCredit: (json['total_credit'] as num?)?.toDouble() ?? 0.0,
+      totalDebit: _parseDouble(json['total_debit']),
+      totalCredit: _parseDouble(json['total_credit']),
     );
   }
 

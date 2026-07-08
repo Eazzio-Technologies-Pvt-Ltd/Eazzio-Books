@@ -72,6 +72,7 @@ class _TaxesListScreenState extends ConsumerState<TaxesListScreen> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: ref.watch(taxTypeFilterProvider),
                         decoration: const InputDecoration(
                           labelText: 'Type',
@@ -96,6 +97,7 @@ class _TaxesListScreenState extends ConsumerState<TaxesListScreen> {
                     const SizedBox(width: AppSpacing.m),
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: ref.watch(taxStatusFilterProvider),
                         decoration: const InputDecoration(
                           labelText: 'Status',

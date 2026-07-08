@@ -385,33 +385,48 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      payment.invoiceNumber != null
-                                          ? 'Invoice: ${payment.invoiceNumber}'
-                                          : 'Invoice #${payment.invoiceId}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: AppColors.primaryBlue,
+                                    Expanded(
+                                      child: Text(
+                                        payment.invoiceNumber != null
+                                            ? 'Invoice: ${payment.invoiceNumber}'
+                                            : 'Invoice #${payment.invoiceId}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          color: AppColors.primaryBlue,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.s,
-                                        vertical: AppSpacing.xs,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        payment.paymentMode?.toUpperCase() ?? 'CASH',
-                                        style: const TextStyle(
-                                          color: Color(0xFF475569),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.s,
+                                          vertical: AppSpacing.xs,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                payment.paymentMode?.toUpperCase() ?? 'CASH',
+                                                style: const TextStyle(
+                                                  color: Color(0xFF475569),
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),

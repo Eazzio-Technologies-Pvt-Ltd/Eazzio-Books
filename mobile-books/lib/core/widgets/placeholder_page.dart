@@ -52,7 +52,7 @@ class PlaceholderPage extends StatelessWidget {
               Text(
                 message,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textSecondaryLight,
+                      color: AppColors.textPrimaryLight,
                     ),
                 textAlign: TextAlign.center,
               ),

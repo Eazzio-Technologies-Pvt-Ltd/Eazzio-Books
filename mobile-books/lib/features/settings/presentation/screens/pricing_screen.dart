@@ -104,15 +104,16 @@ class PricingScreen extends ConsumerStatefulWidget {
 }
 
 class _PricingScreenState extends ConsumerState<PricingScreen> {
-  final PageController _pageController = PageController(viewportFraction: 0.85);
-  int _currentPage = 1; // Default to Standard Premium
+  late final PageController _pageController;
+  int _currentPage = 2; // Default to Professional plan (index 2)
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pageController.jumpToPage(_currentPage);
-    });
+    _pageController = PageController(
+      viewportFraction: 0.85,
+      initialPage: _currentPage,
+    );
   }
 
   @override
@@ -208,7 +209,7 @@ class _PricingScreenState extends ConsumerState<PricingScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: plan.color,
+                                  color: const Color(0xFF3DDC97), // Mint green background
                                   borderRadius: const BorderRadius.only(
                                     bottomLeft: Radius.circular(12),
                                     bottomRight: Radius.circular(12),
@@ -217,7 +218,7 @@ class _PricingScreenState extends ConsumerState<PricingScreen> {
                                 child: Text(
                                   plan.badge!,
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: Colors.black, // Black text
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -285,35 +286,34 @@ class _PricingScreenState extends ConsumerState<PricingScreen> {
                               const Divider(),
                               const SizedBox(height: AppSpacing.s),
                               Expanded(
-                                child: ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: plan.features.length,
-                                  itemBuilder: (context, fIndex) {
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 2),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Icon(
-                                            Icons.check_circle_outline,
-                                            size: 14,
-                                            color: plan.color,
-                                          ),
-                                          const SizedBox(width: AppSpacing.xs),
-                                          Expanded(
-                                            child: Text(
-                                              plan.features[fIndex],
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: isDark ? Colors.grey[300] : AppColors.textPrimaryLight,
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: plan.features.map((feature) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 2),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(
+                                              Icons.check_circle_outline,
+                                              size: 14,
+                                              color: plan.color,
+                                            ),
+                                            const SizedBox(width: AppSpacing.xs),
+                                            Expanded(
+                                              child: Text(
+                                                feature,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: isDark ? Colors.grey[300] : AppColors.textPrimaryLight,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.m),

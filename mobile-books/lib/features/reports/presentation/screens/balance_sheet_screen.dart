@@ -5,6 +5,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+import 'package:mobile_books/features/reports/data/models/balance_sheet.dart';
 
 import 'package:mobile_books/core/network/network_client.dart';
 
@@ -84,8 +85,8 @@ class BalanceSheetScreen extends ConsumerWidget {
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ReportNavBar(currentRoute: '/reports/balance-sheet'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -150,64 +151,69 @@ class BalanceSheetScreen extends ConsumerWidget {
                     ),
                   );
                 }
-                return ListView(
-                  padding: const EdgeInsets.all(AppSpacing.m),
-                  children: [
-                    // Assets
-                    _buildSectionHeader('Assets', AppColors.success),
-                    if (report.assets.accounts.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text('No assets recorded.', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
-                      )
-                    else
-                      ...report.assets.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
-                    _buildTotalRow('Total Assets', report.assets.total),
-                    const SizedBox(height: AppSpacing.l),
+                Widget buildAssets() {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildSectionHeader('Assets', Colors.blue.shade700),
+                      if (report.assets.accounts.isEmpty)
+                        _buildEmptyRow('No assets recorded.')
+                      else
+                        ...report.assets.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
+                      _buildTotalRow('Total Assets', report.assets.total),
+                    ],
+                  );
+                }
 
-                    // Liabilities
-                    _buildSectionHeader('Liabilities', AppColors.danger),
-                    if (report.liabilities.accounts.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text('No liabilities recorded.', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
-                      )
-                    else
-                      ...report.liabilities.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
-                    _buildTotalRow('Total Liabilities', report.liabilities.total),
-                    const SizedBox(height: AppSpacing.l),
-
-                    // Equities
-                    _buildSectionHeader('Equity', AppColors.primaryBlue),
-                    if (report.equity.accounts.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text('No equity recorded.', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
-                      )
-                    else
-                      ...report.equity.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
-                    _buildTotalRow('Total Equity', report.equity.total),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Total Liabilities and Equity Double-Check Banner
-                    Container(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.05),
-                      padding: const EdgeInsets.all(AppSpacing.m),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Total Liabilities and Equity',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          Text(
-                            _formatCurrency(report.liabilities.total + report.equity.total),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ],
+                Widget buildLiabilitiesAndEquity() {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildSectionHeader('Liabilities', Colors.red.shade700),
+                      if (report.liabilities.accounts.isEmpty)
+                        _buildEmptyRow('No liabilities recorded.')
+                      else
+                        ...report.liabilities.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
+                      _buildTotalRow('Total Liabilities', report.liabilities.total),
+                      const SizedBox(height: AppSpacing.l),
+                      
+                      _buildSectionHeader('Equity', Colors.teal.shade700),
+                      if (report.equity.accounts.isEmpty)
+                        _buildEmptyRow('No equity recorded.')
+                      else
+                        ...report.equity.accounts.map((acc) => _buildAccountRow(acc.accountName, acc.balance)),
+                      _buildTotalRow('Total Equity', report.equity.total),
+                      const SizedBox(height: AppSpacing.m),
+                      
+                      _buildGrandTotalContainer(
+                        'Total Liabilities & Equity',
+                        report.liabilities.total + report.equity.total,
                       ),
-                    ),
-                  ],
+                    ],
+                  );
+                }
+
+                final isWide = MediaQuery.of(context).size.width > 600;
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.m),
+                  child: isWide
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: buildAssets()),
+                            const SizedBox(width: AppSpacing.l),
+                            Expanded(child: buildLiabilitiesAndEquity()),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            buildAssets(),
+                            const SizedBox(height: AppSpacing.xl),
+                            buildLiabilitiesAndEquity(),
+                          ],
+                        ),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -266,6 +272,52 @@ class BalanceSheetScreen extends ConsumerWidget {
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           Text(_formatCurrency(total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyRow(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: AppSpacing.m),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+          const Text(
+            '0.00',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrandTotalContainer(String label, double total) {
+    return Container(
+      color: AppColors.primaryBlue.withValues(alpha: 0.05),
+      padding: const EdgeInsets.all(AppSpacing.m),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          Text(
+            _formatCurrency(total),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
         ],
       ),
     );

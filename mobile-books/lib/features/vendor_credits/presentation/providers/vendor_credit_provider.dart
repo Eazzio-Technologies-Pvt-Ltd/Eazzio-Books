@@ -31,6 +31,11 @@ class VendorCreditsNotifier extends AsyncNotifier<List<VendorCredit>> {
   Future<VendorCredit> createVendorCredit(VendorCredit vc, List<VendorCreditItem> items) async {
     final service = ref.read(vendorCreditServiceProvider);
     final result = await service.createVendorCredit(vc, items);
+    // Optimistically insert the returned vendor credit (with computed total)
+    // into the current list before we invalidate and re-fetch.
+    // This prevents a flash of ₹0.00 while the list re-loads from backend.
+    final previous = state.value ?? [];
+    state = AsyncData([result, ...previous]);
     ref.invalidateSelf();
     return result;
   }

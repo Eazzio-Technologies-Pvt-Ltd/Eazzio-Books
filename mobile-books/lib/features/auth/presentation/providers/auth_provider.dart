@@ -70,6 +70,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String password,
     required String companyName,
     required String fullName,
+    String planId = 'free',
   }) async {
     state = const AuthLoading();
     final authService = ref.read(authServiceProvider);
@@ -79,6 +80,7 @@ class AuthNotifier extends Notifier<AuthState> {
         password: password,
         companyName: companyName,
         fullName: fullName,
+        planId: planId,
       );
       state = AuthAuthenticated(user);
     } on AuthException catch (e) {

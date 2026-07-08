@@ -5,6 +5,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+import 'package:mobile_books/features/reports/data/models/cash_flow.dart';
 
 import 'package:mobile_books/core/network/network_client.dart';
 
@@ -87,8 +88,8 @@ class CashFlowScreen extends ConsumerWidget {
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ReportNavBar(currentRoute: '/reports/cash-flow'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -137,47 +138,15 @@ class CashFlowScreen extends ConsumerWidget {
           Expanded(
             child: reportState.when(
               data: (report) {
-                if (report.operatingActivities.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(AppSpacing.xl),
-                      child: Text(
-                        'No records',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.textSecondaryLight,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  );
-                }
                 final flowColor = report.netCashFlow >= 0 ? AppColors.success : AppColors.danger;
 
                 return ListView(
                   padding: const EdgeInsets.all(AppSpacing.m),
                   children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: AppColors.borderLight, width: 2)),
-                      ),
-                      padding: const EdgeInsets.only(bottom: AppSpacing.s),
-                      margin: const EdgeInsets.only(bottom: AppSpacing.s),
-                      child: const Text(
-                        'Operating Activities',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryBlue),
-                      ),
-                    ),
+                    // Operating Activities
+                    _buildSectionHeader('Cash Flow from Operating Activities'),
                     if (report.operatingActivities.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: AppSpacing.l),
-                        child: Center(
-                          child: Text(
-                            'No transaction flows found.',
-                            style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
-                          ),
-                        ),
-                      )
+                      _buildEmptyRow('No operating activities recorded.')
                     else
                       ...report.operatingActivities.map((activity) {
                         final isPositive = activity.amount >= 0;
@@ -204,6 +173,16 @@ class CashFlowScreen extends ConsumerWidget {
                           ),
                         );
                       }),
+                    const SizedBox(height: AppSpacing.l),
+
+                    // Investing Activities
+                    _buildSectionHeader('Cash Flow from Investing Activities'),
+                    _buildEmptyRow('No investing activities recorded.'),
+                    const SizedBox(height: AppSpacing.l),
+
+                    // Financing Activities
+                    _buildSectionHeader('Cash Flow from Financing Activities'),
+                    _buildEmptyRow('No financing activities recorded.'),
                     const SizedBox(height: AppSpacing.xl),
 
                     // Net Cash Flow summary banner
@@ -248,6 +227,50 @@ class CashFlowScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.borderLight, width: 2)),
+      ),
+      padding: const EdgeInsets.only(bottom: AppSpacing.s),
+      margin: const EdgeInsets.only(bottom: AppSpacing.s),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: AppColors.primaryBlue,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyRow(String message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: AppSpacing.m),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+          const Text(
+            '0.00',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondaryLight,
             ),
           ),
         ],

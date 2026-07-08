@@ -80,6 +80,7 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: ref.watch(documentCategoryFilterProvider),
                         decoration: const InputDecoration(
                           labelText: 'Category',
@@ -105,6 +106,7 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
                     const SizedBox(width: AppSpacing.m),
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: ref.watch(documentModuleFilterProvider),
                         decoration: const InputDecoration(
                           labelText: 'Module',

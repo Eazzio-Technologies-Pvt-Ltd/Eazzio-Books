@@ -26,6 +26,8 @@ class DashboardSummary {
   }
 }
 
+double _d(dynamic v) => v != null ? double.tryParse(v.toString()) ?? 0.0 : 0.0;
+
 class TopSummary {
   final double totalReceivables;
   final double totalPayables;
@@ -45,12 +47,12 @@ class TopSummary {
 
   factory TopSummary.fromJson(Map<String, dynamic> json) {
     return TopSummary(
-      totalReceivables: (json['total_receivables'] as num?)?.toDouble() ?? 0.0,
-      totalPayables: (json['total_payables'] as num?)?.toDouble() ?? 0.0,
-      totalIncome: (json['total_income'] as num?)?.toDouble() ?? 0.0,
-      totalExpenses: (json['total_expenses'] as num?)?.toDouble() ?? 0.0,
-      netProfit: (json['net_profit'] as num?)?.toDouble() ?? 0.0,
-      cashBankBalance: (json['cash_bank_balance'] as num?)?.toDouble() ?? 0.0,
+      totalReceivables: _d(json['total_receivables']),
+      totalPayables: _d(json['total_payables']),
+      totalIncome: _d(json['total_income']),
+      totalExpenses: _d(json['total_expenses']),
+      netProfit: _d(json['net_profit']),
+      cashBankBalance: _d(json['cash_bank_balance']),
     );
   }
 }
@@ -87,14 +89,14 @@ class SelectedMonthSummary {
       month: json['month'] as int? ?? 1,
       year: json['year'] as int? ?? 2026,
       label: json['label'] as String? ?? '',
-      incomeReceived: (json['income_received'] as num?)?.toDouble() ?? 0.0,
-      expenses: (json['expenses'] as num?)?.toDouble() ?? 0.0,
-      staffSalary: (json['staff_salary'] as num?)?.toDouble() ?? 0.0,
-      writeoff: (json['writeoff'] as num?)?.toDouble() ?? 0.0,
-      projectedPayments: (json['projected_payments'] as num?)?.toDouble() ?? 0.0,
-      expectedPayables: (json['expected_payables'] as num?)?.toDouble() ?? 0.0,
-      profit: (json['profit'] as num?)?.toDouble() ?? 0.0,
-      netCashPosition: (json['net_cash_position'] as num?)?.toDouble() ?? 0.0,
+      incomeReceived: _d(json['income_received']),
+      expenses: _d(json['expenses']),
+      staffSalary: _d(json['staff_salary']),
+      writeoff: _d(json['writeoff']),
+      projectedPayments: _d(json['projected_payments']),
+      expectedPayables: _d(json['expected_payables']),
+      profit: _d(json['profit']),
+      netCashPosition: _d(json['net_cash_position']),
     );
   }
 }
@@ -129,13 +131,13 @@ class NextMonthSummary {
       month: json['month'] as int? ?? 1,
       year: json['year'] as int? ?? 2026,
       label: json['label'] as String? ?? '',
-      projectedIncome: (json['projected_income'] as num?)?.toDouble() ?? 0.0,
-      projectedPayments: (json['projected_payments'] as num?)?.toDouble() ?? 0.0,
-      projectedExpenses: (json['projected_expenses'] as num?)?.toDouble() ?? 0.0,
-      expectedPayables: (json['expected_payables'] as num?)?.toDouble() ?? 0.0,
-      staffSalary: (json['staff_salary'] as num?)?.toDouble() ?? 0.0,
-      writeoff: (json['writeoff'] as num?)?.toDouble() ?? 0.0,
-      projectedProfit: (json['projected_profit'] as num?)?.toDouble() ?? 0.0,
+      projectedIncome: _d(json['projected_income']),
+      projectedPayments: _d(json['projected_payments']),
+      projectedExpenses: _d(json['projected_expenses']),
+      expectedPayables: _d(json['expected_payables']),
+      staffSalary: _d(json['staff_salary']),
+      writeoff: _d(json['writeoff']),
+      projectedProfit: _d(json['projected_profit']),
     );
   }
 }
@@ -205,8 +207,8 @@ class CashFlowPoint {
   factory CashFlowPoint.fromJson(Map<String, dynamic> json) {
     return CashFlowPoint(
       name: json['name'] as String? ?? '',
-      income: (json['income'] as num?)?.toDouble() ?? 0.0,
-      expense: (json['expense'] as num?)?.toDouble() ?? 0.0,
+      income: _d(json['income']),
+      expense: _d(json['expense']),
     );
   }
 }
@@ -223,7 +225,7 @@ class ExpenseCategoryPoint {
   factory ExpenseCategoryPoint.fromJson(Map<String, dynamic> json) {
     return ExpenseCategoryPoint(
       name: json['name'] as String? ?? '',
-      value: (json['value'] as num?)?.toDouble() ?? 0.0,
+      value: _d(json['value']),
     );
   }
 }

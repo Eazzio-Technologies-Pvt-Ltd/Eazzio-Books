@@ -52,6 +52,7 @@ class RecurringInvoice {
   });
 
   factory RecurringInvoice.fromJson(Map<String, dynamic> json) {
+    double _d(dynamic v) => v != null ? double.tryParse(v.toString()) ?? 0.0 : 0.0;
     return RecurringInvoice(
       id: json['id'] as int,
       userId: json['user_id'] as int? ?? json['userId'] as int? ?? 0,
@@ -66,10 +67,10 @@ class RecurringInvoice {
       nextInvoiceDate: json['next_invoice_date'] != null ? DateTime.tryParse(json['next_invoice_date'] as String) : null,
       lastInvoiceDate: json['last_invoice_date'] != null ? DateTime.tryParse(json['last_invoice_date'] as String) : null,
       status: json['status'] as String? ?? 'Active',
-      subtotal: (json['subtotal'] as num? ?? 0.0).toDouble(),
-      discountTotal: (json['discount_total'] as num? ?? 0.0).toDouble(),
-      taxTotal: (json['tax_total'] as num? ?? 0.0).toDouble(),
-      total: (json['total'] as num? ?? 0.0).toDouble(),
+      subtotal: _d(json['subtotal']),
+      discountTotal: _d(json['discount_total']),
+      taxTotal: _d(json['tax_total']),
+      total: _d(json['total']),
       notes: json['notes'] as String?,
       termsConditions: json['terms_conditions'] as String? ?? json['termsConditions'] as String?,
       autoSendEmail: json['auto_send_email'] as bool? ?? false,
@@ -87,28 +88,27 @@ class RecurringInvoice {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'user_id': userId,
-      'recurring_invoice_number': recurringInvoiceNumber,
+      if (id != 0) 'id': id,
+      if (userId != 0) 'user_id': userId,
+      if (recurringInvoiceNumber.isNotEmpty) 'recurring_invoice_number': recurringInvoiceNumber,
       'profile_name': profileName,
       'customer_id': customerId,
       'frequency': frequency,
       'start_date': startDate.toIso8601String().split('T')[0],
-      'end_date': endDate?.toIso8601String().split('T')[0],
-      'next_invoice_date': nextInvoiceDate?.toIso8601String().split('T')[0],
-      'last_invoice_date': lastInvoiceDate?.toIso8601String().split('T')[0],
+      if (endDate != null) 'end_date': endDate!.toIso8601String().split('T')[0],
+      if (nextInvoiceDate != null) 'next_invoice_date': nextInvoiceDate!.toIso8601String().split('T')[0],
+      if (lastInvoiceDate != null) 'last_invoice_date': lastInvoiceDate!.toIso8601String().split('T')[0],
       'status': status,
       'subtotal': subtotal,
       'discount_total': discountTotal,
       'tax_total': taxTotal,
       'total': total,
-      'notes': notes,
-      'terms_conditions': termsConditions,
+      if (notes != null) 'notes': notes,
+      if (termsConditions != null) 'terms_conditions': termsConditions,
       'auto_send_email': autoSendEmail,
-      'created_by': createdBy,
-      'created_at': createdAt?.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      if (createdBy != null) 'created_by': createdBy,
       if (items != null) 'items': items!.map((i) => i.toJson()).toList(),
     };
   }
+
 }

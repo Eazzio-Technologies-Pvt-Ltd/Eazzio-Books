@@ -16,7 +16,13 @@ class FakeAuthService implements AuthService {
   }
 
   @override
-  Future<User> register({required String email, required String password, required String companyName, required String fullName}) async {
+  Future<User> register({
+    required String email,
+    required String password,
+    required String companyName,
+    required String fullName,
+    String planId = 'free',
+  }) async {
     if (shouldFail) throw AuthException('Registration failed');
     return mockUser!;
   }

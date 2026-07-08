@@ -137,7 +137,7 @@ class _FeatureShowcaseScreenState extends ConsumerState<FeatureShowcaseScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlueDark,
+                        backgroundColor: AppColors.primaryBlue,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(

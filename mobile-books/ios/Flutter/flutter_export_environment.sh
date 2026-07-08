@@ -1,8 +1,8 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
 export "FLUTTER_ROOT=/home/rahul-kumar/flutter"
-export "FLUTTER_APPLICATION_PATH=/home/rahul-kumar/Desktop/Eazzio-Books/mobile-books"
-export "FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=/home/rahul-kumar/Desktop/Eazzio-Books/mobile-books/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework"
+export "FLUTTER_APPLICATION_PATH=/home/rahul-kumar/Desktop/Eazzio-Books/mobile-books/mobile-books"
+export "FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=/home/rahul-kumar/Desktop/Eazzio-Books/mobile-books/mobile-books/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib/main.dart"
 export "FLUTTER_BUILD_DIR=build"

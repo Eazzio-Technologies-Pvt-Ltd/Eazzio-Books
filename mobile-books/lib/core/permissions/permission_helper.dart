@@ -196,7 +196,7 @@ class PermissionHelper {
 
     // Banking module
     if (cleanPath.startsWith('/banking') || cleanPath == '/reconciliation' || cleanPath == '/bank-rules') {
-      if (cleanPath == '/banking') {
+      if (cleanPath == '/banking' || (cleanPath.startsWith('/banking/') && !cleanPath.endsWith('/reconcile'))) {
         return canAccess(role, banking, view);
       }
       return canAccess(role, banking, manage);

@@ -1,3 +1,10 @@
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class PnlAccount {
   final String accountCode;
   final String accountName;
@@ -20,9 +27,9 @@ class PnlAccount {
       accountCode: json['account_code'] as String? ?? '',
       accountName: json['account_name'] as String? ?? '',
       accountType: json['account_type'] as String? ?? '',
-      totalDebit: (json['total_debit'] as num?)?.toDouble() ?? 0.0,
-      totalCredit: (json['total_credit'] as num?)?.toDouble() ?? 0.0,
-      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      totalDebit: _parseDouble(json['total_debit']),
+      totalCredit: _parseDouble(json['total_credit']),
+      balance: _parseDouble(json['balance']),
     );
   }
 }
@@ -40,7 +47,7 @@ class PnlSection {
     final list = json['accounts'] as List? ?? [];
     return PnlSection(
       accounts: list.map((e) => PnlAccount.fromJson(e as Map<String, dynamic>)).toList(),
-      total: (json['total'] as num?)?.toDouble() ?? 0.0,
+      total: _parseDouble(json['total']),
     );
   }
 }
@@ -60,7 +67,7 @@ class ProfitAndLossReport {
     return ProfitAndLossReport(
       income: PnlSection.fromJson(json['income'] as Map<String, dynamic>? ?? {}),
       expense: PnlSection.fromJson(json['expense'] as Map<String, dynamic>? ?? {}),
-      netProfit: (json['net_profit'] as num?)?.toDouble() ?? 0.0,
+      netProfit: _parseDouble(json['net_profit']),
     );
   }
 }

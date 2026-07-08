@@ -1,3 +1,10 @@
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class CashFlowActivity {
   final String description;
   final double amount;
@@ -10,7 +17,7 @@ class CashFlowActivity {
   factory CashFlowActivity.fromJson(Map<String, dynamic> json) {
     return CashFlowActivity(
       description: json['description'] as String? ?? 'Uncategorized Transaction',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      amount: _parseDouble(json['amount']),
     );
   }
 }
@@ -28,7 +35,7 @@ class CashFlowReport {
     final list = json['operating_activities'] as List? ?? [];
     return CashFlowReport(
       operatingActivities: list.map((e) => CashFlowActivity.fromJson(e as Map<String, dynamic>)).toList(),
-      netCashFlow: (json['net_cash_flow'] as num?)?.toDouble() ?? 0.0,
+      netCashFlow: _parseDouble(json['net_cash_flow']),
     );
   }
 }

@@ -29,6 +29,13 @@ class InventoryMovement {
     this.notes,
   });
 
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
   factory InventoryMovement.fromJson(Map<String, dynamic> json) {
     return InventoryMovement(
       id: json['id'] as int,
@@ -36,19 +43,15 @@ class InventoryMovement {
       itemName: json['item_name'] as String? ?? json['itemName'] as String?,
       userId: json['user_id'] as int? ?? json['userId'] as int? ?? 0,
       transactionType: json['transaction_type'] as String? ?? json['transactionType'] as String? ?? json['movement_type'] as String? ?? 'adjustment',
-      quantityChange: (json['quantity_change'] as num? ?? json['quantityChange'] as num? ?? json['quantity'] as num? ?? 0.0).toDouble(),
+      quantityChange: _parseDouble(json['quantity_change'] ?? json['quantityChange'] ?? json['quantity']) ?? 0.0,
       referenceNumber: json['reference_number'] as String? ?? json['referenceNumber'] as String?,
       entryDate: json['entry_date'] != null 
           ? DateTime.tryParse(json['entry_date'] as String) 
           : (json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null),
       description: json['description'] as String? ?? json['reason'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
-      previousStock: json['previous_stock'] != null 
-          ? (json['previous_stock'] as num).toDouble() 
-          : (json['previousStock'] != null ? (json['previousStock'] as num).toDouble() : null),
-      newStock: json['new_stock'] != null 
-          ? (json['new_stock'] as num).toDouble() 
-          : (json['newStock'] != null ? (json['newStock'] as num).toDouble() : null),
+      previousStock: _parseDouble(json['previous_stock'] ?? json['previousStock']),
+      newStock: _parseDouble(json['new_stock'] ?? json['newStock']),
       notes: json['notes'] as String?,
     );
   }

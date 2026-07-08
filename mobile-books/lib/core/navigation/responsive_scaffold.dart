@@ -209,7 +209,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                                     if (customers.isNotEmpty) ...[
                                       const Padding(
                                         padding: EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Text('CUSTOMERS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+                                        child: Text('CUSTOMERS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
                                       ),
                                       ...customers.map((c) => ListTile(
                                         title: Text(c['display_name'] ?? c['company_name'] ?? ''),
@@ -224,7 +224,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                                     if (items.isNotEmpty) ...[
                                       const Padding(
                                         padding: EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Text('ITEMS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+                                        child: Text('ITEMS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
                                       ),
                                       ...items.map((it) => ListTile(
                                         title: Text(it['name'] ?? ''),
@@ -239,7 +239,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                                     if (invoices.isNotEmpty) ...[
                                       const Padding(
                                         padding: EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Text('INVOICES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+                                        child: Text('INVOICES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
                                       ),
                                       ...invoices.map((inv) => ListTile(
                                         title: Text(inv['invoice_number'] ?? ''),
@@ -254,7 +254,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                                     if (quotes.isNotEmpty) ...[
                                       const Padding(
                                         padding: EdgeInsets.symmetric(vertical: 4.0),
-                                        child: Text('QUOTES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+                                        child: Text('QUOTES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
                                       ),
                                       ...quotes.map((q) => ListTile(
                                         title: Text(q['quote_number'] ?? ''),
@@ -418,7 +418,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: Color(0xFF0F172A),
               ),
             ),
           ),
@@ -669,7 +669,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                                 ),
                                 child: Text(
                                   'Role: $userRole',
-                                  style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.grey.shade700),
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF0F172A)),
                                 ),
                               ),
                             ],
@@ -740,51 +740,65 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
     if (widget.appBar != null) {
       if (widget.appBar is AppBar) {
         final originalAppBar = widget.appBar as AppBar;
+        final canPop = context.canPop();
         
         final mergedActions = <Widget>[
-          if (isMobile && context.canPop())
+          if (isMobile) ...[
+            if (canPop)
+              ...?originalAppBar.actions
+            else ...[
+              IconButton(
+                key: const Key('globalSearchButton'),
+                icon: const Icon(Icons.search),
+                onPressed: () => _showSearchDialog(context),
+              ),
+              if (originalAppBar.actions != null && originalAppBar.actions!.isNotEmpty)
+                ...?originalAppBar.actions,
+              Tooltip(
+                message: 'Upgrade',
+                child: IconButton(
+                  key: const Key('appbarUpgradeButton'),
+                  icon: const Icon(Icons.workspace_premium, color: Colors.amber, size: 20),
+                  onPressed: () => context.push('/pricing'),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                ),
+              ),
+              const SizedBox(width: 2),
+              _buildOrgSwitcherButton(context, isMobile),
+              _buildProfileAvatarButton(context),
+            ]
+          ] else ...[
+            ...?originalAppBar.actions,
             IconButton(
-              key: const Key('backButton'),
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(),
+              key: const Key('globalSearchButton'),
+              icon: const Icon(Icons.search),
+              onPressed: () => _showSearchDialog(context),
             ),
-          
-          if (!isMobile)
-            ...?originalAppBar.actions,
-          
-          IconButton(
-            key: const Key('globalSearchButton'),
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context),
-          ),
-          
-          if (isMobile && originalAppBar.actions != null && originalAppBar.actions!.isNotEmpty)
-            ...?originalAppBar.actions,
-          
-          // Upgrade Button
-          TextButton.icon(
-            key: const Key('appbarUpgradeButton'),
-            icon: const Icon(Icons.workspace_premium, color: Colors.amber, size: 16),
-            label: const Text(
-              'Upgrade',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+            TextButton.icon(
+              key: const Key('appbarUpgradeButton'),
+              icon: const Icon(Icons.workspace_premium, color: Colors.amber, size: 16),
+              label: const Text(
+                'Upgrade',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
-            ),
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
+              onPressed: () => context.push('/pricing'),
             ),
-            onPressed: () => context.push('/pricing'),
-          ),
-          const SizedBox(width: 4),
-          _buildOrgSwitcherButton(context, isMobile),
-          _buildProfileAvatarButton(context),
+            const SizedBox(width: 2),
+            _buildOrgSwitcherButton(context, isMobile),
+            _buildProfileAvatarButton(context),
+          ]
         ];
 
         final titleWidget = FittedBox(
@@ -795,10 +809,18 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
 
         return AppBar(
           key: originalAppBar.key,
-          leading: isMobile ? null : originalAppBar.leading,
+          leading: isMobile 
+              ? (canPop 
+                  ? IconButton(
+                      key: const Key('backButton'),
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => context.pop(),
+                    )
+                  : originalAppBar.leading)
+              : originalAppBar.leading,
           title: titleWidget,
           actions: mergedActions,
-          automaticallyImplyLeading: isMobile ? false : originalAppBar.automaticallyImplyLeading,
+          automaticallyImplyLeading: isMobile ? !canPop : originalAppBar.automaticallyImplyLeading,
           flexibleSpace: originalAppBar.flexibleSpace,
           bottom: originalAppBar.bottom,
           elevation: originalAppBar.elevation,
@@ -825,27 +847,32 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
         return widget.appBar;
       }
     } else {
+      final canPop = context.canPop();
       return AppBar(
         title: const Text('Eazzio Books'),
-        leading: isMobile ? IconButton(
-          key: const Key('drawerOpenButton'),
-          icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ) : null,
+        leading: isMobile 
+            ? (canPop 
+                ? IconButton(
+                    key: const Key('backButton'),
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => context.pop(),
+                  )
+                : IconButton(
+                    key: const Key('drawerOpenButton'),
+                    icon: const Icon(Icons.menu),
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  ))
+            : null,
         actions: [
-          if (isMobile && context.canPop())
+          if (!canPop || !isMobile) ...[
             IconButton(
-              key: const Key('backButton'),
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(),
+              key: const Key('globalSearchButton'),
+              icon: const Icon(Icons.search),
+              onPressed: () => _showSearchDialog(context),
             ),
-          IconButton(
-            key: const Key('globalSearchButton'),
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context),
-          ),
-          _buildOrgSwitcherButton(context, isMobile),
-          _buildProfileAvatarButton(context),
+            _buildOrgSwitcherButton(context, isMobile),
+            _buildProfileAvatarButton(context),
+          ]
         ],
       );
     }
@@ -917,6 +944,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: currentBottomNavIndex,
                 type: BottomNavigationBarType.fixed,
+                backgroundColor: Colors.white,
                 selectedItemColor: theme.colorScheme.primary,
                 unselectedItemColor: theme.colorScheme.secondary,
                 onTap: (index) {
@@ -1398,13 +1426,13 @@ class AppNavigationDrawer extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                 Consumer(
+                Consumer(
                   builder: (context, ref, child) {
                     if (Platform.environment.containsKey('FLUTTER_TEST')) {
                       return const Text(
                         'My Business (Test)',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: Color(0xFF0F172A),
                           fontSize: 14,
                         ),
                       );
@@ -1417,7 +1445,7 @@ class AppNavigationDrawer extends ConsumerWidget {
                     return Text(
                       orgName,
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: Color(0xFF0F172A),
                         fontSize: 14,
                       ),
                       maxLines: 1,

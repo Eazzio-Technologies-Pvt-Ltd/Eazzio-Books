@@ -81,19 +81,19 @@ class AppTextStyles {
   static TextStyle get bodyMedium => GoogleFonts.inter(
     fontSize: 14.0,
     fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
+    color: AppColors.textPrimary,
   );
   static TextStyle get bodySmall => GoogleFonts.inter(
     fontSize: 14.0,
     fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
+    color: AppColors.textPrimary,
   );
 
   // Caption: Size 12, Regular
   static TextStyle get caption => GoogleFonts.inter(
     fontSize: 12.0,
     fontWeight: FontWeight.w400,
-    color: AppColors.textHint,
+    color: AppColors.textPrimary,
   );
 
   // Tabular Numeric (using body size 14, Bold)

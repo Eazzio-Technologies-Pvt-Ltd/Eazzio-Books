@@ -8,6 +8,13 @@ int? _parseInt(dynamic value) {
   return null;
 }
 
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0.0;
+  return 0.0;
+}
+
 class AgingEntry {
   final int id;
   final String name;
@@ -33,12 +40,12 @@ class AgingEntry {
     return AgingEntry(
       id: _parseInt(json['customer_id']) ?? _parseInt(json['vendor_id']) ?? 0,
       name: json['customer_name'] as String? ?? json['vendor_name'] as String? ?? '',
-      current: (json['current'] as num?)?.toDouble() ?? 0.0,
-      days1To30: (json['days_1_30'] as num?)?.toDouble() ?? 0.0,
-      days31To60: (json['days_31_60'] as num?)?.toDouble() ?? 0.0,
-      days61To90: (json['days_61_90'] as num?)?.toDouble() ?? 0.0,
-      days90Plus: (json['days_90_plus'] as num?)?.toDouble() ?? 0.0,
-      totalDue: (json['total_due'] as num?)?.toDouble() ?? 0.0,
+      current: _parseDouble(json['current']),
+      days1To30: _parseDouble(json['days_1_30']),
+      days31To60: _parseDouble(json['days_31_60']),
+      days61To90: _parseDouble(json['days_61_90']),
+      days90Plus: _parseDouble(json['days_90_plus']),
+      totalDue: _parseDouble(json['total_due']),
     );
   }
 }

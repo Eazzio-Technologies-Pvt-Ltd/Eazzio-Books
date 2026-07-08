@@ -251,6 +251,7 @@ class _SearchableAutocompleteFieldState<T extends Object>
                         });
                         onSelected(option);
                         widget.onChanged(option);
+                        _focusNode.unfocus();
                         Future.delayed(const Duration(milliseconds: 150), () {
                           _isSelecting = false;
                         });

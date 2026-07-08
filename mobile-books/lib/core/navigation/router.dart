@@ -203,27 +203,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/inventory',
-        redirect: (context, state) {
-          if (state.matchedLocation == '/inventory') {
-            return '/inventory/movements';
-          }
-          return null;
-        },
-        routes: [
-          GoRoute(
-            path: 'stock',
-            builder: (context, state) => const StockAdjustmentFormScreen(),
-          ),
-          GoRoute(
-            path: 'movements',
-            builder: (context, state) => const InventoryMovementsScreen(),
-          ),
-          GoRoute(
-            path: 'low-stock',
-            builder: (context, state) => const LowStockAlertsScreen(),
-          ),
-        ],
+        path: '/inventory/stock',
+        builder: (context, state) => const StockAdjustmentFormScreen(),
+      ),
+      GoRoute(
+        path: '/inventory/movements',
+        builder: (context, state) => const InventoryMovementsScreen(),
+      ),
+      GoRoute(
+        path: '/inventory/low-stock',
+        builder: (context, state) => const LowStockAlertsScreen(),
       ),
       GoRoute(
         path: '/customers',
@@ -813,14 +802,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/more',
         builder: (context, state) => const MoreScreen(),
-      ),
-      GoRoute(
-        path: '/projected-payments',
-        builder: (context, state) => const ProjectedPaymentsScreen(),
-      ),
-      GoRoute(
-        path: '/projected-expenses',
-        builder: (context, state) => const ProjectedExpensesScreen(),
       ),
     ],
   );

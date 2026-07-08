@@ -263,32 +263,42 @@ class _SalesOrdersListScreenState extends ConsumerState<SalesOrdersListScreen> {
                             vertical: AppSpacing.xs,
                           ),
                           title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                order.salesOrderNumber,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: statusStyle.bg,
-                                  borderRadius: BorderRadius.circular(4),
+                              Expanded(
+                                child: Text(
+                                  order.salesOrderNumber,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(statusStyle.icon, size: 12, color: statusStyle.color),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      statusStyle.label,
-                                      style: TextStyle(
-                                        color: statusStyle.color,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: statusStyle.bg,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(statusStyle.icon, size: 12, color: statusStyle.color),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          statusStyle.label,
+                                          style: TextStyle(
+                                            color: statusStyle.color,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -296,12 +306,15 @@ class _SalesOrdersListScreenState extends ConsumerState<SalesOrdersListScreen> {
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  formattedDate,
-                                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                                Expanded(
+                                  child: Text(
+                                    formattedDate,
+                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 Text(
                                   formattedTotal,
                                   style: const TextStyle(

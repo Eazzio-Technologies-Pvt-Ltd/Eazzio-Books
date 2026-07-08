@@ -95,12 +95,13 @@ class _BulkUpdatesScreenState extends ConsumerState<BulkUpdatesScreen> with Sing
         options = ['sent', 'paid', 'void'];
       }
       return DropdownButtonFormField<String>(
+        isExpanded: true,
         initialValue: _selectedStatus,
         decoration: const InputDecoration(
           labelText: 'New Status *',
           border: OutlineInputBorder(),
         ),
-        items: options.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+        items: options.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
         onChanged: (val) {
           setState(() {
             _selectedStatus = val;
@@ -380,6 +381,7 @@ class _BulkUpdatesScreenState extends ConsumerState<BulkUpdatesScreen> with Sing
                     const Text('Select Target Module & Action', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: AppSpacing.m),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _selectedModule.isEmpty ? null : _selectedModule,
                       decoration: const InputDecoration(
                         labelText: 'Module *',
@@ -388,7 +390,7 @@ class _BulkUpdatesScreenState extends ConsumerState<BulkUpdatesScreen> with Sing
                       items: modulesList.map((m) {
                         return DropdownMenuItem<String>(
                           value: m['name'] as String,
-                          child: Text(m['name'] as String),
+                          child: Text(m['name'] as String, overflow: TextOverflow.ellipsis),
                         );
                       }).toList(),
                       onChanged: _onModuleChanged,
@@ -396,6 +398,7 @@ class _BulkUpdatesScreenState extends ConsumerState<BulkUpdatesScreen> with Sing
                     if (_selectedModule.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.m),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: _selectedAction.isEmpty ? null : _selectedAction,
                         decoration: const InputDecoration(
                           labelText: 'Action *',
@@ -404,7 +407,7 @@ class _BulkUpdatesScreenState extends ConsumerState<BulkUpdatesScreen> with Sing
                         items: actions.map((a) {
                           return DropdownMenuItem<String>(
                             value: a['value'] as String,
-                            child: Text(a['label'] as String),
+                            child: Text(a['label'] as String, overflow: TextOverflow.ellipsis),
                           );
                         }).toList(),
                         onChanged: _onActionChanged,

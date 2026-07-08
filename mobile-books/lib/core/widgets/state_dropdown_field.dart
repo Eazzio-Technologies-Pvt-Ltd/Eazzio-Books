@@ -66,6 +66,7 @@ class StateDropdownField extends StatelessWidget {
     }
 
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
@@ -74,7 +75,10 @@ class StateDropdownField extends StatelessWidget {
       items: indianStates.map((state) {
         return DropdownMenuItem<String>(
           value: state,
-          child: Text(state),
+          child: Text(
+            state,
+            overflow: TextOverflow.ellipsis,
+          ),
         );
       }).toList(),
       onChanged: onChanged,

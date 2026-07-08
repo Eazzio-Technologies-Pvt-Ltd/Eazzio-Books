@@ -74,6 +74,7 @@ class AuthService {
     required String password,
     required String companyName,
     required String fullName,
+    String planId = 'free',
   }) async {
     try {
       final response = await _networkClient.post(
@@ -83,6 +84,7 @@ class AuthService {
           'password': password,
           'companyName': companyName.trim(),
           'fullName': fullName.trim(),
+          'plan_id': planId,
         },
       );
 

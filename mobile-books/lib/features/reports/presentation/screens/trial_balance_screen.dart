@@ -87,8 +87,8 @@ class TrialBalanceScreen extends ConsumerWidget {
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ReportNavBar(currentRoute: '/reports/trial-balance'),
           // Filter card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -171,10 +171,23 @@ class TrialBalanceScreen extends ConsumerWidget {
             child: reportState.when(
               data: (report) {
                 if (report.accounts.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No entries found.',
-                      style: TextStyle(color: AppColors.textSecondaryLight),
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.all(AppSpacing.m),
+                    padding: const EdgeInsets.symmetric(vertical: 48.0, horizontal: AppSpacing.m),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'No data found for this period.',
+                        style: TextStyle(
+                          color: AppColors.textSecondaryLight,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   );
                 }

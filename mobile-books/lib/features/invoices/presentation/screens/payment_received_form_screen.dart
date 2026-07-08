@@ -47,6 +47,9 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
   Map<int, String> paymentDatesMap = {};
 
   bool _initialized = false;
+  // Tracks whether the selected customer has any open invoices.
+  // When false, an advance/excess payment is valid without allocating to any invoice.
+  bool _customerHasOpenInvoices = true;
 
   @override
   void dispose() {
@@ -147,11 +150,25 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     }
 
     final double amountUsed = paymentsMap.values.fold(0.0, (sum, v) => sum + v);
-    if (amountUsed <= 0) {
+
+    // Only require allocation if the customer actually has open invoices.
+    // If they have no open invoices, the whole amount becomes an advance payment
+    // (shown as "Amount in Excess") which is a valid, savable state.
+    if (_customerHasOpenInvoices && amountUsed <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please apply an amount to at least one invoice')),
       );
       return;
+    }
+    // Additionally, require an amount received when no invoices to allocate against.
+    if (!_customerHasOpenInvoices) {
+      final double totalReceived = double.tryParse(_amountReceivedController.text) ?? 0.0;
+      if (totalReceived <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter an Amount Received')),
+        );
+        return;
+      }
     }
 
     final double totalReceived = double.tryParse(_amountReceivedController.text) ?? 0.0;
@@ -179,9 +196,18 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
             'amount': amt,
             'payment_date': date,
             'payment_mode': _paymentMode,
+            'deposit_to': _depositToController.text,
             'reference': _refController.text.trim().isEmpty ? null : _refController.text.trim(),
             'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
             'status': status,
+            'splits': [
+              {
+                'amount': amt,
+                'payment_mode': _paymentMode,
+                'deposit_to': _depositToController.text,
+                'reference': _refController.text.trim().isEmpty ? null : _refController.text.trim(),
+              }
+            ]
           });
         }
       }
@@ -256,6 +282,17 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
 
     // Sort by date oldest first
     customerInvoices.sort((a, b) => a.invoiceDate.compareTo(b.invoiceDate));
+
+    // Synchronously track if the customer has open invoices (used in _save validation).
+    // We use a local comparison and only schedule setState if the value changed,
+    // avoiding rebuild loops from addPostFrameCallback.
+    final hasOpen = _selectedCustomerId != null && customerInvoices.isNotEmpty;
+    if (hasOpen != _customerHasOpenInvoices) {
+      // Defer the state update to avoid setState during build.
+      Future.microtask(() {
+        if (mounted) setState(() => _customerHasOpenInvoices = hasOpen);
+      });
+    }
 
     final double amountUsed = paymentsMap.values.fold(0.0, (sum, v) => sum + v);
     final double amountReceivedVal = double.tryParse(_amountReceivedController.text) ?? 0.0;
@@ -377,12 +414,35 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                   const SizedBox(height: AppSpacing.m),
 
                   // ─── Deposit To / Account ───
-                  TextFormField(
-                    controller: _depositToController,
-                    decoration: const InputDecoration(
-                      labelText: 'Account',
+                  if (_paymentMode == 'Cash')
+                    DropdownButtonFormField<String>(
+                      value: _depositToController.text == 'Petty Cash' || _depositToController.text == 'Undeposited Funds' ? _depositToController.text : 'Petty Cash',
+                      decoration: const InputDecoration(
+                        labelText: 'Deposit To *',
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Petty Cash', child: Text('Petty Cash')),
+                        DropdownMenuItem(value: 'Undeposited Funds', child: Text('Undeposited Funds')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _depositToController.text = val;
+                          });
+                        }
+                      },
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      value: 'Undeposited Funds',
+                      decoration: const InputDecoration(
+                        labelText: 'Deposit To *',
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Undeposited Funds', child: Text('Undeposited Funds')),
+                      ],
+                      onChanged: null,
                     ),
-                  ),
                   const SizedBox(height: AppSpacing.m),
 
                   // ─── Reference ───
@@ -464,82 +524,85 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                       ),
                     )
                   else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: customerInvoices.length,
-                      itemBuilder: (context, idx) {
-                        final inv = customerInvoices[idx];
-                        final invDateStr = DateFormat('dd/MM/yyyy').format(inv.invoiceDate);
-                        final dueDateStr = DateFormat('dd/MM/yyyy').format(inv.dueDate ?? inv.invoiceDate);
-                        final currentAllocated = paymentsMap[inv.id] ?? 0.0;
-                        final controller = TextEditingController(
-                          text: currentAllocated > 0 ? currentAllocated.toStringAsFixed(2) : '',
-                        );
+                    Column(
+                      children: [
+                        for (int idx = 0; idx < customerInvoices.length; idx++) ...[
+                          Builder(
+                            builder: (context) {
+                              final inv = customerInvoices[idx];
+                              final invDateStr = DateFormat('dd/MM/yyyy').format(inv.invoiceDate);
+                              final dueDateStr = DateFormat('dd/MM/yyyy').format(inv.dueDate ?? inv.invoiceDate);
+                              final currentAllocated = paymentsMap[inv.id] ?? 0.0;
+                              final controller = TextEditingController(
+                                text: currentAllocated > 0 ? currentAllocated.toStringAsFixed(2) : '',
+                              );
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.s),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      inv.invoiceNumber,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => _payInFull(inv),
-                                      child: const Text('Pay in Full'),
-                                    ),
-                                  ],
-                                ),
-                                Text('Date: $invDateStr | Due: $dueDateStr', style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
-                                const SizedBox(height: AppSpacing.xs),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('Due Amount: ₹${inv.balanceDue.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                    const SizedBox(width: AppSpacing.m),
-                                    Expanded(
-                                      child: InkWell(
-                                        onTap: () => _selectInvoicePaymentDate(context, inv.id),
-                                        child: InputDecorator(
-                                          decoration: const InputDecoration(
-                                            labelText: 'Payment Date',
-                                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 6.0),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(AppSpacing.s),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            inv.invoiceNumber,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
                                           ),
-                                          child: Text(
-                                            paymentDatesMap[inv.id] ?? DateFormat('yyyy-MM-dd').format(_paymentDate),
-                                            style: const TextStyle(fontSize: 12),
+                                          TextButton(
+                                            onPressed: () => _payInFull(inv),
+                                            child: const Text('Pay in Full'),
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(width: AppSpacing.s),
-                                    SizedBox(
-                                      width: 100,
-                                      child: TextFormField(
-                                        controller: controller,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        textAlign: TextAlign.right,
-                                        decoration: const InputDecoration(
-                                          hintText: '0.00',
-                                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        ),
-                                        onChanged: (val) => _onPaymentMapChanged(inv.id, val),
+                                      Text('Date: $invDateStr | Due: $dueDateStr', style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text('Due Amount: ₹${inv.balanceDue.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                          const SizedBox(width: AppSpacing.m),
+                                          Expanded(
+                                            child: InkWell(
+                                              onTap: () => _selectInvoicePaymentDate(context, inv.id),
+                                              child: InputDecorator(
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Payment Date',
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                ),
+                                                child: Text(
+                                                  paymentDatesMap[inv.id] ?? DateFormat('yyyy-MM-dd').format(_paymentDate),
+                                                  style: const TextStyle(fontSize: 12),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: AppSpacing.s),
+                                          SizedBox(
+                                            width: 100,
+                                            child: TextFormField(
+                                              controller: controller,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                              textAlign: TextAlign.right,
+                                              decoration: const InputDecoration(
+                                                hintText: '0.00',
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              ),
+                                              onChanged: (val) => _onPaymentMapChanged(inv.id, val),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
+                              );
+                            }
                           ),
-                        );
-                      },
+                        ]
+                      ],
                     ),
 
                   const Divider(height: 32),
