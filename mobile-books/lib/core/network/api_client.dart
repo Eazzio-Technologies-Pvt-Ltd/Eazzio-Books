@@ -6,7 +6,11 @@ import '../constants/api_constants.dart';
 import 'api_exception.dart';
 
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
-  return const FlutterSecureStorage();
+  return const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
 });
 
 final apiClientProvider = Provider<ApiClient>((ref) {

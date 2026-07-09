@@ -52,7 +52,11 @@ class AuthService {
           tokenCookie = cookies.first.toString();
         }
         if (tokenCookie != null) {
-          const storage = FlutterSecureStorage();
+          const storage = FlutterSecureStorage(
+            aOptions: AndroidOptions(
+              encryptedSharedPreferences: true,
+            ),
+          );
           await storage.write(key: 'session_cookie', value: tokenCookie);
         }
 
@@ -104,7 +108,11 @@ class AuthService {
           tokenCookie = cookies.first.toString();
         }
         if (tokenCookie != null) {
-          const storage = FlutterSecureStorage();
+          const storage = FlutterSecureStorage(
+            aOptions: AndroidOptions(
+              encryptedSharedPreferences: true,
+            ),
+          );
           await storage.write(key: 'session_cookie', value: tokenCookie);
         }
 
@@ -124,7 +132,11 @@ class AuthService {
   Future<User> getProfile() async {
     try {
       // Restore cookie from FlutterSecureStorage to CookieJar on startup
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(
+        aOptions: AndroidOptions(
+          encryptedSharedPreferences: true,
+        ),
+      );
       final savedCookie = await storage.read(key: 'session_cookie');
       if (savedCookie != null && savedCookie.isNotEmpty) {
         final uri = Uri.parse(_networkClient.dio.options.baseUrl);
@@ -194,7 +206,11 @@ class AuthService {
     } catch (e) {
       throw AuthException(e.toString());
     } finally {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(
+        aOptions: AndroidOptions(
+          encryptedSharedPreferences: true,
+        ),
+      );
       await storage.delete(key: 'session_cookie');
       await _cookieJar.deleteAll();
     }

@@ -179,6 +179,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DashboardScreen(),
       ),
       GoRoute(
+        path: '/',
+        redirect: (context, state) => '/dashboard',
+      ),
+      GoRoute(
+        path: '/projected-expenses',
+        builder: (context, state) => const ProjectedExpensesScreen(),
+      ),
+      GoRoute(
+        path: '/projected-payments',
+        builder: (context, state) => const ProjectedPaymentsScreen(),
+      ),
+      GoRoute(
         path: '/items',
         builder: (context, state) => const ItemsScreen(),
         routes: [
@@ -351,42 +363,35 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/reports',
-        redirect: (context, state) {
-          if (state.matchedLocation == '/reports') {
-            return '/reports/profit-loss';
-          }
-          return null;
-        },
-        routes: [
-          GoRoute(
-            path: 'trial-balance',
-            builder: (context, state) => const TrialBalanceScreen(),
-          ),
-          GoRoute(
-            path: 'profit-loss',
-            builder: (context, state) => const PnlScreen(),
-          ),
-          GoRoute(
-            path: 'balance-sheet',
-            builder: (context, state) => const BalanceSheetScreen(),
-          ),
-          GoRoute(
-            path: 'cash-flow',
-            builder: (context, state) => const CashFlowScreen(),
-          ),
-          GoRoute(
-            path: 'customer-aging',
-            builder: (context, state) => const CustomerAgingScreen(),
-          ),
-          GoRoute(
-            path: 'vendor-aging',
-            builder: (context, state) => const VendorAgingScreen(),
-          ),
-          GoRoute(
-            path: 'item-valuation',
-            builder: (context, state) => const ItemValuationReportScreen(),
-          ),
-        ],
+        redirect: (context, state) => '/reports/profit-loss',
+      ),
+      GoRoute(
+        path: '/reports/trial-balance',
+        builder: (context, state) => const TrialBalanceScreen(),
+      ),
+      GoRoute(
+        path: '/reports/profit-loss',
+        builder: (context, state) => const PnlScreen(),
+      ),
+      GoRoute(
+        path: '/reports/balance-sheet',
+        builder: (context, state) => const BalanceSheetScreen(),
+      ),
+      GoRoute(
+        path: '/reports/cash-flow',
+        builder: (context, state) => const CashFlowScreen(),
+      ),
+      GoRoute(
+        path: '/reports/customer-aging',
+        builder: (context, state) => const CustomerAgingScreen(),
+      ),
+      GoRoute(
+        path: '/reports/vendor-aging',
+        builder: (context, state) => const VendorAgingScreen(),
+      ),
+      GoRoute(
+        path: '/reports/item-valuation',
+        builder: (context, state) => const ItemValuationReportScreen(),
       ),
       GoRoute(
         path: '/payments-received',

@@ -109,8 +109,10 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
       // Suggest state from vendor's address if possible
       if (_vendorId != null) {
         final vendors = await ref.read(vendorsProvider.future);
-        final vendor = vendors.firstWhere((v) => v.id == _vendorId);
-        _vendorState = _suggestState(vendor.billingAddress) ?? 'Jharkhand';
+        final vendor = vendors.where((v) => v.id == _vendorId).firstOrNull;
+        if (vendor != null) {
+          _vendorState = _suggestState(vendor.billingAddress) ?? 'Jharkhand';
+        }
       }
 
       _lineItems.clear();
