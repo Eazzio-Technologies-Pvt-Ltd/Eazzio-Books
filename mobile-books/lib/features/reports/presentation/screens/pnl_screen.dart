@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
-import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+
 import 'package:mobile_books/features/reports/data/models/pnl_report.dart';
 
 import 'package:pdf/pdf.dart';
@@ -343,7 +343,6 @@ class PnlScreen extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ReportNavBar(currentRoute: '/reports/profit-loss'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),

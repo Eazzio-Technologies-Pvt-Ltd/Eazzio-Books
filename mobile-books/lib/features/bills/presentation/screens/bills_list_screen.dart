@@ -145,12 +145,6 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
       currentRoute: '/bills',
       appBar: AppBar(
         title: const Text('Bills'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: () => _showSortBottomSheet(context),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/bills/new'),
@@ -164,22 +158,33 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) => ref.read(billSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search bills...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(billSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) => ref.read(billSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search bills...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(billSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  onPressed: () => _showSortBottomSheet(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.xs),

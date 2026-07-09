@@ -178,12 +178,6 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('Expenses'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: () => _showSortBottomSheet(context),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/expenses/new'),
@@ -197,22 +191,33 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) => ref.read(expenseSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search expenses...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(expenseSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) => ref.read(expenseSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search expenses...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(expenseSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  onPressed: () => _showSortBottomSheet(context),
+                ),
+              ],
             ),
           ),
 
