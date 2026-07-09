@@ -104,7 +104,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size(88, 52),
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.primaryBlueDark,
           elevation: 0,
@@ -190,7 +190,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size(88, 52),
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: AppColors.primaryBlueDark,
           elevation: 0,
