@@ -158,12 +158,6 @@ class _SalesOrdersListScreenState extends ConsumerState<SalesOrdersListScreen> {
       currentRoute: '/sales-orders',
       appBar: AppBar(
         title: const Text('Sales Orders'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: () => _showSortBottomSheet(context),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/sales-orders/new'),
@@ -178,23 +172,34 @@ class _SalesOrdersListScreenState extends ConsumerState<SalesOrdersListScreen> {
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) =>
-                  ref.read(salesOrderSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search sales orders...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(salesOrderSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) =>
+                        ref.read(salesOrderSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search sales orders...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(salesOrderSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  onPressed: () => _showSortBottomSheet(context),
+                ),
+              ],
             ),
           ),
 
