@@ -73,6 +73,7 @@ class VendorCreditService {
       }).toList();
 
       final response = await _networkClient.post('/vendor-credits', data: body);
+      print("CREATE VENDOR CREDIT REQUEST BODY: $body");
       final data = response.data as Map<String, dynamic>;
       if (data['vendor_credit'] != null) {
         return VendorCredit.fromJson(data['vendor_credit'] as Map<String, dynamic>);

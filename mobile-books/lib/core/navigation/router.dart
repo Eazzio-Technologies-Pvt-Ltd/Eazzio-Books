@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/permissions/permission_helper.dart';
+import 'package:mobile_books/core/permissions/plan_permission_helper.dart';
+import 'package:mobile_books/features/settings/presentation/screens/feature_locked_screen.dart';
 import 'package:mobile_books/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:mobile_books/features/auth/presentation/screens/login_screen.dart';
 import 'package:mobile_books/features/auth/presentation/screens/register_screen.dart';
@@ -137,13 +139,32 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // If user is authenticated, redirect away from public auth forms to Dashboard
       if (authState is AuthAuthenticated) {
-        if (isPublicRoute) {
+        final isPricing = location == '/pricing';
+        final isLogout = location == '/logout';
+        final isSupport = location == '/support';
+        final isAllowedExpired = isPricing || isLogout || isSupport || isPublicRoute;
+
+        // Check if subscription has expired
+        final isExpired = authState.user.subscriptionStatus == 'expired';
+
+        if (isExpired && !isAllowedExpired) {
+          return '/pricing';
+        }
+
+        if (isPublicRoute && !isExpired) {
           return '/dashboard';
         }
         // Verify route permission
         final role = authState.user.role;
         if (!PermissionHelper.hasRoutePermission(role, location)) {
           return '/dashboard';
+        }
+
+        // Verify subscription plan limits
+        final planId = authState.user.planId;
+        if (!PlanPermissionHelper.hasAccess(planId, location)) {
+          final featureName = PlanPermissionHelper.getFeatureName(location);
+          return '/feature-locked?feature=${Uri.encodeComponent(featureName)}';
         }
         return null;
       }
@@ -154,6 +175,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/showcase',
         builder: (context, state) => const FeatureShowcaseScreen(),
+      ),
+      GoRoute(
+        path: '/feature-locked',
+        builder: (context, state) {
+          final feature = state.uri.queryParameters['feature'] ?? 'Premium Feature';
+          return FeatureLockedScreen(featureName: feature);
+        },
       ),
       GoRoute(
         path: '/login',

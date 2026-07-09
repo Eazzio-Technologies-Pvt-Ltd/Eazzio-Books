@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_books/features/auth/data/models/user.dart';
 import 'package:mobile_books/features/auth/data/services/auth_service.dart';
+import 'package:mobile_books/core/navigation/router.dart';
 
 sealed class AuthState {
   const AuthState();
@@ -31,15 +34,67 @@ class AuthNotifier extends Notifier<AuthState> {
     return const AuthInitial();
   }
 
+  SharedPreferences? _getPrefs() {
+    try {
+      return ref.read(sharedPreferencesProvider);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Verifies if a valid session exists on startup.
   Future<void> bootstrap() async {
     final authService = ref.read(authServiceProvider);
+    final prefs = _getPrefs();
+    
+    // Attempt to load from offline cache first (only until first backend response)
+    if (prefs != null) {
+      final cachedUserJson = prefs.getString('cached_user_json');
+      if (cachedUserJson != null) {
+        try {
+          final decoded = jsonDecode(cachedUserJson) as Map<String, dynamic>;
+          final cachedUser = User.fromJson(decoded);
+          state = AuthAuthenticated(cachedUser);
+        } catch (_) {
+          // Ignore cache corruption
+        }
+      }
+    }
+
     try {
       final user = await authService.getProfile();
+      await _cacheUser(user);
       state = AuthAuthenticated(user);
     } catch (_) {
-      state = const AuthUnauthenticated();
+      // If we failed to get the profile but we had a cached user, we keep it as fallback (until next request)
+      if (state is! AuthAuthenticated) {
+        state = const AuthUnauthenticated();
+      }
     }
+  }
+
+  /// Helper to cache user and subscription to SharedPreferences
+  Future<void> _cacheUser(User user) async {
+    final prefs = _getPrefs();
+    if (prefs == null) return;
+    await prefs.setString('cached_user_json', jsonEncode(user.toJson()));
+    await prefs.setString('cached_plan_id', user.planId);
+    await prefs.setString('cached_subscription_status', user.subscriptionStatus);
+    if (user.subscriptionExpiresAt != null) {
+      await prefs.setString('cached_subscription_expires_at', user.subscriptionExpiresAt!.toIso8601String());
+    } else {
+      await prefs.remove('cached_subscription_expires_at');
+    }
+  }
+
+  /// Helper to clear cached user
+  Future<void> _clearCache() async {
+    final prefs = _getPrefs();
+    if (prefs == null) return;
+    await prefs.remove('cached_user_json');
+    await prefs.remove('cached_plan_id');
+    await prefs.remove('cached_subscription_status');
+    await prefs.remove('cached_subscription_expires_at');
   }
 
   /// Logs in the user and updates the auth state.
@@ -56,6 +111,7 @@ class AuthNotifier extends Notifier<AuthState> {
         password: password,
         rememberMe: rememberMe,
       );
+      await _cacheUser(user);
       state = AuthAuthenticated(user);
     } on AuthException catch (e) {
       state = AuthUnauthenticated(errorMessage: e.message);
@@ -82,6 +138,7 @@ class AuthNotifier extends Notifier<AuthState> {
         fullName: fullName,
         planId: planId,
       );
+      await _cacheUser(user);
       state = AuthAuthenticated(user);
     } on AuthException catch (e) {
       state = AuthUnauthenticated(errorMessage: e.message);
@@ -96,11 +153,36 @@ class AuthNotifier extends Notifier<AuthState> {
     final authService = ref.read(authServiceProvider);
     try {
       await authService.logout();
+      await _clearCache();
       state = const AuthUnauthenticated();
     } on AuthException catch (e) {
       state = AuthUnauthenticated(errorMessage: e.message);
     } catch (e) {
       state = AuthUnauthenticated(errorMessage: e.toString());
+    }
+  }
+
+  /// Refreshes the user profile and subscription status.
+  Future<void> refreshProfile() async {
+    final authService = ref.read(authServiceProvider);
+    try {
+      final user = await authService.getProfile();
+      await _cacheUser(user);
+      state = AuthAuthenticated(user);
+    } catch (_) {
+      // Keep existing state on refresh failure
+    }
+  }
+
+  /// Marks subscription as expired (triggered by HTTP 402 handler)
+  Future<void> markSubscriptionExpired() async {
+    final currentState = state;
+    if (currentState is AuthAuthenticated) {
+      final updatedUser = currentState.user.copyWith(
+        subscriptionStatus: 'expired',
+      );
+      await _cacheUser(updatedUser);
+      state = AuthAuthenticated(updatedUser);
     }
   }
 
@@ -126,6 +208,7 @@ class AuthNotifier extends Notifier<AuthState> {
         organizationId: orgId,
         organizationName: orgName,
       );
+      _cacheUser(updatedUser);
       state = AuthAuthenticated(updatedUser);
     }
   }

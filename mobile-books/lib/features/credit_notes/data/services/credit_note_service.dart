@@ -65,6 +65,12 @@ class CreditNoteService {
     try {
       final body = cn.toJson();
       body.remove('id');
+      body.remove('user_id');
+      body.remove('created_at');
+      body.remove('updated_at');
+      body.remove('applied_amount');
+      body.remove('remaining_amount');
+      body.remove('adjustment');
       body['items'] = items.map((i) {
         final itemMap = i.toJson();
         itemMap.remove('id');
@@ -89,6 +95,21 @@ class CreditNoteService {
 
   Future<void> updateCreditNote(int id, Map<String, dynamic> updates) async {
     try {
+      updates.remove('id');
+      updates.remove('user_id');
+      updates.remove('created_at');
+      updates.remove('updated_at');
+      updates.remove('applied_amount');
+      updates.remove('remaining_amount');
+      updates.remove('adjustment');
+      if (updates['items'] != null) {
+        updates['items'] = (updates['items'] as List).map((i) {
+          final itemMap = Map<String, dynamic>.from(i as Map);
+          itemMap.remove('id');
+          itemMap.remove('credit_note_id');
+          return itemMap;
+        }).toList();
+      }
       await _networkClient.put('/credit-notes/$id', data: updates);
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to update credit note.';

@@ -218,6 +218,7 @@ class _VendorCreditFormScreenState extends ConsumerState<VendorCreditFormScreen>
       total: calc.totalAmount,
       appliedAmount: 0.0,
       remainingAmount: calc.totalAmount,
+      items: vcItems,
     );
 
     try {

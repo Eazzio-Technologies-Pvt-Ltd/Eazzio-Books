@@ -4,6 +4,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 
 final cookieJarProvider = Provider<CookieJar>((ref) {
   return CookieJar();
@@ -36,6 +37,16 @@ final dioProvider = Provider<Dio>((ref) {
 
   final cookieJar = ref.watch(cookieJarProvider);
   dio.interceptors.add(CookieManager(cookieJar));
+  
+  // Centralized HTTP 402 handler
+  dio.interceptors.add(InterceptorsWrapper(
+    onError: (DioException error, handler) {
+      if (error.response?.statusCode == 402) {
+        ref.read(authNotifierProvider.notifier).markSubscriptionExpired();
+      }
+      return handler.next(error);
+    },
+  ));
   
   // Log request and response details in debug mode
   dio.interceptors.add(LogInterceptor(

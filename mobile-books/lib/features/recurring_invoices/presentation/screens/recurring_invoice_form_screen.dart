@@ -78,9 +78,21 @@ class _RecurringInvoiceFormScreenState extends ConsumerState<RecurringInvoiceFor
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_profileNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile Name is required.'), backgroundColor: AppColors.warning),
+      );
+      return;
+    }
     if (_customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a customer'), backgroundColor: AppColors.warning),
+      );
+      return;
+    }
+    if (_frequency.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Frequency is required.'), backgroundColor: AppColors.warning),
       );
       return;
     }

@@ -61,6 +61,7 @@ class RecurringInvoiceService {
       }).toList();
 
       final response = await _networkClient.post('/recurring-invoices', data: body);
+      print("CREATE RECURRING INVOICE REQUEST BODY: $body");
       final data = response.data as Map<String, dynamic>;
       final newId = data['id'] as int?;
       if (newId != null) {

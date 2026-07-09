@@ -10,6 +10,8 @@ import 'package:mobile_books/features/vendor_credits/data/services/vendor_credit
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/features/bills/presentation/providers/bill_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
+import 'package:printing/printing.dart';
+import 'package:dio/dio.dart';
 
 class VendorCreditDetailScreen extends ConsumerStatefulWidget {
   final int vendorCreditId;
@@ -266,19 +268,31 @@ class _VendorCreditDetailScreenState extends ConsumerState<VendorCreditDetailScr
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: 'Export PDF',
             onPressed: () async {
-              final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
-              final pdfUrl = '$baseUrl/vendor-credits/${widget.vendorCreditId}/pdf';
-              final uri = Uri.parse(pdfUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } else {
-                // fallback: let user copy the URL
-                if (context.mounted) {
-                  await Clipboard.setData(ClipboardData(text: pdfUrl));
+              setState(() => _actionLoading = true);
+              try {
+                final dio = ref.read(networkClientProvider).dio;
+                final response = await dio.get<List<int>>(
+                  '/vendor-credits/${widget.vendorCreditId}/pdf',
+                  options: Options(responseType: ResponseType.bytes),
+                );
+                
+                if (response.data == null) {
+                  throw Exception('Failed to download PDF data from server.');
+                }
+                
+                final bytes = Uint8List.fromList(response.data!);
+                await Printing.layoutPdf(
+                  onLayout: (format) async => bytes,
+                  name: 'VendorCredit_${widget.vendorCreditId}.pdf',
+                );
+              } catch (e) {
+                if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('PDF URL copied to clipboard')),
+                    SnackBar(content: Text('Failed to load PDF: $e'), backgroundColor: AppColors.danger),
                   );
                 }
+              } finally {
+                setState(() => _actionLoading = false);
               }
             },
           ),

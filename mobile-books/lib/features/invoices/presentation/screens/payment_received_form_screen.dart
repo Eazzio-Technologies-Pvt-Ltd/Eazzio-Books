@@ -149,19 +149,26 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
       return;
     }
 
+    final allInvoices = ref.read(invoicesProvider).value ?? [];
+    final customerInvoices = allInvoices.where((i) {
+      return i.customerId == _selectedCustomerId &&
+          i.balanceDue > 0 &&
+          i.status.toLowerCase() != 'draft' &&
+          i.status.toLowerCase() != 'cancelled';
+    }).toList();
+    final hasOpenInvoices = customerInvoices.isNotEmpty;
+
     final double amountUsed = paymentsMap.values.fold(0.0, (sum, v) => sum + v);
 
     // Only require allocation if the customer actually has open invoices.
-    // If they have no open invoices, the whole amount becomes an advance payment
-    // (shown as "Amount in Excess") which is a valid, savable state.
-    if (_customerHasOpenInvoices && amountUsed <= 0) {
+    if (hasOpenInvoices && amountUsed <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please apply an amount to at least one invoice')),
       );
       return;
     }
     // Additionally, require an amount received when no invoices to allocate against.
-    if (!_customerHasOpenInvoices) {
+    if (!hasOpenInvoices) {
       final double totalReceived = double.tryParse(_amountReceivedController.text) ?? 0.0;
       if (totalReceived <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -213,8 +220,11 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
       }
 
       if (mounted) {
+        final message = amountUsed > 0
+            ? 'Payment(s) recorded successfully as ${status.toUpperCase()}.'
+            : 'Advance payment of ₹${totalReceived.toStringAsFixed(2)} recorded successfully.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment(s) recorded successfully as ${status.toUpperCase()}.')),
+          SnackBar(content: Text(message)),
         );
         ref.invalidate(paymentsProvider);
         context.pop();
