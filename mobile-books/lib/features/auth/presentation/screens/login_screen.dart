@@ -85,53 +85,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2F80ED), Color(0xFF56CCF2)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        boxShadow: [
-                          BoxShadow(
-                            // ignore: deprecated_member_use
-                            color: const Color(0xFF2F80ED).withOpacity(0.2),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          )
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.menu_book_rounded,
-                        color: Colors.white,
-                        size: 54,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Eazzio Books',
-                      style: AppTextStyles.h1.copyWith(
-                        color: Colors.black,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Accounting & Finance Command Center',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.black54,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 48),
                     const SizedBox(
-                      width: 24,
-                      height: 24,
+                      width: 50,
+                      height: 50,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
+                        strokeWidth: 4.0,
                         valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2F80ED)),
                       ),
                     ),

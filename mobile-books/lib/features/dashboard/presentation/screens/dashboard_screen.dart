@@ -198,9 +198,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: [
                   _buildGreetingHeader(context, ref),
                   const SizedBox(height: AppSpacing.s),
-                  // 4. PROJECTIONS AND EXPECTED SURPLUS
-                  _buildProjectionsSection(context),
-                  const SizedBox(height: AppSpacing.s),
+
                   // 1. STAT CARDS (RECEIVABLES, PAYABLES, INCOME, EXPENSES)
                   _buildStatCards(context, summary.topSummary),
                   const SizedBox(height: AppSpacing.s),
@@ -262,6 +260,10 @@ class DashboardScreen extends ConsumerWidget {
 
                   // 7. EXPENSES BY CATEGORY AND BANK ACCOUNTS (Row on large screens, Column on mobile)
                   _buildBottomLists(context, summary.chartData),
+                  const SizedBox(height: AppSpacing.s),
+
+                  // 4. PROJECTIONS AND EXPECTED SURPLUS (before Quick Actions)
+                  _buildProjectionsSection(context),
                   const SizedBox(height: AppSpacing.s),
 
                   // Quick Actions at the bottom
@@ -686,13 +688,7 @@ class DashboardScreen extends ConsumerWidget {
             subtext: totalProjExpense == 0 ? 'No projected expenses.' : 'Expected expense payments for $monthStr $selectedYear.',
             onViewTap: () => context.push('/projected-expenses'),
           ),
-          _buildExpectedNetCashCard(
-            context,
-            amount: surplus,
-            isPositive: isPositive,
-            monthName: monthStr,
-            year: selectedYear,
-          ),
+
           // Petty Cash Card
           Card(
             margin: EdgeInsets.zero,
@@ -785,32 +781,19 @@ class DashboardScreen extends ConsumerWidget {
               cards[2],
               const SizedBox(height: AppSpacing.s),
               cards[3],
-              const SizedBox(height: AppSpacing.s),
-              cards[4],
             ],
           );
         } else {
-          return Column(
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: cards[0]),
-                  const SizedBox(width: AppSpacing.s),
-                  Expanded(child: cards[1]),
-                  const SizedBox(width: AppSpacing.s),
-                  Expanded(child: cards[2]),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.s),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: cards[3]),
-                  const SizedBox(width: AppSpacing.s),
-                  Expanded(child: cards[4]),
-                ],
-              ),
+              Expanded(child: cards[0]),
+              const SizedBox(width: AppSpacing.s),
+              Expanded(child: cards[1]),
+              const SizedBox(width: AppSpacing.s),
+              Expanded(child: cards[2]),
+              const SizedBox(width: AppSpacing.s),
+              Expanded(child: cards[3]),
             ],
           );
         }

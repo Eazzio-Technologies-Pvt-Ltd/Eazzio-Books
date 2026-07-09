@@ -93,6 +93,7 @@ class _CustomerAgingScreenState extends ConsumerState<CustomerAgingScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const ReportNavBar(currentRoute: '/reports/customer-aging'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),

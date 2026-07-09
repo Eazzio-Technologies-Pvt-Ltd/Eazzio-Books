@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +8,11 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
 import 'package:mobile_books/features/reports/data/models/pnl_report.dart';
 
-import 'package:mobile_books/core/network/network_client.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 
 class PnlScreen extends ConsumerWidget {
   const PnlScreen({super.key});
@@ -34,30 +39,270 @@ class PnlScreen extends ConsumerWidget {
     }
   }
 
-  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTimeRange? dateRange) {
+  Future<void> _exportCSV(BuildContext context, ProfitAndLossReport report, DateTimeRange? dateRange) async {
     final df = DateFormat('yyyy-MM-dd');
-    final queryParams = <String>[];
-    if (dateRange != null) {
-      queryParams.add('startDate=${df.format(dateRange.start)}');
-      queryParams.add('endDate=${df.format(dateRange.end)}');
-    }
-    queryParams.add('format=${format.toLowerCase()}');
-    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
-    final url = '$baseUrl/reports/profit-loss?${queryParams.join('&')}';
+    final rangeStr = dateRange != null
+        ? '${df.format(dateRange.start)}_to_${df.format(dateRange.end)}'
+        : 'all_time';
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('P&L Export ${format.toUpperCase()} Link'),
-        content: SelectableText(url),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+    final revenueAccounts = <PnlAccount>[];
+    final otherIncomeAccounts = <PnlAccount>[];
+    double totalRevenue = 0.0;
+    double totalOtherIncome = 0.0;
+
+    for (final acc in report.income.accounts) {
+      final lower = acc.accountName.toLowerCase();
+      final isOther = lower.contains('other income') ||
+          lower.contains('interest') ||
+          lower.contains('dividend') ||
+          lower.contains('discount received') ||
+          lower.contains('commission') ||
+          lower.contains('gain') ||
+          lower.contains('rent received') ||
+          lower.contains('bad debts') ||
+          lower.contains('insurance claim') ||
+          lower.contains('scrap') ||
+          lower.contains('refund');
+      if (isOther) {
+        otherIncomeAccounts.add(acc);
+        totalOtherIncome += acc.balance;
+      } else {
+        revenueAccounts.add(acc);
+        totalRevenue += acc.balance;
+      }
+    }
+
+    var csv = "Account Name,Balance (INR)\n";
+    csv += "--- A) REVENUE FROM OPERATIONS ---\n";
+    for (final acc in revenueAccounts) {
+      csv += '"${acc.accountName}",${acc.balance.toStringAsFixed(2)}\n';
+    }
+    csv += '"Total Revenue from Operations",${totalRevenue.toStringAsFixed(2)}\n\n';
+
+    csv += "--- B) OTHER INCOME ---\n";
+    for (final acc in otherIncomeAccounts) {
+      csv += '"${acc.accountName}",${acc.balance.toStringAsFixed(2)}\n';
+    }
+    csv += '"Total Other Income",${totalOtherIncome.toStringAsFixed(2)}\n\n';
+    csv += '"Total Incomes (A + B)",${(totalRevenue + totalOtherIncome).toStringAsFixed(2)}\n\n';
+
+    csv += "--- OPERATING EXPENSES ---\n";
+    for (final acc in report.expense.accounts) {
+      csv += '"${acc.accountName}",${acc.balance.toStringAsFixed(2)}\n';
+    }
+    csv += '"Total Operating Expenses",${report.expense.total.toStringAsFixed(2)}\n\n';
+    csv += '"${report.netProfit >= 0 ? "Net Profit" : "Net Loss"}",${report.netProfit.toStringAsFixed(2)}\n';
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/Profit_And_Loss_$rangeStr.csv');
+      await file.writeAsString(csv);
+      await Share.shareXFiles([XFile(file.path)], subject: 'Profit and Loss Report');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export CSV: $e'), backgroundColor: AppColors.danger),
+      );
+    }
+  }
+
+  Future<void> _exportPDF(BuildContext context, ProfitAndLossReport report, DateTimeRange? dateRange) async {
+    final df = DateFormat('yyyy-MM-dd');
+    final rangeStr = dateRange != null
+        ? '${df.format(dateRange.start)} to ${df.format(dateRange.end)}'
+        : 'All Time';
+
+    final revenueAccounts = <PnlAccount>[];
+    final otherIncomeAccounts = <PnlAccount>[];
+    double totalRevenue = 0.0;
+    double totalOtherIncome = 0.0;
+
+    for (final acc in report.income.accounts) {
+      final lower = acc.accountName.toLowerCase();
+      final isOther = lower.contains('other income') ||
+          lower.contains('interest') ||
+          lower.contains('dividend') ||
+          lower.contains('discount received') ||
+          lower.contains('commission') ||
+          lower.contains('gain') ||
+          lower.contains('rent received') ||
+          lower.contains('bad debts') ||
+          lower.contains('insurance claim') ||
+          lower.contains('scrap') ||
+          lower.contains('refund');
+      if (isOther) {
+        otherIncomeAccounts.add(acc);
+        totalOtherIncome += acc.balance;
+      } else {
+        revenueAccounts.add(acc);
+        totalRevenue += acc.balance;
+      }
+    }
+
+    final doc = pw.Document();
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Profit and Loss Statement', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(rangeStr, style: const pw.TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            
+            // Incomes
+            pw.Text('Incomes', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#065f46'))),
+            pw.Divider(color: PdfColor.fromHex('#e2e8f0')),
+            
+            pw.Text('A) Revenue from Operations', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0f766e'))),
+            pw.SizedBox(height: 5),
+            if (revenueAccounts.isEmpty)
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('No revenue from operations accounts found.', style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
+                  pw.Text('0.00'),
+                ],
+              )
+            else
+              ...revenueAccounts.map((acc) => pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(acc.accountName),
+                  pw.Text(acc.balance.toStringAsFixed(2)),
+                ],
+              )),
+            pw.SizedBox(height: 5),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Total Revenue from Operations', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text('INR ${totalRevenue.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+            pw.SizedBox(height: 15),
+
+            pw.Text('B) Other Income', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#0f766e'))),
+            pw.SizedBox(height: 5),
+            if (otherIncomeAccounts.isEmpty)
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('No other income accounts found.', style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
+                  pw.Text('0.00'),
+                ],
+              )
+            else
+              ...otherIncomeAccounts.map((acc) => pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(acc.accountName),
+                  pw.Text(acc.balance.toStringAsFixed(2)),
+                ],
+              )),
+            pw.SizedBox(height: 5),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Total Other Income', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text('INR ${totalOtherIncome.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+            pw.SizedBox(height: 15),
+
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Total Incomes (A + B)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text('INR ${(totalRevenue + totalOtherIncome).toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+            pw.Divider(color: PdfColor.fromHex('#e2e8f0')),
+            pw.SizedBox(height: 20),
+
+            // Gross Profit
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Total Gross Profit', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#1d4ed8'))),
+                pw.Text('INR ${(totalRevenue + totalOtherIncome).toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#1d4ed8'))),
+              ],
+            ),
+            pw.Divider(color: PdfColor.fromHex('#e2e8f0')),
+            pw.SizedBox(height: 20),
+
+            // Operating Expenses
+            pw.Text('Operating Expenses', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#b91c1c'))),
+            pw.Divider(color: PdfColor.fromHex('#e2e8f0')),
+            if (report.expense.accounts.isEmpty)
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('No operating expenses accounts found.', style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
+                  pw.Text('0.00'),
+                ],
+              )
+            else
+              ...report.expense.accounts.map((acc) => pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(acc.accountName),
+                  pw.Text(acc.balance.toStringAsFixed(2)),
+                ],
+              )),
+            pw.SizedBox(height: 5),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Total Operating Expenses', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text('INR ${report.expense.total.toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+            pw.Divider(color: PdfColor.fromHex('#e2e8f0')),
+            pw.SizedBox(height: 30),
+
+            // Net Profit/Loss Banner
+            pw.Container(
+              color: report.netProfit >= 0 ? PdfColor.fromHex('#f0fdf4') : PdfColor.fromHex('#fef2f2'),
+              padding: const pw.EdgeInsets.all(12),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    report.netProfit >= 0 ? 'Net Profit' : 'Net Loss',
+                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: report.netProfit >= 0 ? PdfColor.fromHex('#15803d') : PdfColor.fromHex('#b91c1c')),
+                  ),
+                  pw.Text(
+                    'INR ${report.netProfit.toStringAsFixed(2)}',
+                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: report.netProfit >= 0 ? PdfColor.fromHex('#15803d') : PdfColor.fromHex('#b91c1c')),
+                  ),
+                ],
+              ),
+            ),
+          ];
+        },
       ),
     );
+
+    try {
+      final pdfBytes = await doc.save();
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdfBytes,
+        name: 'Profit_And_Loss_${df.format(dateRange?.start ?? DateTime.now())}_to_${df.format(dateRange?.end ?? DateTime.now())}.pdf',
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to print PDF: $e'), backgroundColor: AppColors.danger),
+      );
+    }
   }
 
   @override
@@ -78,18 +323,27 @@ class PnlScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.table_chart),
             tooltip: "Export CSV",
-            onPressed: () => _showExportDialog(context, ref, 'CSV', dateRange),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportCSV(context, report, dateRange);
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: "Export PDF",
-            onPressed: () => _showExportDialog(context, ref, 'PDF', dateRange),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportPDF(context, report, dateRange);
+              });
+            },
           ),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const ReportNavBar(currentRoute: '/reports/profit-loss'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -115,6 +369,7 @@ class PnlScreen extends ConsumerWidget {
                     ),
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (dateRange != null)
                         IconButton(
@@ -124,6 +379,9 @@ class PnlScreen extends ConsumerWidget {
                           },
                         ),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(80, 36),
+                        ),
                         onPressed: () => _selectDateRange(context, ref),
                         child: const Text('Filter'),
                       ),

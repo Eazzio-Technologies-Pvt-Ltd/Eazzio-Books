@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,8 +6,12 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/reports/presentation/providers/reports_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+import 'package:mobile_books/features/reports/data/models/trial_balance.dart';
 
-import 'package:mobile_books/core/network/network_client.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 class TrialBalanceScreen extends ConsumerWidget {
   const TrialBalanceScreen({super.key});
@@ -33,29 +38,161 @@ class TrialBalanceScreen extends ConsumerWidget {
     }
   }
 
-  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTimeRange? dateRange) {
+  Future<void> _exportCSV(BuildContext context, TrialBalanceReport report, DateTimeRange? dateRange) async {
     final df = DateFormat('yyyy-MM-dd');
-    final queryParams = <String>[];
-    if (dateRange != null) {
-      queryParams.add('startDate=${df.format(dateRange.start)}');
-      queryParams.add('endDate=${df.format(dateRange.end)}');
-    }
-    queryParams.add('format=${format.toLowerCase()}');
-    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
-    final url = '$baseUrl/reports/trial-balance?${queryParams.join('&')}';
+    final String dateLabel = dateRange != null
+        ? '${df.format(dateRange.start)} to ${df.format(dateRange.end)}'
+        : 'All Time';
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Trial Balance Export ${format.toUpperCase()} Link'),
-        content: SelectableText(url),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+    final csvBuffer = StringBuffer();
+    csvBuffer.writeln('Trial Balance Report');
+    csvBuffer.writeln('Period: $dateLabel');
+    csvBuffer.writeln('');
+    csvBuffer.writeln('Account Code,Account Name,Account Type,Debit,Credit');
+
+    double totalDebit = 0;
+    double totalCredit = 0;
+    for (final acc in report.accounts) {
+      csvBuffer.writeln('"${acc.accountCode}","${acc.accountName}","${acc.accountType}",${acc.totalDebit},${acc.totalCredit}');
+      totalDebit += acc.totalDebit;
+      totalCredit += acc.totalCredit;
+    }
+    csvBuffer.writeln('');
+    csvBuffer.writeln('Total,,, $totalDebit,$totalCredit');
+
+    await Share.shareXFiles(
+      [
+        XFile.fromData(
+          utf8.encode(csvBuffer.toString()),
+          name: 'trial_balance_report.csv',
+          mimeType: 'text/csv',
+        )
+      ],
+      subject: 'Trial Balance Report ($dateLabel)',
+    );
+  }
+
+  Future<void> _exportPDF(BuildContext context, TrialBalanceReport report, DateTimeRange? dateRange) async {
+    final df = DateFormat('yyyy-MM-dd');
+    final String dateLabel = dateRange != null
+        ? '${df.format(dateRange.start)} to ${df.format(dateRange.end)}'
+        : 'All Time';
+
+    final pdf = pw.Document();
+    
+    double totalDebit = 0;
+    double totalCredit = 0;
+    for (final acc in report.accounts) {
+      totalDebit += acc.totalDebit;
+      totalCredit += acc.totalCredit;
+    }
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Trial Balance', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(dateLabel, style: const pw.TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Account Code', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Account Name', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Type', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Debit', style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Credit', style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right),
+                    ),
+                  ],
+                ),
+                ...report.accounts.map((acc) {
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text(acc.accountCode),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text(acc.accountName),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text(acc.accountType),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text(_formatCurrency(acc.totalDebit).replaceAll('₹', 'INR'), textAlign: pw.TextAlign.right),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(6),
+                        child: pw.Text(_formatCurrency(acc.totalCredit).replaceAll('₹', 'INR'), textAlign: pw.TextAlign.right),
+                      ),
+                    ],
+                  );
+                }),
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text('Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(''),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(''),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(_formatCurrency(totalDebit).replaceAll('₹', 'INR'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(_formatCurrency(totalCredit).replaceAll('₹', 'INR'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ];
+        },
       ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'trial_balance_report.pdf',
     );
   }
 
@@ -77,18 +214,27 @@ class TrialBalanceScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.table_chart),
             tooltip: "Export CSV",
-            onPressed: () => _showExportDialog(context, ref, 'CSV', dateRange),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportCSV(context, report, dateRange);
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: "Export PDF",
-            onPressed: () => _showExportDialog(context, ref, 'PDF', dateRange),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportPDF(context, report, dateRange);
+              });
+            },
           ),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const ReportNavBar(currentRoute: '/reports/trial-balance'),
           // Filter card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -114,6 +260,7 @@ class TrialBalanceScreen extends ConsumerWidget {
                     ),
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (dateRange != null)
                         IconButton(
@@ -123,6 +270,9 @@ class TrialBalanceScreen extends ConsumerWidget {
                           },
                         ),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(80, 36),
+                        ),
                         onPressed: () => _selectDateRange(context, ref),
                         child: const Text('Filter'),
                       ),

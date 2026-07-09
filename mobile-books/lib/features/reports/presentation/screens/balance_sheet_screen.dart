@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +8,10 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
 import 'package:mobile_books/features/reports/data/models/balance_sheet.dart';
 
-import 'package:mobile_books/core/network/network_client.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 class BalanceSheetScreen extends ConsumerWidget {
   const BalanceSheetScreen({super.key});
@@ -34,28 +38,172 @@ class BalanceSheetScreen extends ConsumerWidget {
     }
   }
 
-  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTime? endDate) {
+  Future<void> _exportCSV(BuildContext context, BalanceSheetReport report, DateTime? endDate) async {
     final df = DateFormat('yyyy-MM-dd');
-    final queryParams = <String>[];
-    if (endDate != null) {
-      queryParams.add('endDate=${df.format(endDate)}');
-    }
-    queryParams.add('format=${format.toLowerCase()}');
-    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
-    final url = '$baseUrl/reports/balance-sheet?${queryParams.join('&')}';
+    final String dateLabel = endDate != null ? df.format(endDate) : 'As of Today';
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Balance Sheet Export ${format.toUpperCase()} Link'),
-        content: SelectableText(url),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+    final csvBuffer = StringBuffer();
+    csvBuffer.writeln('Balance Sheet Report');
+    csvBuffer.writeln('As of Date: $dateLabel');
+    csvBuffer.writeln('');
+
+    csvBuffer.writeln('ASSETS');
+    csvBuffer.writeln('Account Code,Account Name,Account Type,Balance');
+    for (final acc in report.assets.accounts) {
+      csvBuffer.writeln('"${acc.accountCode}","${acc.accountName}","${acc.accountType}",${acc.balance}');
+    }
+    csvBuffer.writeln('Total Assets,,,${report.assets.total}');
+    csvBuffer.writeln('');
+
+    csvBuffer.writeln('LIABILITIES');
+    csvBuffer.writeln('Account Code,Account Name,Account Type,Balance');
+    for (final acc in report.liabilities.accounts) {
+      csvBuffer.writeln('"${acc.accountCode}","${acc.accountName}","${acc.accountType}",${acc.balance}');
+    }
+    csvBuffer.writeln('Total Liabilities,,,${report.liabilities.total}');
+    csvBuffer.writeln('');
+
+    csvBuffer.writeln('EQUITY');
+    csvBuffer.writeln('Account Code,Account Name,Account Type,Balance');
+    for (final acc in report.equity.accounts) {
+      csvBuffer.writeln('"${acc.accountCode}","${acc.accountName}","${acc.accountType}",${acc.balance}');
+    }
+    csvBuffer.writeln('Total Equity,,,${report.equity.total}');
+    csvBuffer.writeln('');
+
+    csvBuffer.writeln('Total Liabilities & Equity,,,${report.liabilities.total + report.equity.total}');
+
+    await Share.shareXFiles(
+      [
+        XFile.fromData(
+          utf8.encode(csvBuffer.toString()),
+          name: 'balance_sheet_report.csv',
+          mimeType: 'text/csv',
+        )
+      ],
+      subject: 'Balance Sheet ($dateLabel)',
+    );
+  }
+
+  Future<void> _exportPDF(BuildContext context, BalanceSheetReport report, DateTime? endDate) async {
+    final df = DateFormat('yyyy-MM-dd');
+    final String dateLabel = endDate != null ? df.format(endDate) : 'As of Today';
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Balance Sheet', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(dateLabel, style: const pw.TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            
+            // Assets Section
+            pw.Text('Assets', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.blue700)),
+            pw.SizedBox(height: 5),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              children: [
+                ...report.assets.accounts.map((acc) {
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(acc.accountName)),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_formatCurrency(acc.balance).replaceAll('₹', 'INR'), textAlign: pw.TextAlign.right)),
+                    ],
+                  );
+                }),
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Total Assets', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_formatCurrency(report.assets.total).replaceAll('₹', 'INR'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+
+            // Liabilities Section
+            pw.Text('Liabilities', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.red700)),
+            pw.SizedBox(height: 5),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              children: [
+                ...report.liabilities.accounts.map((acc) {
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(acc.accountName)),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_formatCurrency(acc.balance).replaceAll('₹', 'INR'), textAlign: pw.TextAlign.right)),
+                    ],
+                  );
+                }),
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Total Liabilities', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_formatCurrency(report.liabilities.total).replaceAll('₹', 'INR'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+
+            // Equity Section
+            pw.Text('Equity', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.teal700)),
+            pw.SizedBox(height: 5),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              children: [
+                ...report.equity.accounts.map((acc) {
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(acc.accountName)),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_formatCurrency(acc.balance).replaceAll('₹', 'INR'), textAlign: pw.TextAlign.right)),
+                    ],
+                  );
+                }),
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Total Equity', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                    pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_formatCurrency(report.equity.total).replaceAll('₹', 'INR'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+
+            // Grand Total Section
+            pw.Container(
+              color: PdfColors.grey200,
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Total Liabilities & Equity', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(_formatCurrency(report.liabilities.total + report.equity.total).replaceAll('₹', 'INR'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+            ),
+          ];
+        },
       ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'balance_sheet_report.pdf',
     );
   }
 
@@ -75,18 +223,27 @@ class BalanceSheetScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.table_chart),
             tooltip: "Export CSV",
-            onPressed: () => _showExportDialog(context, ref, 'CSV', endDate),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportCSV(context, report, endDate);
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: "Export PDF",
-            onPressed: () => _showExportDialog(context, ref, 'PDF', endDate),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportPDF(context, report, endDate);
+              });
+            },
           ),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const ReportNavBar(currentRoute: '/reports/balance-sheet'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -112,6 +269,7 @@ class BalanceSheetScreen extends ConsumerWidget {
                     ),
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (endDate != null)
                         IconButton(
@@ -121,6 +279,9 @@ class BalanceSheetScreen extends ConsumerWidget {
                           },
                         ),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(80, 36),
+                        ),
                         onPressed: () => _selectEndDate(context, ref),
                         child: const Text('Filter'),
                       ),
@@ -235,7 +396,7 @@ class BalanceSheetScreen extends ConsumerWidget {
 
   Widget _buildSectionHeader(String title, Color accentColor) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.borderLight, width: 2)),
       ),
       padding: const EdgeInsets.only(bottom: AppSpacing.s),

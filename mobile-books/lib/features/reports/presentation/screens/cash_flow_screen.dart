@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +8,10 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
 import 'package:mobile_books/features/reports/data/models/cash_flow.dart';
 
-import 'package:mobile_books/core/network/network_client.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 class CashFlowScreen extends ConsumerWidget {
   const CashFlowScreen({super.key});
@@ -34,29 +38,96 @@ class CashFlowScreen extends ConsumerWidget {
     }
   }
 
-  void _showExportDialog(BuildContext context, WidgetRef ref, String format, DateTimeRange? dateRange) {
+  Future<void> _exportCSV(BuildContext context, CashFlowReport report, DateTimeRange? dateRange) async {
     final df = DateFormat('yyyy-MM-dd');
-    final queryParams = <String>[];
-    if (dateRange != null) {
-      queryParams.add('startDate=${df.format(dateRange.start)}');
-      queryParams.add('endDate=${df.format(dateRange.end)}');
-    }
-    queryParams.add('format=${format.toLowerCase()}');
-    final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
-    final url = '$baseUrl/reports/cash-flow?${queryParams.join('&')}';
+    final String dateLabel = dateRange != null
+        ? '${df.format(dateRange.start)} to ${df.format(dateRange.end)}'
+        : 'All Time';
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Cash Flow Export ${format.toUpperCase()} Link'),
-        content: SelectableText(url),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+    final csvBuffer = StringBuffer();
+    csvBuffer.writeln('Cash Flow Report');
+    csvBuffer.writeln('Period: $dateLabel');
+    csvBuffer.writeln('');
+    csvBuffer.writeln('Description,Amount');
+
+    for (final activity in report.operatingActivities) {
+      csvBuffer.writeln('"${activity.description}",${activity.amount}');
+    }
+    csvBuffer.writeln('');
+    csvBuffer.writeln('Net Cash Flow,${report.netCashFlow}');
+
+    await Share.shareXFiles(
+      [
+        XFile.fromData(
+          utf8.encode(csvBuffer.toString()),
+          name: 'cash_flow_report.csv',
+          mimeType: 'text/csv',
+        )
+      ],
+      subject: 'Cash Flow Report ($dateLabel)',
+    );
+  }
+
+  Future<void> _exportPDF(BuildContext context, CashFlowReport report, DateTimeRange? dateRange) async {
+    final df = DateFormat('yyyy-MM-dd');
+    final String dateLabel = dateRange != null
+        ? '${df.format(dateRange.start)} to ${df.format(dateRange.end)}'
+        : 'All Time';
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Cash Flow Statement', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(dateLabel, style: const pw.TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text('Operating Activities', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.teal700)),
+            pw.SizedBox(height: 5),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              children: [
+                ...report.operatingActivities.map((activity) {
+                  return pw.TableRow(
+                    children: [
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(activity.description)),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_formatCurrency(activity.amount).replaceAll('₹', 'INR'), textAlign: pw.TextAlign.right)),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            pw.Container(
+              color: PdfColors.grey200,
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Net Cash Flow', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(_formatCurrency(report.netCashFlow).replaceAll('₹', 'INR'), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+            ),
+          ];
+        },
       ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'cash_flow_report.pdf',
     );
   }
 
@@ -78,18 +149,27 @@ class CashFlowScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.table_chart),
             tooltip: "Export CSV",
-            onPressed: () => _showExportDialog(context, ref, 'CSV', dateRange),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportCSV(context, report, dateRange);
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: "Export PDF",
-            onPressed: () => _showExportDialog(context, ref, 'PDF', dateRange),
+            onPressed: () {
+              reportState.whenData((report) {
+                _exportPDF(context, report, dateRange);
+              });
+            },
           ),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const ReportNavBar(currentRoute: '/reports/cash-flow'),
           // Filter Card
           Card(
             margin: const EdgeInsets.all(AppSpacing.m),
@@ -115,6 +195,7 @@ class CashFlowScreen extends ConsumerWidget {
                     ),
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (dateRange != null)
                         IconButton(
@@ -124,6 +205,9 @@ class CashFlowScreen extends ConsumerWidget {
                           },
                         ),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(80, 36),
+                        ),
                         onPressed: () => _selectDateRange(context, ref),
                         child: const Text('Filter'),
                       ),

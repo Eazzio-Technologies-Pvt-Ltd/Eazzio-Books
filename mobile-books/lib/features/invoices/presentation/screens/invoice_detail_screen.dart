@@ -457,7 +457,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         );
                         return;
                       }
-                      final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                      final businessName = ref.read(organizationSettingsProvider).value?.organizationName ?? 'our business';
                       final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
                       final totalAmt = invoice.totalAmount.toStringAsFixed(2);
                       final msg = "Dear $customerName, please find your invoice ${invoice.invoiceNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";
@@ -477,7 +477,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         );
                         return;
                       }
-                      final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                      final businessName = ref.read(organizationSettingsProvider).value?.organizationName ?? 'our business';
                       final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
                       final totalAmt = invoice.totalAmount.toStringAsFixed(2);
                       final msg = "Dear $customerName, please find your invoice ${invoice.invoiceNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";

@@ -412,9 +412,9 @@ class QuoteDetailScreen extends ConsumerWidget {
                       );
                       return;
                     }
-                    final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                    final businessName = ref.read(organizationSettingsProvider).value?.organizationName ?? 'our business';
                     final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
-                    final totalAmt = quote.total.toStringAsFixed(2);
+                    final totalAmt = quote.totalAmount.toStringAsFixed(2);
                     final msg = "Dear $customerName, please find your quote ${quote.quoteNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";
                     await SharingHelper.sendWhatsApp(phone: phone, message: msg);
                   },
@@ -432,9 +432,9 @@ class QuoteDetailScreen extends ConsumerWidget {
                       );
                       return;
                     }
-                    final businessName = ref.read(organizationSettingsProvider).value?.name ?? 'our business';
+                    final businessName = ref.read(organizationSettingsProvider).value?.organizationName ?? 'our business';
                     final customerName = customer != null ? (customer.displayName ?? '${customer.firstName ?? ""} ${customer.lastName ?? ""}'.trim()) : 'Customer';
-                    final totalAmt = quote.total.toStringAsFixed(2);
+                    final totalAmt = quote.totalAmount.toStringAsFixed(2);
                     final msg = "Dear $customerName, please find your quote ${quote.quoteNumber} from $businessName. Total: ₹$totalAmt. Thank you for your business. Regards, $businessName.";
                     await SharingHelper.sendSMS(phone: phone, message: msg);
                   },
