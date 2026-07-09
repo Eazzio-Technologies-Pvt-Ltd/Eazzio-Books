@@ -134,12 +134,6 @@ class _PurchaseOrdersListScreenState extends ConsumerState<PurchaseOrdersListScr
       currentRoute: '/purchase-orders',
       appBar: AppBar(
         title: const Text('Purchase Orders'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: () => _showSortBottomSheet(context),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/purchase-orders/new'),
@@ -153,22 +147,33 @@ class _PurchaseOrdersListScreenState extends ConsumerState<PurchaseOrdersListScr
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) => ref.read(purchaseOrderSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search purchase orders...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(purchaseOrderSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) => ref.read(purchaseOrderSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search purchase orders...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(purchaseOrderSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  onPressed: () => _showSortBottomSheet(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
