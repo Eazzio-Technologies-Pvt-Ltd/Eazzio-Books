@@ -35,7 +35,7 @@ ensurePaymentsTable();
 // Record a payment against an invoice
 const recordPayment = async (req, res) => {
   const { id: invoiceId } = req.params;
-  const { amount, payment_date, payment_mode, reference, notes, customer_id, transfer_shortfall, deposit_to, splits } = req.body;
+  const { amount, payment_date, payment_mode, reference, notes, customer_id, transfer_shortfall, installment_months, deposit_to, splits } = req.body;
   
   const paymentSplits = splits && Array.isArray(splits) && splits.length > 0 ? splits : [{
     amount: amount,
@@ -125,17 +125,34 @@ const recordPayment = async (req, res) => {
       
       let idx = 0;
       
-      if (schedulesRes.rows.length === 0 && transfer_shortfall && remainingPayment > 0 && newBalanceDue > 0) {
+      if (schedulesRes.rows.length === 0 && remainingPayment > 0 && newBalanceDue > 0) {
         const invoiceData = await client.query(`SELECT customer_id, organization_id FROM invoices WHERE id = $1`, [invoiceId]);
         const invInfo = invoiceData.rows[0];
         const currDate = new Date(payment_date || new Date());
-        await client.query(`INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status) VALUES ($1, $2, $3, $4, $5, $5, 0, 'paid')`, [invInfo.organization_id, invoiceId, invInfo.customer_id, currDate, remainingPayment]);
         
-        const nextDate = new Date(currDate);
-        nextDate.setMonth(nextDate.getMonth() + 1);
-        await client.query(`INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status) VALUES ($1, $2, $3, $4, $5, 0, $5, 'pending')`, [invInfo.organization_id, invoiceId, invInfo.customer_id, nextDate, newBalanceDue]);
-        
-        remainingPayment = 0;
+        if (installment_months && installment_months > 0) {
+          await client.query(`INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status) VALUES ($1, $2, $3, $4, $5, $5, 0, 'paid')`, [invInfo.organization_id, invoiceId, invInfo.customer_id, currDate, remainingPayment]);
+          
+          const monthlyAmount = newBalanceDue / installment_months;
+          for (let i = 1; i <= installment_months; i++) {
+            const nextDate = new Date(currDate);
+            nextDate.setMonth(nextDate.getMonth() + i);
+            let iterAmount = monthlyAmount;
+            if (i === installment_months) {
+              iterAmount = newBalanceDue - (Number(monthlyAmount.toFixed(2)) * (installment_months - 1));
+            }
+            await client.query(`INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status) VALUES ($1, $2, $3, $4, $5, 0, $5, 'pending')`, [invInfo.organization_id, invoiceId, invInfo.customer_id, nextDate, iterAmount]);
+          }
+          remainingPayment = 0;
+        } else if (transfer_shortfall) {
+          await client.query(`INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status) VALUES ($1, $2, $3, $4, $5, $5, 0, 'paid')`, [invInfo.organization_id, invoiceId, invInfo.customer_id, currDate, remainingPayment]);
+          
+          const nextDate = new Date(currDate);
+          nextDate.setMonth(nextDate.getMonth() + 1);
+          await client.query(`INSERT INTO invoice_payment_schedules (organization_id, invoice_id, customer_id, due_date, due_amount, paid_amount, balance_amount, status) VALUES ($1, $2, $3, $4, $5, 0, $5, 'pending')`, [invInfo.organization_id, invoiceId, invInfo.customer_id, nextDate, newBalanceDue]);
+          
+          remainingPayment = 0;
+        }
       }
 
       for (const sch of schedulesRes.rows) {
@@ -171,17 +188,6 @@ const recordPayment = async (req, res) => {
            }
         }
         
-        if (schStatus === 'paid') {
-           const nextSchIdx = idx + 1;
-           if (nextSchIdx < schedulesRes.rows.length) {
-              const nextSch = schedulesRes.rows[nextSchIdx];
-              const pDate = new Date(payment_date || new Date());
-              pDate.setMonth(pDate.getMonth() + 1);
-              await client.query(`UPDATE invoice_payment_schedules SET due_date = $1 WHERE id = $2`, [pDate, nextSch.id]);
-              nextSch.due_date = pDate;
-           }
-        }
-
         await client.query(
           `UPDATE invoice_payment_schedules 
            SET due_amount = $1, paid_amount = $2, balance_amount = $3, status = $4, updated_at = CURRENT_TIMESTAMP 

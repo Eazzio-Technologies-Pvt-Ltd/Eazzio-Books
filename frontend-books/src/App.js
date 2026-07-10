@@ -32,6 +32,8 @@ import InvoicePreferences from "./InvoicePreferences";
 import Expenses from "./Expenses";
 import ProjectedPayments from "./ProjectedPayments";
 import Banking from "./Banking";
+import PettyCash from "./PettyCash";
+import UndepositedFunds from "./UndepositedFunds";
 import ProjectedExpenses from "./ProjectedExpenses";
 import ImportMore from "./ImportMore";
 // NewItem removed — AddItem handles both create and edit
@@ -213,6 +215,8 @@ function App() {
           <Route path="/timesheets/new" element={<AddTimesheet />} />
           <Route path="/timesheets/:id/edit" element={<AddTimesheet />} />
           <Route path="/bank-accounts" element={<ProtectedRoute module={MODULES.BANKING}><Banking /></ProtectedRoute>} />
+          <Route path="/banking/petty-cash" element={<ProtectedRoute module={MODULES.BANKING}><PettyCash /></ProtectedRoute>} />
+          <Route path="/banking/undeposited-funds" element={<ProtectedRoute module={MODULES.BANKING}><UndepositedFunds /></ProtectedRoute>} />
           <Route path="/bank-rules" element={<PlaceholderPage title="Bank Rules" description="Set up rules to automatically categorize bank transactions." />} />
           <Route path="/chart-of-accounts" element={<ChartOfAccounts />} />
           <Route path="/manual-journals" element={<ManualJournals />} />

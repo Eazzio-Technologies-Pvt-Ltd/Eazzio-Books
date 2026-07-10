@@ -27,6 +27,7 @@ function AddPaymentReceived() {
   const [paymentsMap, setPaymentsMap] = useState({});
   const [paymentDatesMap, setPaymentDatesMap] = useState({});
   const [transferShortfalls, setTransferShortfalls] = useState({});
+  const [installmentMonthsMap, setInstallmentMonthsMap] = useState({});
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -64,6 +65,7 @@ function AddPaymentReceived() {
       setPaymentsMap({});
       setPaymentDatesMap({});
       setTransferShortfalls({});
+      setInstallmentMonthsMap({});
     }
   }, [customerId]);
 
@@ -143,7 +145,8 @@ function AddPaymentReceived() {
               payment_date: paymentDatesMap[invId] || paymentDate,
               splits: paymentSplits, // Send the splits to the backend
               notes: notes || null,
-              transfer_shortfall: !!transferShortfalls[invId]
+              transfer_shortfall: !!transferShortfalls[invId],
+              installment_months: parseInt(installmentMonthsMap[invId]) || 0
             }),
           });
         }
@@ -344,9 +347,47 @@ function AddPaymentReceived() {
                             </label>
                           </div>
                         )}
-                        {!nextSch && amtApplied > 0 && (
-                          <div style={{ marginTop: "4px", color: "#d92d20", fontSize: "10px", width: "140px", textAlign: "left" }}>
-                            (No installment schedule exists for this invoice to transfer a balance to)
+                        {!nextSch && amtApplied > 0 && inv.balance_due - amtApplied > 0 && (
+                          <div style={{ marginTop: "4px", background: "#fcfcfd", padding: "6px", borderRadius: "4px", border: "1px solid #e2e8f0", fontSize: "10px", width: "140px", textAlign: "left" }}>
+                            <div style={{ color: "#344054", marginBottom: "4px", fontWeight: "500" }}>Split remaining ₹{(inv.balance_due - amtApplied).toFixed(2)} into:</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              <input 
+                                type="number" 
+                                min="1" 
+                                max="24"
+                                value={installmentMonthsMap[inv.id] || ""} 
+                                onChange={(e) => setInstallmentMonthsMap({...installmentMonthsMap, [inv.id]: e.target.value})}
+                                placeholder="Months"
+                                style={{ width: "60px", padding: "4px", borderRadius: "4px", border: "1px solid #d0d5dd", fontSize: "10px" }}
+                              />
+                              <span style={{ color: "#667085" }}>months</span>
+                            </div>
+                            {installmentMonthsMap[inv.id] > 0 && (
+                              <div style={{ marginTop: "8px", maxHeight: "100px", overflowY: "auto", borderTop: "1px dashed #d0d5dd", paddingTop: "4px" }}>
+                                {Array.from({ length: Math.min(24, parseInt(installmentMonthsMap[inv.id]) || 0) }).map((_, i) => {
+                                  const d = new Date(paymentDatesMap[inv.id] || paymentDate || new Date());
+                                  d.setMonth(d.getMonth() + i + 1);
+                                  const mths = parseInt(installmentMonthsMap[inv.id]);
+                                  const shortfall = inv.balance_due - amtApplied;
+                                  const monthly = shortfall / mths;
+                                  let amt = monthly;
+                                  if (i === mths - 1) {
+                                    amt = shortfall - (parseFloat(monthly.toFixed(2)) * (mths - 1));
+                                  }
+                                  return (
+                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "9px", color: "#475569", padding: "2px 0" }}>
+                                      <span>{d.toLocaleDateString("en-US", { month: "short" })} <span style={{ color: "#94a3b8" }}>({d.toLocaleDateString("en-GB")})</span></span>
+                                      <span style={{ fontWeight: "600" }}>₹{amt.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {!nextSch && amtApplied > 0 && inv.balance_due - amtApplied <= 0 && (
+                          <div style={{ marginTop: "4px", color: "#12b76a", fontSize: "10px", width: "140px", textAlign: "left" }}>
+                            (Fully Paid)
                           </div>
                         )}
                       </div>

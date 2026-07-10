@@ -365,10 +365,10 @@ function PaymentDetail() {
             </div>
 
             {/* Document Scrollable Area */}
-            <div className="scroll-area" style={{ flex: 1, overflowY: "auto", padding: "32px", display: "flex", justifyContent: "center" }}>
+            <div className="scroll-area" style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
               
               {/* Document Container */}
-              <div className="printable-a4" style={{ width: "800px", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)", position: "relative", minHeight: "1123px", padding: "60px 48px" }}>
+              <div className="printable-a4" style={{ width: "800px", margin: "0 auto", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)", position: "relative", minHeight: "1123px", padding: "60px 48px" }}>
                 
                 {/* Diagonal Status Ribbon */}
                 <div className="print-hide" style={{ position: "absolute", top: 0, left: 0, width: "130px", height: "130px", overflow: "hidden", zIndex: 10 }}>

@@ -5,7 +5,7 @@ import { useTheme } from "../ThemeContext";
 import { apiRequest } from "../api";
 import "./Topbar.css";
 import CreateOrganizationForm from "./CreateOrganizationForm";
-import { Search, RefreshCw, Users, Plus } from "lucide-react";
+import { Search, RefreshCw, Users, Plus, Bell } from "lucide-react";
 
 function Topbar() {
   const navigate = useNavigate();
@@ -25,6 +25,26 @@ function Topbar() {
   const searchRef = useRef(null);
 
   const [organizations, setOrganizations] = useState([]);
+  
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        if (user) {
+          const res = await apiRequest("/notifications");
+          if (res && res.notifications) {
+            setNotifications(res.notifications);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch notifications:", e);
+      }
+    };
+    fetchNotifications();
+  }, [user]);
 
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -297,6 +317,56 @@ function Topbar() {
           </button>
 
           {/* Notification / users icons */}
+          <div className="topbar-dropdown-container">
+            <button 
+              className="topbar-icon-btn" 
+              aria-label="Notifications" 
+              onClick={() => setShowNotifications(!showNotifications)}
+              style={{ position: "relative" }}
+            >
+              <Bell size={18} />
+              {notifications.length > 0 && (
+                <span style={{ position: "absolute", top: "2px", right: "2px", background: "#ef4444", color: "#fff", fontSize: "9px", fontWeight: "bold", width: "14px", height: "14px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div className="topbar-dropdown-menu" style={{ width: "320px", right: 0, padding: "0" }}>
+                <div style={{ padding: "12px 16px", borderBottom: "1px solid #eaecf0", fontWeight: "600", fontSize: "14px" }}>
+                  Notifications
+                </div>
+                <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: "24px 16px", textAlign: "center", color: "#667085", fontSize: "13px" }}>
+                      No new notifications
+                    </div>
+                  ) : (
+                    notifications.map(n => (
+                      <div 
+                        key={n.id} 
+                        style={{ padding: "12px 16px", borderBottom: "1px solid #eaecf0", cursor: "pointer", transition: "background 0.2s" }}
+                        onClick={() => { setSelectedNotification(n); setShowNotifications(false); }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      >
+                        <div style={{ fontSize: "13px", fontWeight: "500", color: "#1d2939", marginBottom: "4px" }}>
+                          Installment Due: {n.invoice_number}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "#475569" }}>
+                          ₹{parseFloat(n.balance_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})} due from {n.customer_name}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#dc2626", marginTop: "4px", fontWeight: "500" }}>
+                          Due Date: {new Date(n.due_date).toLocaleDateString("en-GB")}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button className="topbar-icon-btn" aria-label="Users" onClick={() => navigate("/users-roles")}>
             <Users size={18} />
           </button>
@@ -353,6 +423,68 @@ function Topbar() {
       {/* Create Organization Modal */}
       {showCreateOrg && (
         <CreateOrganizationForm onClose={() => setShowCreateOrg(false)} />
+      )}
+
+      {/* Quick Action Modal for Notifications */}
+      {selectedNotification && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(16,24,40,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#ffffff", width: "400px", borderRadius: "8px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)", overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #eaecf0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#1d2939" }}>Pending Installment Action</h3>
+              <button onClick={() => setSelectedNotification(null)} style={{ background: "none", border: "none", fontSize: "20px", color: "#98a2b3", cursor: "pointer" }}>&times;</button>
+            </div>
+            
+            <div style={{ padding: "20px" }}>
+              <div style={{ marginBottom: "16px" }}>
+                <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}>Customer</div>
+                <div style={{ fontSize: "14px", fontWeight: "500", color: "#1d2939" }}>{selectedNotification.customer_name}</div>
+              </div>
+              <div style={{ marginBottom: "16px", display: "flex", gap: "20px" }}>
+                <div>
+                  <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}>Invoice</div>
+                  <div style={{ fontSize: "14px", fontWeight: "500", color: "#1d2939" }}>{selectedNotification.invoice_number}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}>Pending Amount</div>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#dc2626" }}>₹{parseFloat(selectedNotification.balance_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                </div>
+              </div>
+              
+              <div style={{ borderTop: "1px solid #eaecf0", margin: "20px -20px", paddingTop: "20px", paddingLeft: "20px", paddingRight: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <button 
+                  onClick={() => {
+                    const msg = `Dear ${selectedNotification.customer_name}, your installment of Rs.${parseFloat(selectedNotification.balance_amount).toFixed(2)} for Invoice ${selectedNotification.invoice_number} is due on ${new Date(selectedNotification.due_date).toLocaleDateString("en-GB")}. Please remit payment.`;
+                    const phone = selectedNotification.customer_phone ? String(selectedNotification.customer_phone).replace(/\D/g, "") : "";
+                    const target = phone.length === 10 ? `91${phone}` : phone;
+                    if (!target) {
+                      alert("Customer phone number is missing.");
+                      return;
+                    }
+                    window.open(`https://wa.me/${target}?text=${encodeURIComponent(msg)}`, "_blank");
+                  }}
+                  style={{ width: "100%", background: "#25D366", color: "#fff", border: "none", padding: "10px", borderRadius: "6px", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                  Send to WhatsApp
+                </button>
+                <button 
+                  onClick={() => {
+                    const msg = `Dear ${selectedNotification.customer_name},\n\nThis is a reminder that your installment of Rs.${parseFloat(selectedNotification.balance_amount).toFixed(2)} for Invoice ${selectedNotification.invoice_number} is due on ${new Date(selectedNotification.due_date).toLocaleDateString("en-GB")}.\n\nPlease remit payment at your earliest convenience.\n\nThank you!`;
+                    if (!selectedNotification.customer_email) {
+                      alert("Customer email is missing.");
+                      return;
+                    }
+                    window.location.href = `mailto:${selectedNotification.customer_email}?subject=Payment Reminder: Invoice ${selectedNotification.invoice_number}&body=${encodeURIComponent(msg)}`;
+                  }}
+                  style={{ width: "100%", background: "#006ee6", color: "#fff", border: "none", padding: "10px", borderRadius: "6px", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  Send to Email
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

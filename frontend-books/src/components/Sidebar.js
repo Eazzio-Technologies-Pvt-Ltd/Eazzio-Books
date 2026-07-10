@@ -64,6 +64,8 @@ const sidebarMenus = [
     label: "Banking", icon: <Landmark size={18} />, module: MODULES.BANKING,
     children: [
       { label: "Bank Accounts", path: "/bank-accounts" },
+      { label: "Petty Cash", path: "/banking/petty-cash" },
+      { label: "Undeposited Funds", path: "/banking/undeposited-funds" },
       { label: "Bank Rules", path: "/bank-rules" },
       { label: "Reconciliation", path: "/reconciliation" },
     ],

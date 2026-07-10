@@ -214,9 +214,9 @@ function DeliveryChallans() {
         .btn-new:hover { background: #2563eb; }
         .btn-more { background: #f5f5f5; border: 1px solid #ddd; color: #555; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
         .table-wrapper { flex: 1; overflow: auto; }
-        .items-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+        .items-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; border: 1px solid #e2e8f0; }
         .items-table th { text-align: left; padding: 12px 15px; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; background: #ffffff; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; white-space: nowrap; resize: horizontal; overflow: hidden; text-overflow: ellipsis; }
-        .items-table td { padding: 14px 15px; border-bottom: 1px solid #f8fafc; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .items-table td { padding: 14px 15px; border-bottom: 1px solid #e2e8f0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .items-table tr:hover { background: #f1f5f9; }
         .customer-name-link { color: #2563eb; cursor: pointer; font-weight: 500; }
         .customer-name-link:hover { text-decoration: underline; }

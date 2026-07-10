@@ -45,6 +45,7 @@ function InvoiceDetail() {
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [paymentNotes, setPaymentNotes] = useState("");
   const [transferShortfall, setTransferShortfall] = useState(false);
+  const [installmentMonths, setInstallmentMonths] = useState("");
   
   const addSplit = () => setPaymentSplits([...paymentSplits, { id: Date.now(), amount: "", payment_mode: "Cash", deposit_to: "Petty Cash", reference: "" }]);
   const removeSplit = (id) => setPaymentSplits(paymentSplits.filter(s => s.id !== id));
@@ -250,7 +251,8 @@ function InvoiceDetail() {
           payment_date: paymentDate,
           splits: paymentSplits,
           notes: paymentNotes,
-          transfer_shortfall: transferShortfall
+          transfer_shortfall: transferShortfall,
+          installment_months: parseInt(installmentMonths) || 0
         }),
       });
       toast.success("Payment recorded");
@@ -268,6 +270,7 @@ function InvoiceDetail() {
       setShowPaymentModal(false);
       setPaymentSplits([{ id: Date.now(), amount: "", payment_mode: "Cash", deposit_to: "Petty Cash", reference: "" }]);
       setPaymentNotes("");
+      setInstallmentMonths("");
     } catch (err) { toast.error("Failed to record payment"); }
   };
 
@@ -580,10 +583,10 @@ function InvoiceDetail() {
             </div>
 
             {/* Document Scrollable Area */}
-            <div className="scroll-area" style={{ flex: 1, overflowY: "auto", padding: "32px", display: "flex", justifyContent: "center" }}>
+            <div className="scroll-area" style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
               
               {/* Document Container */}
-              <div className="printable-a4" style={{ width: "800px", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)", position: "relative", minHeight: "1123px", padding: "48px" }}>
+              <div className="printable-a4" style={{ width: "800px", margin: "0 auto", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)", position: "relative", minHeight: "1123px", padding: "48px" }}>
                 
                 {/* Diagonal Status Ribbon */}
                 <div className="print-hide" style={{ position: "absolute", top: 0, left: 0, width: "130px", height: "130px", overflow: "hidden", zIndex: 10 }}>
@@ -910,7 +913,7 @@ function InvoiceDetail() {
                     + Add another payment method
                   </button>
 
-                  {shortfall > 0 && shortfall < currBal && (
+                  {currentInstallment && shortfall > 0 && shortfall < currBal && (
                     <div style={{ marginBottom: "16px", padding: "12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
                       <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#344054", cursor: "pointer", margin: 0 }}>
                         <input type="checkbox" checked={transferShortfall} onChange={e => setTransferShortfall(e.target.checked)} style={{ margin: 0 }} />
@@ -919,6 +922,55 @@ function InvoiceDetail() {
                       {transferShortfall && (
                         <div style={{ marginTop: "8px", fontSize: "12px", color: "#0ba5ec", fontWeight: "500", paddingLeft: "24px" }}>
                            This ₹{shortfall.toFixed(2)} will be shifted to the installment due on {nextDateStr}.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!currentInstallment && amt > 0 && shortfall > 0 && (
+                    <div style={{ marginBottom: "16px", padding: "12px", background: "#fcfcfd", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ color: "#344054", marginBottom: "8px", fontWeight: "600", fontSize: "13px" }}>
+                        Split remaining balance (₹{shortfall.toFixed(2)}) into installments:
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <input 
+                          type="number" 
+                          min="1" 
+                          max="24"
+                          value={installmentMonths} 
+                          onChange={(e) => setInstallmentMonths(e.target.value)}
+                          placeholder="Months"
+                          className="input-style"
+                          style={{ width: "80px", marginBottom: "0", padding: "6px 10px" }}
+                        />
+                        <span style={{ color: "#667085", fontSize: "13px" }}>months</span>
+                      </div>
+                      {installmentMonths > 0 && (
+                        <div style={{ marginTop: "12px", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#ffffff", overflow: "hidden" }}>
+                          <div style={{ padding: "8px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: "12px", fontWeight: "600", color: "#475569" }}>
+                            Installment Schedule Preview
+                          </div>
+                          <div style={{ maxHeight: "150px", overflowY: "auto", padding: "0 12px" }}>
+                            {Array.from({ length: Math.min(24, parseInt(installmentMonths) || 0) }).map((_, i) => {
+                              const d = new Date(paymentDate || new Date());
+                              d.setMonth(d.getMonth() + i + 1);
+                              const mths = parseInt(installmentMonths);
+                              const monthly = shortfall / mths;
+                              let amt = monthly;
+                              if (i === mths - 1) {
+                                amt = shortfall - (parseFloat(monthly.toFixed(2)) * (mths - 1));
+                              }
+                              return (
+                                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < mths - 1 ? "1px dashed #e2e8f0" : "none", fontSize: "12px", color: "#344054" }}>
+                                  <span>
+                                    {d.toLocaleDateString("en-US", { month: "short", year: "numeric" })}{" "}
+                                    <span style={{ color: "#94a3b8", fontSize: "11px" }}>(Due: {d.toLocaleDateString("en-GB")})</span>
+                                  </span>
+                                  <span style={{ fontWeight: "600" }}>₹{amt.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>

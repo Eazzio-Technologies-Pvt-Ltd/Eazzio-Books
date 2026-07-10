@@ -269,6 +269,7 @@ function PaymentsReceived() {
           border-collapse: collapse;
           font-size: 13px;
           table-layout: fixed;
+          border: 1px solid #e2e8f0;
         }
         .items-table th {
           text-align: left;
@@ -287,7 +288,7 @@ function PaymentsReceived() {
         }
         .items-table td {
           padding: 14px 15px;
-          border-bottom: 1px solid #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
           color: #334155;
           white-space: nowrap;
           overflow: hidden;
