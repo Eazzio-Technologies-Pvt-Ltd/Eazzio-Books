@@ -394,16 +394,52 @@ const getProjectedPayments = async (req, res) => {
 
     const projEndDate = new Date(projYear, projMonth, 0); // Last day of the projected month
     const result = await pool.query(`
-      SELECT b.id as bill_id, b.invoice_number as bill_number, v.display_name as vendor_name, b.invoice_date as bill_date, b.due_date, 
-             b.total_amount, (b.total_amount - b.balance_due) as paid_amount, b.balance_due as pending_amount, 
-             b.status
+      SELECT 
+        b.id as bill_id, 
+        b.invoice_number as bill_number, 
+        v.display_name as vendor_name, 
+        v.email as customer_email,
+        v.phone as customer_phone,
+        v.mobile as customer_mobile,
+        b.invoice_date as bill_date, 
+        b.due_date, 
+        b.total_amount, 
+        (b.total_amount - b.balance_due) as paid_amount, 
+        b.balance_due as pending_amount, 
+        b.status
       FROM invoices b
       LEFT JOIN customers v ON b.customer_id = v.id
       WHERE b.user_id = $1 
         AND b.balance_due > 0
         AND LOWER(b.status) NOT IN ('paid', 'cancelled', 'void', 'written off', 'write off', 'written_off')
         AND b.due_date <= $2
-      ORDER BY b.due_date ASC
+        AND NOT EXISTS (SELECT 1 FROM invoice_payment_schedules WHERE invoice_id = b.id)
+      
+      UNION ALL
+      
+      SELECT 
+        b.id as bill_id, 
+        b.invoice_number as bill_number, 
+        v.display_name as vendor_name, 
+        v.email as customer_email,
+        v.phone as customer_phone,
+        v.mobile as customer_mobile,
+        b.invoice_date as bill_date, 
+        s.due_date as due_date, 
+        b.total_amount, 
+        s.paid_amount as paid_amount, 
+        s.balance_amount as pending_amount, 
+        s.status as status
+      FROM invoice_payment_schedules s
+      JOIN invoices b ON s.invoice_id = b.id
+      LEFT JOIN customers v ON b.customer_id = v.id
+      WHERE b.user_id = $1 
+        AND s.balance_amount > 0
+        AND s.status != 'paid'
+        AND LOWER(b.status) NOT IN ('cancelled', 'void', 'written off', 'write off', 'written_off')
+        AND s.due_date <= $2
+        
+      ORDER BY due_date ASC
     `, [req.user.id, projEndDate]);
 
     let total_projected_payment = 0;

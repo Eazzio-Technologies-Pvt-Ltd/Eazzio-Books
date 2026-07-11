@@ -82,8 +82,19 @@ exports.getMonthlyFinanceSummary = async (req, res) => {
     const expenses = parseFloat(selExpRes.rows[0].total) + parseFloat(selPmtMadeRes.rows[0].total);
 
     const selProjPmtRes = await pool.query(
-      `SELECT COALESCE(SUM(balance_due), 0) AS total FROM invoices 
-       WHERE user_id = $1 AND status != 'Paid' AND EXTRACT(MONTH FROM due_date) = $2 AND EXTRACT(YEAR FROM due_date) = $3`,
+      `SELECT COALESCE(SUM(CASE WHEN s.id IS NOT NULL THEN s.balance_amount ELSE i.balance_due END), 0) AS total 
+       FROM invoices i
+       LEFT JOIN invoice_payment_schedules s 
+         ON i.id = s.invoice_id 
+         AND EXTRACT(MONTH FROM s.due_date) = $2 AND EXTRACT(YEAR FROM s.due_date) = $3 
+         AND s.status != 'paid'
+       WHERE i.user_id = $1 
+         AND i.status != 'Paid'
+         AND (
+           s.id IS NOT NULL 
+           OR 
+           (NOT EXISTS (SELECT 1 FROM invoice_payment_schedules WHERE invoice_id = i.id) AND EXTRACT(MONTH FROM i.due_date) = $2 AND EXTRACT(YEAR FROM i.due_date) = $3)
+         )`,
       [userId, month, year]
     );
     const projected_payments = parseFloat(selProjPmtRes.rows[0].total);
@@ -127,8 +138,19 @@ exports.getMonthlyFinanceSummary = async (req, res) => {
 
     // 3. NEXT MONTH
     const nextProjIncRes = await pool.query(
-      `SELECT COALESCE(SUM(balance_due), 0) AS total FROM invoices 
-       WHERE user_id = $1 AND EXTRACT(MONTH FROM due_date) = $2 AND EXTRACT(YEAR FROM due_date) = $3 AND status != 'Paid'`,
+      `SELECT COALESCE(SUM(CASE WHEN s.id IS NOT NULL THEN s.balance_amount ELSE i.balance_due END), 0) AS total 
+       FROM invoices i
+       LEFT JOIN invoice_payment_schedules s 
+         ON i.id = s.invoice_id 
+         AND EXTRACT(MONTH FROM s.due_date) = $2 AND EXTRACT(YEAR FROM s.due_date) = $3 
+         AND s.status != 'paid'
+       WHERE i.user_id = $1 
+         AND i.status != 'Paid'
+         AND (
+           s.id IS NOT NULL 
+           OR 
+           (NOT EXISTS (SELECT 1 FROM invoice_payment_schedules WHERE invoice_id = i.id) AND EXTRACT(MONTH FROM i.due_date) = $2 AND EXTRACT(YEAR FROM i.due_date) = $3)
+         )`,
       [userId, nextMonth, nextYear]
     );
     const next_projected_income = parseFloat(nextProjIncRes.rows[0].total);

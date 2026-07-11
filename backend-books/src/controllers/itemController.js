@@ -20,6 +20,7 @@ const getItems = async (req, res) => {
 
     query += ` ORDER BY created_at DESC`;
     const result = await pool.query(query, values);
+    console.log(`[GET ITEMS] user: ${req.user.email}, tenantId: ${req.tenantId}, found: ${result.rows.length}`);
     res.json({ items: result.rows });
   } catch (err) {
     console.error("GET ITEMS ERROR:", err);

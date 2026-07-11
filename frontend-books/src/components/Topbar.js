@@ -25,28 +25,15 @@ function Topbar() {
   const searchRef = useRef(null);
   const orgMenuRef = useRef(null);
   const profileMenuRef = useRef(null);
+  const notificationMenuRef = useRef(null);
 
-  const [organizations, setOrganizations] = useState([]);
-  
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        if (user) {
-          const res = await apiRequest("/notifications");
-          if (res && res.notifications) {
-            setNotifications(res.notifications);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch notifications:", e);
-      }
-    };
-    fetchNotifications();
-  }, [user]);
+  const [organizations, setOrganizations] = useState([]);
+  
+
 
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -62,6 +49,23 @@ function Topbar() {
       }
     };
     fetchOrgs();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        if (user) {
+          const res = await apiRequest("/accounts/projected-payments");
+          if (res && res.bills) {
+            const pending = res.bills.filter(p => p.status !== 'Paid' && p.status !== 'PAID');
+            setNotifications(pending);
+          }
+        }
+      } catch(e) {
+        console.error("Failed to fetch notifications:", e);
+      }
+    };
+    fetchNotifications();
   }, [user]);
 
   const handleSwitchOrg = async (orgId) => {
@@ -83,6 +87,9 @@ function Topbar() {
       }
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
         setShowProfileMenu(false);
+      }
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(e.target)) {
+        setShowNotifications(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -327,17 +334,13 @@ function Topbar() {
             <Plus size={20} />
           </button>
 
-          {/* Notification / users icons */}
-          <div className="topbar-dropdown-container">
-            <button 
-              className="topbar-icon-btn" 
-              aria-label="Notifications" 
-              onClick={() => setShowNotifications(!showNotifications)}
-              style={{ position: "relative" }}
-            >
+
+
+          <div className="topbar-dropdown-container" ref={notificationMenuRef}>
+            <button className="topbar-icon-btn" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}>
               <Bell size={18} />
               {notifications.length > 0 && (
-                <span style={{ position: "absolute", top: "2px", right: "2px", background: "#ef4444", color: "#fff", fontSize: "9px", fontWeight: "bold", width: "14px", height: "14px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ position: "absolute", top: "2px", right: "2px", background: "#ef4444", color: "#fff", fontSize: "10px", fontWeight: "bold", padding: "2px 6px", borderRadius: "10px", lineHeight: 1 }}>
                   {notifications.length}
                 </span>
               )}
@@ -362,10 +365,10 @@ function Topbar() {
                         onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                       >
                         <div style={{ fontSize: "13px", fontWeight: "500", color: "#1d2939", marginBottom: "4px" }}>
-                          Installment Due: {n.invoice_number}
+                          Installment Due: {n.bill_number}
                         </div>
                         <div style={{ fontSize: "12px", color: "#475569" }}>
-                          ₹{parseFloat(n.balance_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})} due from {n.customer_name}
+                          ₹{parseFloat(n.pending_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})} due from {n.vendor_name}
                         </div>
                         <div style={{ fontSize: "11px", color: "#dc2626", marginTop: "4px", fontWeight: "500" }}>
                           Due Date: {new Date(n.due_date).toLocaleDateString("en-GB")}
@@ -451,24 +454,24 @@ function Topbar() {
             <div style={{ padding: "20px" }}>
               <div style={{ marginBottom: "16px" }}>
                 <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}>Customer</div>
-                <div style={{ fontSize: "14px", fontWeight: "500", color: "#1d2939" }}>{selectedNotification.customer_name}</div>
+                <div style={{ fontSize: "14px", fontWeight: "500", color: "#1d2939" }}>{selectedNotification.vendor_name}</div>
               </div>
               <div style={{ marginBottom: "16px", display: "flex", gap: "20px" }}>
                 <div>
                   <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}>Invoice</div>
-                  <div style={{ fontSize: "14px", fontWeight: "500", color: "#1d2939" }}>{selectedNotification.invoice_number}</div>
+                  <div style={{ fontSize: "14px", fontWeight: "500", color: "#1d2939" }}>{selectedNotification.bill_number}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}>Pending Amount</div>
-                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#dc2626" }}>₹{parseFloat(selectedNotification.balance_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#dc2626" }}>₹{parseFloat(selectedNotification.pending_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                 </div>
               </div>
               
               <div style={{ borderTop: "1px solid #eaecf0", margin: "20px -20px", paddingTop: "20px", paddingLeft: "20px", paddingRight: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
                 <button 
                   onClick={() => {
-                    const msg = `Dear ${selectedNotification.customer_name}, your installment of Rs.${parseFloat(selectedNotification.balance_amount).toFixed(2)} for Invoice ${selectedNotification.invoice_number} is due on ${new Date(selectedNotification.due_date).toLocaleDateString("en-GB")}. Please remit payment.`;
-                    const phone = selectedNotification.customer_phone ? String(selectedNotification.customer_phone).replace(/\D/g, "") : "";
+                    const msg = `Dear ${selectedNotification.vendor_name}, your installment of Rs.${parseFloat(selectedNotification.pending_amount).toFixed(2)} for Invoice ${selectedNotification.bill_number} is due on ${new Date(selectedNotification.due_date).toLocaleDateString("en-GB")}. Please remit payment.`;
+                    const phone = (selectedNotification.customer_phone || selectedNotification.customer_mobile) ? String(selectedNotification.customer_phone || selectedNotification.customer_mobile).replace(/\D/g, "") : "";
                     const target = phone.length === 10 ? `91${phone}` : phone;
                     if (!target) {
                       alert("Customer phone number is missing.");
@@ -483,12 +486,12 @@ function Topbar() {
                 </button>
                 <button 
                   onClick={() => {
-                    const msg = `Dear ${selectedNotification.customer_name},\n\nThis is a reminder that your installment of Rs.${parseFloat(selectedNotification.balance_amount).toFixed(2)} for Invoice ${selectedNotification.invoice_number} is due on ${new Date(selectedNotification.due_date).toLocaleDateString("en-GB")}.\n\nPlease remit payment at your earliest convenience.\n\nThank you!`;
+                    const msg = `Dear ${selectedNotification.vendor_name},\n\nThis is a reminder that your installment of Rs.${parseFloat(selectedNotification.pending_amount).toFixed(2)} for Invoice ${selectedNotification.bill_number} is due on ${new Date(selectedNotification.due_date).toLocaleDateString("en-GB")}.\n\nPlease remit payment at your earliest convenience.\n\nThank you!`;
                     if (!selectedNotification.customer_email) {
                       alert("Customer email is missing.");
                       return;
                     }
-                    window.location.href = `mailto:${selectedNotification.customer_email}?subject=Payment Reminder: Invoice ${selectedNotification.invoice_number}&body=${encodeURIComponent(msg)}`;
+                    window.location.href = `mailto:${selectedNotification.customer_email}?subject=Payment Reminder: Invoice ${selectedNotification.bill_number}&body=${encodeURIComponent(msg)}`;
                   }}
                   style={{ width: "100%", background: "#006ee6", color: "#fff", border: "none", padding: "10px", borderRadius: "6px", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 >
@@ -500,6 +503,7 @@ function Topbar() {
           </div>
         </div>
       )}
+
     </>
   );
 }
