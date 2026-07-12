@@ -5,6 +5,9 @@ class PlanPermissionHelper {
   static final _service = PlanLimitsService(PlanLimitsConfig.data);
 
   static bool hasAccess(String planId, String path, {int remainingTrialDays = 0}) {
+    if (PlanLimitsConfig.data['_meta']?['enforcement_enabled'] == false) {
+      return true;
+    }
     final cleanPath = Uri.parse(path).path.toLowerCase();
     
     // Auth routes, dashboard, pricing, logout, support, more, and the lock page are always allowed

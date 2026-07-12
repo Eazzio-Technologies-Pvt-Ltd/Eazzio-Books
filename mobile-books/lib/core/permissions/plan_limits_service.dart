@@ -41,6 +41,9 @@ class PlanLimitsService {
   }
 
   bool isFeatureEnabled(String planId, String featureKey) {
+    if (_config['_meta']?['enforcement_enabled'] == false) {
+      return true;
+    }
     final plan = getPlan(planId);
     
     // Check both standard boolean keys and enabled keys
@@ -57,6 +60,9 @@ class PlanLimitsService {
   }
 
   PlanCreateCheck checkCanCreate(String planId, String entityType, int currentCount) {
+    if (_config['_meta']?['enforcement_enabled'] == false) {
+      return const PlanCreateCheck(allowed: true, remaining: null, isUnlimited: true);
+    }
     String configKey = entityType.toLowerCase();
     
     // Map resource type to configuration max fields

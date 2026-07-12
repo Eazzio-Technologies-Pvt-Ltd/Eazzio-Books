@@ -1,3 +1,4 @@
+import 'package:mobile_books/core/config/plan_limits.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
@@ -40,6 +41,9 @@ class PlanGateService {
   }
 
   int? getMaxLimit(String resourceType) {
+    if (PlanLimitsConfig.data['_meta']?['enforcement_enabled'] == false) {
+      return null;
+    }
     var effectivePlan = planId;
     if (effectivePlan.toLowerCase() == 'trial') {
       effectivePlan = remainingTrialDays > 0 ? 'standard' : 'free';

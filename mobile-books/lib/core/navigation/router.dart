@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_books/core/config/plan_limits.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/permissions/permission_helper.dart';
 import 'package:mobile_books/core/permissions/plan_permission_helper.dart';
@@ -148,14 +149,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         final userPlan = authState.user.planId.toLowerCase();
         final isPaidPlan = userPlan == 'standard' || userPlan == 'premium' || userPlan == 'professional' || userPlan == 'enterprise';
-        final isExpired = authState.user.subscriptionStatus == 'expired' && isPaidPlan;
+        final isExpired = authState.user.subscriptionStatus == 'expired' && isPaidPlan && PlanLimitsConfig.data['_meta']?['enforcement_enabled'] != false;
 
         if (isExpired && !isAllowedExpired) {
           return '/pricing';
         }
 
-        // Check if trial has expired and trigger state downgrade
-        if (userPlan == 'trial' && authState.user.remainingTrialDays <= 0) {
+        // Check if trial has expired and trigger state downgrade (only if enforcement is enabled)
+        if (userPlan == 'trial' && authState.user.remainingTrialDays <= 0 && PlanLimitsConfig.data['_meta']?['enforcement_enabled'] != false) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.read(authNotifierProvider.notifier).downgradeToFree();
           });

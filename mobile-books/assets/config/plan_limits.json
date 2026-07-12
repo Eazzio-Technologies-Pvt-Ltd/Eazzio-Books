@@ -1,7 +1,4 @@
-import 'dart:convert';
-
-class PlanLimitsConfig {
-  static const String jsonString = r'''{
+{
   "free": {
     "price_inr_per_month": 0,
     "billing_model": "flat",
@@ -213,7 +210,4 @@ class PlanLimitsConfig {
       "note": "Free plan has no billing cycle and never expires. Paid plans (including per-org add-ons) must be re-charged every 30 days; failure to renew sets status='expired' which triggers the full app lock in subscription_expiry_lock, NOT the soft trial-downgrade path."
     }
   }
-}''';
-
-  static final Map<String, dynamic> data = json.decode(jsonString);
 }
