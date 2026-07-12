@@ -31,6 +31,8 @@ class MoreScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildProfileCard(context, ref, authState),
+            const Divider(height: AppSpacing.m),
             _buildSectionHeader(context, 'Items & Inventory'),
             _buildMenuItem(
               context: context,
@@ -200,6 +202,20 @@ class MoreScreen extends ConsumerWidget {
             ),
             _buildMenuItem(
               context: context,
+              icon: Icons.money_outlined,
+              label: 'Petty Cash',
+              path: '/banking/petty-cash',
+              show: hasPermission('/banking'),
+            ),
+            _buildMenuItem(
+              context: context,
+              icon: Icons.all_inbox_outlined,
+              label: 'Undeposited Funds',
+              path: '/banking/undeposited-funds',
+              show: hasPermission('/banking'),
+            ),
+            _buildMenuItem(
+              context: context,
               icon: Icons.gavel_outlined,
               label: 'Bank Rules',
               path: '/bank-rules',
@@ -287,6 +303,20 @@ class MoreScreen extends ConsumerWidget {
               label: 'Trial Balance',
               path: '/reports/trial-balance',
               show: hasPermission('/reports/trial-balance'),
+            ),
+            _buildMenuItem(
+              context: context,
+              icon: Icons.payments_outlined,
+              label: 'Projected Payments',
+              path: '/projected-payments',
+              show: true,
+            ),
+            _buildMenuItem(
+              context: context,
+              icon: Icons.money_off_csred_outlined,
+              label: 'Projected Expenses',
+              path: '/projected-expenses',
+              show: true,
             ),
 
             const Divider(height: AppSpacing.l),
@@ -388,6 +418,148 @@ class MoreScreen extends ConsumerWidget {
       onTap: () {
         context.go(path);
       },
+    );
+  }
+
+  Widget _buildProfileCard(BuildContext context, WidgetRef ref, AuthState authState) {
+    if (authState is! AuthAuthenticated) return const SizedBox.shrink();
+    
+    final user = authState.user;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+        ],
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xFFEFF6FF),
+                child: Text(
+                  user.email.isNotEmpty ? user.email[0].toUpperCase() : 'U',
+                  style: const TextStyle(
+                    color: AppColors.primaryBlue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.m),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.email,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white12 : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            user.role,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            user.planId.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.m),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.s),
+          
+          // Theme Switcher Tile
+          Consumer(
+            builder: (context, ref, child) {
+              final themeMode = ref.watch(themeModeProvider);
+              final isThemeDark = themeMode == ThemeMode.dark || 
+                  (themeMode == ThemeMode.system && MediaQuery.of(context).platformBrightness == Brightness.dark);
+              
+              return SwitchListTile(
+                secondary: Icon(
+                  isThemeDark ? Icons.dark_mode : Icons.light_mode,
+                  color: isDark ? Colors.white70 : AppColors.primaryBlue,
+                ),
+                title: const Text('Dark Mode', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                value: isThemeDark,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (bool value) {
+                  ref.read(themeModeProvider.notifier).setThemeMode(
+                      value ? ThemeMode.dark : ThemeMode.light);
+                },
+              );
+            },
+          ),
+          
+          // Logout Tile
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            onTap: () {
+              ref.read(authNotifierProvider.notifier).logout();
+            },
+          ),
+        ],
+      ),
     );
   }
 }

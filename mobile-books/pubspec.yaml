@@ -41,3 +41,4 @@ flutter:
   assets:
     - .env
     - assets/images/
+    - assets/config/plan_limits.json

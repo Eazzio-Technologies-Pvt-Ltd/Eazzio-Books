@@ -5,6 +5,9 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/vendors/data/models/vendor.dart';
+import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
+import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
 
 class VendorsListScreen extends ConsumerStatefulWidget {
   const VendorsListScreen({super.key});
@@ -162,11 +165,28 @@ class _VendorsListScreenState extends ConsumerState<VendorsListScreen> {
         title: const Text('Vendors'),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/vendors/new'),
+        onPressed: () {
+          final planGate = ref.read(planGateProvider);
+          if (!planGate.canCreate('vendor')) {
+            final limit = planGate.getMaxLimit('vendor') ?? 5;
+            final currentPlanName = planGate.planId.toLowerCase() == 'free' ? 'Free' : 'Standard Premium';
+            UpgradeContinueSheet.show(
+              context,
+              title: 'Vendor Limit Reached',
+              description: 'You have reached the maximum limit of $limit vendors allowed on the $currentPlanName plan. Upgrade to a higher plan to add more.',
+            );
+          } else {
+            context.push('/vendors/new');
+          }
+        },
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs),
+            child: const PlanLimitBanner(resourceType: 'vendor', resourceName: 'vendor'),
+          ),
           // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(

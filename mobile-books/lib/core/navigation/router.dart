@@ -19,6 +19,8 @@ import 'package:mobile_books/features/settings/presentation/screens/pricing_scre
 import 'package:mobile_books/features/settings/presentation/screens/more_screen.dart';
 import 'package:mobile_books/features/dashboard/presentation/screens/projected_payments_screen.dart';
 import 'package:mobile_books/features/dashboard/presentation/screens/projected_expenses_screen.dart';
+import 'package:mobile_books/features/invoices/presentation/screens/petty_cash_screen.dart';
+import 'package:mobile_books/features/invoices/presentation/screens/undeposited_funds_screen.dart';
 import 'package:mobile_books/features/items/presentation/screens/stock_adjustment_form_screen.dart';
 import 'package:mobile_books/features/items/presentation/screens/inventory_movements_screen.dart';
 import 'package:mobile_books/features/quotes/presentation/screens/quotes_screen.dart';
@@ -144,11 +146,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         final isSupport = location == '/support';
         final isAllowedExpired = isPricing || isLogout || isSupport || isPublicRoute;
 
-        // Check if subscription has expired
-        final isExpired = authState.user.subscriptionStatus == 'expired';
+        final userPlan = authState.user.planId.toLowerCase();
+        final isPaidPlan = userPlan == 'standard' || userPlan == 'premium' || userPlan == 'professional' || userPlan == 'enterprise';
+        final isExpired = authState.user.subscriptionStatus == 'expired' && isPaidPlan;
 
         if (isExpired && !isAllowedExpired) {
           return '/pricing';
+        }
+
+        // Check if trial has expired and trigger state downgrade
+        if (userPlan == 'trial' && authState.user.remainingTrialDays <= 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(authNotifierProvider.notifier).downgradeToFree();
+          });
         }
 
         if (isPublicRoute && !isExpired) {
@@ -162,7 +172,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         // Verify subscription plan limits
         final planId = authState.user.planId;
-        if (!PlanPermissionHelper.hasAccess(planId, location)) {
+        final remainingDays = authState.user.remainingTrialDays;
+        if (!PlanPermissionHelper.hasAccess(planId, location, remainingTrialDays: remainingDays)) {
           final featureName = PlanPermissionHelper.getFeatureName(location);
           return '/feature-locked?feature=${Uri.encodeComponent(featureName)}';
         }
@@ -691,6 +702,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/banking',
         builder: (context, state) => const BankAccountsScreen(),
         routes: [
+          GoRoute(
+            path: 'petty-cash',
+            builder: (context, state) => const PettyCashScreen(),
+          ),
+          GoRoute(
+            path: 'undeposited-funds',
+            builder: (context, state) => const UndepositedFundsScreen(),
+          ),
           GoRoute(
             path: ':id',
             builder: (context, state) {

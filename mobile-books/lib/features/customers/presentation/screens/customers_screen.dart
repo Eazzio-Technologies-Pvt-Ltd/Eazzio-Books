@@ -6,6 +6,9 @@ import 'package:mobile_books/features/customers/presentation/providers/customer_
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/customers/data/models/customer.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
+import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
 
 class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({super.key});
@@ -145,137 +148,190 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         title: const Text('Customers'),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/customers/new'),
+        onPressed: () {
+          final planGate = ref.read(planGateProvider);
+          if (!planGate.canCreate('customer')) {
+            final limit = planGate.getMaxLimit('customer') ?? 10;
+            final currentPlanName = planGate.planId.toLowerCase() == 'free' ? 'Free' : 'Standard Premium';
+            UpgradeContinueSheet.show(
+              context,
+              title: 'Customer Limit Reached',
+              description: 'You have reached the maximum limit of $limit customers allowed on the $currentPlanName plan. Upgrade to a higher plan to add more.',
+            );
+          } else {
+            context.push('/customers/new');
+          }
+        },
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
-          // Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs),
+            child: const PlanLimitBanner(resourceType: 'customer', resourceName: 'customer'),
+          ),
+          // Search Bar & Filter Menu
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) => ref.read(customerSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search customers...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(customerSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
-            ),
-          ),
-
-          // Inline Sorting Chips
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.m,
-              vertical: AppSpacing.xs,
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  const Text(
-                    'Sort by: ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: AppColors.textSecondaryLight,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  ChoiceChip(
-                    label: const Text('Date'),
-                    selected: _sortBy == 'date',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'date');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Amount'),
-                    selected: _sortBy == 'amount',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'amount');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Status'),
-                    selected: _sortBy == 'status',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'status');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  ChoiceChip(
-                    label: const Text('Name'),
-                    selected: _sortBy == 'name',
-                    onSelected: (val) {
-                      if (val) setState(() => _sortBy = 'name');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  IconButton(
-                    icon: Icon(
-                      _sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 18,
-                      color: AppColors.primaryBlue,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _sortOrder = _sortOrder == 'asc' ? 'desc' : 'asc';
-                      });
-                    },
-                    tooltip: _sortOrder == 'asc' ? 'Ascending' : 'Descending',
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Filters Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
             child: Row(
               children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: filter == null,
-                  onSelected: (val) {
-                    if (val) ref.read(customersListFilterProvider.notifier).state = null;
-                  },
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) => ref.read(customerSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search customers...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(customerSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.s),
-                ChoiceChip(
-                  label: const Text('Active'),
-                  selected: filter == 'active',
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
-                    if (val) ref.read(customersListFilterProvider.notifier).state = 'active';
+                    if (val == 'sort_date') {
+                      setState(() => _sortBy = 'date');
+                    } else if (val == 'sort_amount') {
+                      setState(() => _sortBy = 'amount');
+                    } else if (val == 'sort_status') {
+                      setState(() => _sortBy = 'status');
+                    } else if (val == 'sort_name') {
+                      setState(() => _sortBy = 'name');
+                    } else if (val == 'order_asc') {
+                      setState(() => _sortOrder = 'asc');
+                    } else if (val == 'order_desc') {
+                      setState(() => _sortOrder = 'desc');
+                    } else if (val == 'filter_all') {
+                      ref.read(customersListFilterProvider.notifier).state = null;
+                    } else if (val == 'filter_active') {
+                      ref.read(customersListFilterProvider.notifier).state = 'active';
+                    } else if (val == 'filter_inactive') {
+                      ref.read(customersListFilterProvider.notifier).state = 'inactive';
+                    }
                   },
-                ),
-                const SizedBox(width: AppSpacing.s),
-                ChoiceChip(
-                  label: const Text('Inactive'),
-                  selected: filter == 'inactive',
-                  onSelected: (val) {
-                    if (val) ref.read(customersListFilterProvider.notifier).state = 'inactive';
-                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      enabled: false,
+                      child: Text('SORT BY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)),
+                    ),
+                    PopupMenuItem(
+                      value: 'sort_date',
+                      child: Row(
+                        children: [
+                          const Text('Date'),
+                          if (_sortBy == 'date') const Spacer(),
+                          if (_sortBy == 'date') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'sort_amount',
+                      child: Row(
+                        children: [
+                          const Text('Amount'),
+                          if (_sortBy == 'amount') const Spacer(),
+                          if (_sortBy == 'amount') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'sort_status',
+                      child: Row(
+                        children: [
+                          const Text('Status'),
+                          if (_sortBy == 'status') const Spacer(),
+                          if (_sortBy == 'status') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'sort_name',
+                      child: Row(
+                        children: [
+                          const Text('Name'),
+                          if (_sortBy == 'name') const Spacer(),
+                          if (_sortBy == 'name') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      enabled: false,
+                      child: Text('ORDER', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)),
+                    ),
+                    PopupMenuItem(
+                      value: 'order_asc',
+                      child: Row(
+                        children: [
+                          const Text('Ascending'),
+                          if (_sortOrder == 'asc') const Spacer(),
+                          if (_sortOrder == 'asc') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'order_desc',
+                      child: Row(
+                        children: [
+                          const Text('Descending'),
+                          if (_sortOrder == 'desc') const Spacer(),
+                          if (_sortOrder == 'desc') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      enabled: false,
+                      child: Text('FILTER BY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)),
+                    ),
+                    PopupMenuItem(
+                      value: 'filter_all',
+                      child: Row(
+                        children: [
+                          const Text('All'),
+                          if (filter == null) const Spacer(),
+                          if (filter == null) const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'filter_active',
+                      child: Row(
+                        children: [
+                          const Text('Active'),
+                          if (filter == 'active') const Spacer(),
+                          if (filter == 'active') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'filter_inactive',
+                      child: Row(
+                        children: [
+                          const Text('Inactive'),
+                          if (filter == 'inactive') const Spacer(),
+                          if (filter == 'inactive') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.s),
+          const SizedBox(height: AppSpacing.xs),
 
           // List Content
           Expanded(

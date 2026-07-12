@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
@@ -69,6 +70,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String _selectedPlanId = 'free';
   bool _isLoading = false;
 
+  late final Razorpay _razorpay;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -76,7 +88,59 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _companyController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _razorpay.clear();
     super.dispose();
+  }
+
+  Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      await ref.read(authNotifierProvider.notifier).register(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            companyName: _companyController.text.trim(),
+            fullName: _fullNameController.text.trim(),
+            planId: _selectedPlanId,
+            razorpayOrderId: response.orderId ?? '',
+            razorpayPaymentId: response.paymentId ?? '',
+            razorpaySignature: response.signature ?? '',
+          );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed: ${e.toString()}'),
+            backgroundColor: const Color(0xFFE5484D),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    setState(() {
+      _isLoading = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Payment Failed: ${response.message ?? "Cancelled"}'),
+        backgroundColor: const Color(0xFFE5484D),
+      ),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   void _nextStep() {
@@ -117,7 +181,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               planId: 'free',
             );
       } else {
-        // Paid plan: Call POST /api/register/create-order, construct URL, and open it
+        // Paid plan: Call POST /api/register/create-order and open native Razorpay overlay
         final networkClient = ref.read(networkClientProvider);
         final response = await networkClient.post(
           '/register/create-order',
@@ -127,27 +191,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         final data = response.data as Map<String, dynamic>;
         if (data['success'] == true && data['order'] != null) {
           final orderId = data['order']['id'] as String;
-          final paymentUrl = Uri.parse('https://rzp.io/rzp/$orderId');
+          final keyId = data['keyId'] as String? ?? '';
+          final plan = registrationPlans.firstWhere((p) => p.id == _selectedPlanId);
 
-          // TODO: Razorpay in-app SDK integration
-          if (await canLaunchUrl(paymentUrl)) {
-            await launchUrl(paymentUrl, mode: LaunchMode.externalApplication);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Complete payment in your browser to activate your plan.'),
-                  backgroundColor: Colors.black,
-                ),
-              );
-            }
-          } else {
-            throw Exception('Could not launch payment URL.');
-          }
+          var options = {
+            'key': keyId,
+            'amount': plan.price * 100, // in paise
+            'name': 'Eazzio Books',
+            'order_id': orderId,
+            'description': 'Register Organization - ${plan.name}',
+            'prefill': {
+              'email': _emailController.text.trim(),
+            },
+          };
+
+          _razorpay.open(options);
         } else {
-          throw Exception('Failed to create payment order.');
+          throw Exception(data['message'] ?? 'Failed to generate payment order.');
         }
       }
     } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -155,12 +221,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             backgroundColor: const Color(0xFFE5484D),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }

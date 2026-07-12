@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_books/core/navigation/router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 
+import 'package:mobile_books/features/auth/data/models/user.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -58,6 +60,7 @@ void main() async {
 
   await dotenv.load(fileName: '.env');
   final prefs = await SharedPreferences.getInstance();
+  User.prefs = prefs;
   runApp(
     ProviderScope(
       overrides: [

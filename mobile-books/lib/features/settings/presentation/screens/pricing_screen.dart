@@ -9,6 +9,8 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
 
+import 'package:mobile_books/core/config/plan_limits.dart';
+
 class PlanDetail {
   final String id;
   final String name;
@@ -31,75 +33,78 @@ class PlanDetail {
   });
 }
 
-const List<PlanDetail> plansList = [
-  PlanDetail(
-    id: 'free',
-    name: 'Free Plan',
-    price: 0,
-    description: 'Basic features to get started',
-    color: Colors.grey,
-    features: [
-      'Basic invoice',
-      'Tracking payments',
-      '1 user access',
-      'Basic customer management',
-      'Manual journal entries',
-      'Dashboard overview'
-    ],
-    cta: 'Get started for free',
-  ),
-  PlanDetail(
-    id: 'premium',
-    name: 'Standard Premium',
-    price: 749,
-    description: 'Advanced features for growing businesses',
-    color: AppColors.primaryBlue,
-    features: [
-      'Automated payment reminders',
-      'Complete inventory',
-      'GST tracking reporting',
-      'Unlimited invoices & quotes',
-      'Customer & vendor management',
-      'Sales orders & purchase orders',
-      'Delivery challans & credit notes',
-      'Bank reconciliation'
-    ],
-    cta: 'Upgrade to Premium',
-  ),
-  PlanDetail(
-    id: 'professional',
-    name: 'Professional',
-    price: 1499,
-    description: 'Comprehensive features for established businesses',
-    badge: 'Most Popular',
-    color: Colors.deepPurple,
-    features: [
-      'Advanced workflow automation',
-      'Multi-currency support',
-      'Custom roles & permissions',
-      'Time tracking & timesheets',
-      'Reports: P&L, Balance Sheet, Cash Flow',
-      'Priority email & chat support'
-    ],
-    cta: 'Upgrade to Professional',
-  ),
-  PlanDetail(
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 1999,
-    description: 'Ultimate power and control for large organizations',
-    color: Colors.pink,
-    features: [
-      'Dedicated account manager',
-      'Custom integrations & API',
-      'Advanced analytics & reporting',
-      'Advanced RBAC & audit logs',
-      'Custom fields & workflows',
-      'API access & webhooks'
-    ],
-    cta: 'Upgrade to Enterprise',
-  ),
-];
+List<PlanDetail> get plansList {
+  final data = PlanLimitsConfig.data;
+  return [
+    PlanDetail(
+      id: 'free',
+      name: 'Free Plan',
+      price: (data['free']['price_inr_per_month'] as num).toDouble(),
+      description: 'Basic features to get started',
+      color: Colors.grey,
+      features: const [
+        'Basic invoice',
+        'Tracking payments',
+        '1 user access',
+        'Basic customer management',
+        'Manual journal entries',
+        'Dashboard overview'
+      ],
+      cta: data['free']['cta_label'] as String? ?? 'Get started for free',
+    ),
+    PlanDetail(
+      id: 'standard',
+      name: 'Standard Premium',
+      price: (data['standard']['price_inr_per_month'] as num).toDouble(),
+      description: 'Advanced features for growing businesses',
+      color: AppColors.primaryBlue,
+      features: const [
+        'Automated payment reminders',
+        'Complete inventory',
+        'GST tracking reporting',
+        'Unlimited invoices & quotes',
+        'Customer & vendor management',
+        'Sales orders & purchase orders',
+        'Delivery challans & credit notes',
+        'Bank reconciliation'
+      ],
+      cta: data['standard']['cta_label'] as String? ?? 'Upgrade to Premium',
+    ),
+    PlanDetail(
+      id: 'professional',
+      name: 'Professional',
+      price: (data['professional']['price_inr_per_month'] as num).toDouble(),
+      description: 'Comprehensive features for established businesses',
+      badge: 'Most Popular',
+      color: Colors.deepPurple,
+      features: const [
+        'Advanced workflow automation',
+        'Multi-currency support',
+        'Custom roles & permissions',
+        'Time tracking & timesheets',
+        'Reports: P&L, Balance Sheet, Cash Flow',
+        'Priority email & chat support'
+      ],
+      cta: data['professional']['cta_label'] as String? ?? 'Upgrade to Professional',
+    ),
+    PlanDetail(
+      id: 'enterprise',
+      name: 'Enterprise',
+      price: (data['enterprise']['price_inr_per_month'] as num).toDouble(),
+      description: 'Ultimate power and control for large organizations',
+      color: Colors.pink,
+      features: const [
+        'Dedicated account manager',
+        'Custom integrations & API',
+        'Advanced analytics & reporting',
+        'Advanced RBAC & audit logs',
+        'Custom fields & workflows',
+        'API access & webhooks'
+      ],
+      cta: data['enterprise']['cta_label'] as String? ?? 'Upgrade to Enterprise',
+    ),
+  ];
+}
 
 class PricingScreen extends ConsumerStatefulWidget {
   const PricingScreen({super.key});
@@ -423,14 +428,7 @@ class _PricingScreenState extends ConsumerState<PricingScreen> {
                             foregroundColor: isDark ? Colors.white : AppColors.primaryBlue,
                           ),
                         ),
-                        TextButton.icon(
-                          onPressed: () => ref.read(authNotifierProvider.notifier).logout(),
-                          icon: const Icon(Icons.logout),
-                          label: const Text('Logout'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.redAccent,
-                          ),
-                        ),
+
                       ],
                     ),
                   ],

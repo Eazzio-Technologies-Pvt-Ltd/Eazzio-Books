@@ -1,4 +1,8 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class User {
+  static SharedPreferences? prefs;
+
   final int id;
   final String email;
   final String fullName;
@@ -45,20 +49,45 @@ class User {
     int remaining = 0;
     String status = json['subscription_status'] as String? ?? json['subscriptionStatus'] as String? ?? '';
 
-    if (parsedPlanId == 'free' || parsedPlanId == 'trial') {
-      final baseDate = parsedCreatedAt ?? DateTime.now();
+    if (parsedPlanId == 'trial') {
+      final email = json['email'] as String? ?? '';
+      DateTime baseDate = parsedCreatedAt ?? DateTime.now();
+      
+      if (prefs != null && email.isNotEmpty) {
+        final key = 'trial_start_$email';
+        if (parsedCreatedAt != null) {
+          baseDate = parsedCreatedAt;
+          prefs!.setString(key, parsedCreatedAt.toIso8601String());
+        } else {
+          final cached = prefs!.getString(key);
+          if (cached != null) {
+            final parsed = DateTime.tryParse(cached);
+            if (parsed != null) {
+              baseDate = parsed;
+            }
+          } else {
+            prefs!.setString(key, baseDate.toIso8601String());
+          }
+        }
+      }
+
       final trialExpiresAt = baseDate.add(const Duration(days: 14));
       final now = DateTime.now();
-      parsedPlanId = 'trial';
-      parsedExpiresAt = trialExpiresAt;
       
       if (now.isBefore(trialExpiresAt)) {
-        status = 'trialing';
+        status = 'trial';
         remaining = trialExpiresAt.difference(now).inDays;
+        parsedExpiresAt = trialExpiresAt;
       } else {
-        status = 'expired';
+        parsedPlanId = 'free';
+        status = 'active';
         remaining = 0;
+        parsedExpiresAt = null;
       }
+    } else if (parsedPlanId == 'free') {
+      status = 'active';
+      remaining = 0;
+      parsedExpiresAt = null;
     } else {
       if (parsedExpiresAt != null) {
         final difference = parsedExpiresAt.difference(DateTime.now()).inDays;

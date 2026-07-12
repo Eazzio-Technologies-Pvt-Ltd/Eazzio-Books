@@ -47,90 +47,106 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
+          // Search Bar & Filter Menu
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.m,
               vertical: AppSpacing.s,
             ),
-            child: TextField(
-              controller: searchController,
-              onChanged: (val) => ref.read(itemSearchQueryProvider.notifier).state = val,
-              decoration: InputDecoration(
-                hintText: 'Search items by name, SKU...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          ref.read(itemSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) => ref.read(itemSearchQueryProvider.notifier).state = val,
+                    decoration: InputDecoration(
+                      hintText: 'Search items by name, SKU...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                ref.read(itemSearchQueryProvider.notifier).state = '';
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  onSelected: (val) {
+                    ref.read(itemsListFilterProvider.notifier).state = val;
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'all',
+                      child: Row(
+                        children: [
+                          const Text('All Items'),
+                          if (filter == 'all') const Spacer(),
+                          if (filter == 'all') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'active',
+                      child: Row(
+                        children: [
+                          const Text('Active Items'),
+                          if (filter == 'active') const Spacer(),
+                          if (filter == 'active') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'inactive',
+                      child: Row(
+                        children: [
+                          const Text('Inactive Items'),
+                          if (filter == 'inactive') const Spacer(),
+                          if (filter == 'inactive') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'low_stock',
+                      child: Row(
+                        children: [
+                          const Text('Low Stock'),
+                          if (filter == 'low_stock') const Spacer(),
+                          if (filter == 'low_stock') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'goods',
+                      child: Row(
+                        children: [
+                          const Text('Goods'),
+                          if (filter == 'goods') const Spacer(),
+                          if (filter == 'goods') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'services',
+                      child: Row(
+                        children: [
+                          const Text('Services'),
+                          if (filter == 'services') const Spacer(),
+                          if (filter == 'services') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-
-          // Filters Bar (Scrollable chips row)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ChoiceChip(
-                    label: const Text('All'),
-                    selected: filter == 'all',
-                    onSelected: (val) {
-                      if (val) ref.read(itemsListFilterProvider.notifier).state = 'all';
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  ChoiceChip(
-                    label: const Text('Active'),
-                    selected: filter == 'active',
-                    onSelected: (val) {
-                      if (val) ref.read(itemsListFilterProvider.notifier).state = 'active';
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  ChoiceChip(
-                    label: const Text('Inactive'),
-                    selected: filter == 'inactive',
-                    onSelected: (val) {
-                      if (val) ref.read(itemsListFilterProvider.notifier).state = 'inactive';
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  ChoiceChip(
-                    label: const Text('Low Stock'),
-                    selected: filter == 'low_stock',
-                    onSelected: (val) {
-                      if (val) ref.read(itemsListFilterProvider.notifier).state = 'low_stock';
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  ChoiceChip(
-                    label: const Text('Goods'),
-                    selected: filter == 'goods',
-                    onSelected: (val) {
-                      if (val) ref.read(itemsListFilterProvider.notifier).state = 'goods';
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.s),
-                  ChoiceChip(
-                    label: const Text('Services'),
-                    selected: filter == 'services',
-                    onSelected: (val) {
-                      if (val) ref.read(itemsListFilterProvider.notifier).state = 'services';
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s),
+          const SizedBox(height: AppSpacing.xs),
 
           // List Content
           Expanded(

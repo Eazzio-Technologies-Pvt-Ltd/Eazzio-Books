@@ -8,6 +8,9 @@ import 'package:mobile_books/features/expenses/data/models/expense.dart';
 import 'package:mobile_books/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
+import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
 
 class ExpensesListScreen extends ConsumerStatefulWidget {
   const ExpensesListScreen({super.key});
@@ -180,12 +183,29 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
         title: const Text('Expenses'),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/expenses/new'),
+        onPressed: () {
+          final planGate = ref.read(planGateProvider);
+          if (!planGate.canCreate('expense')) {
+            final limit = planGate.getMaxLimit('expense') ?? 10;
+            final currentPlanName = planGate.planId.toLowerCase() == 'free' ? 'Free' : 'Standard Premium';
+            UpgradeContinueSheet.show(
+              context,
+              title: 'Expense Limit Reached',
+              description: 'You have reached the maximum limit of $limit expenses allowed on the $currentPlanName plan. Upgrade to a higher plan to add more.',
+            );
+          } else {
+            context.push('/expenses/new');
+          }
+        },
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
-          // Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs),
+            child: const PlanLimitBanner(resourceType: 'expense', resourceName: 'expense'),
+          ),
+          // Search Bar & Filter Menu
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.m,
@@ -213,30 +233,76 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
-                IconButton(
-                  icon: const Icon(Icons.sort),
-                  onPressed: () => _showSortBottomSheet(context),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  onSelected: (val) {
+                    if (val == 'sort') {
+                      _showSortBottomSheet(context);
+                    } else {
+                      setState(() {
+                        _statusFilter = val;
+                      });
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'sort',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sort, size: 18),
+                          SizedBox(width: 8),
+                          Text('Sort Expenses'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      enabled: false,
+                      child: Text('FILTER BY STATUS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)),
+                    ),
+                    PopupMenuItem(
+                      value: 'all',
+                      child: Row(
+                        children: [
+                          const Text('All'),
+                          if (_statusFilter == 'all') const Spacer(),
+                          if (_statusFilter == 'all') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'billable',
+                      child: Row(
+                        children: [
+                          const Text('Billable'),
+                          if (_statusFilter == 'billable') const Spacer(),
+                          if (_statusFilter == 'billable') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'non-billable',
+                      child: Row(
+                        children: [
+                          const Text('Non-Billable'),
+                          if (_statusFilter == 'non-billable') const Spacer(),
+                          if (_statusFilter == 'non-billable') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'reimbursed',
+                      child: Row(
+                        children: [
+                          const Text('Reimbursed'),
+                          if (_statusFilter == 'reimbursed') const Spacer(),
+                          if (_statusFilter == 'reimbursed') const Icon(Icons.check, size: 16),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-
-          // Status Filter Chips
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _filterChip('all', 'All'),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('billable', 'Billable'),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('non-billable', 'Non-Billable'),
-                  const SizedBox(width: AppSpacing.s),
-                  _filterChip('reimbursed', 'Reimbursed'),
-                ],
-              ),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),

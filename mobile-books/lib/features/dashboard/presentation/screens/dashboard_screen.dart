@@ -11,15 +11,24 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/features/dashboard/presentation/providers/deposit_balances_provider.dart';
+import 'package:mobile_books/features/organizations/presentation/providers/organization_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   Widget _buildGreetingHeader(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    String orgName = 'Your Organization';
+    final orgState = ref.watch(organizationsProvider);
+    String orgName = '';
     if (authState is AuthAuthenticated) {
-      orgName = authState.user.organizationName ?? 'Your Organization';
+      orgName = authState.user.organizationName ?? '';
+    }
+    if (orgName.isEmpty || orgName == 'Your Organization') {
+      if (orgState.organizations.isNotEmpty) {
+        orgName = orgState.organizations.first.name;
+      } else {
+        orgName = 'Your Organization';
+      }
     }
 
     final hour = DateTime.now().hour;
@@ -30,37 +39,32 @@ class DashboardScreen extends ConsumerWidget {
       greeting = 'Good afternoon';
     }
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.m),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$greeting,',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
+      padding: const EdgeInsets.only(bottom: AppSpacing.s),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$greeting, ',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            orgName,
-            style: Theme.of(context).brightness == Brightness.dark
-                ? const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimaryDark,
-                  )
-                : const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimaryLight,
-                  ),
-          ),
-        ],
+            TextSpan(
+              text: orgName,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -196,6 +200,7 @@ class DashboardScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildSearchSearchBar(context),
                   _buildGreetingHeader(context, ref),
                   const SizedBox(height: AppSpacing.s),
 
@@ -254,8 +259,6 @@ class DashboardScreen extends ConsumerWidget {
 
                   // 3. MONTHLY METRICS GRID
                   _buildMonthlyMetricsGrid(context, summary.selectedMonth),
-                  const SizedBox(height: AppSpacing.xs),
-                  _buildIncomeExpenseProgress(context, summary.selectedMonth),
                   const SizedBox(height: AppSpacing.s),
 
                   // 7. EXPENSES BY CATEGORY AND BANK ACCOUNTS (Row on large screens, Column on mobile)
@@ -297,9 +300,9 @@ class DashboardScreen extends ConsumerWidget {
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: AppSpacing.s,
-          mainAxisSpacing: AppSpacing.s,
-          childAspectRatio: constraints.maxWidth > 600 ? 1.5 : (constraints.maxWidth < 360 ? 1.05 : 1.3),
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 6,
+          childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.65,
           children: [
             _buildStatCard(
               context,
@@ -364,7 +367,7 @@ class DashboardScreen extends ConsumerWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.s),
+        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -372,19 +375,19 @@ class DashboardScreen extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     color: iconBgColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Icon(icon, color: iconColor, size: 18),
+                  child: Icon(icon, color: iconColor, size: 12),
                 ),
-                const SizedBox(width: AppSpacing.s),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
-                    maxLines: 2,
+                    style: const TextStyle(fontSize: 9.5, color: AppColors.textSecondaryLight),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -395,13 +398,13 @@ class DashboardScreen extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 _formatCurrency(context, amount),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 maxLines: 1,
               ),
             ),
             Text(
               sub,
-              style: TextStyle(fontSize: 10, color: subColor, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 8.5, color: subColor, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -417,9 +420,9 @@ class DashboardScreen extends ConsumerWidget {
           crossAxisCount: crossAxisCount,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: AppSpacing.s,
-          mainAxisSpacing: AppSpacing.s,
-          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : (constraints.maxWidth < 360 ? 1.35 : 1.7),
+          crossAxisSpacing: 6,
+          mainAxisSpacing: 6,
+          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : 1.75,
           children: [
             _buildMetricCard(context, 'INCOME', selected.incomeReceived, const Color(0xFF059669)),
             _buildMetricCard(context, 'EXPENSES', selected.expenses, const Color(0xFFDC2626)),
@@ -484,22 +487,22 @@ class DashboardScreen extends ConsumerWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
+        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+              style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: 2),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
                 _formatCurrency(context, value),
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: valueColor),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: valueColor),
                 maxLines: 1,
               ),
             ),
@@ -989,28 +992,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildBottomLists(BuildContext context, DashboardChartData data) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth > 700) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _buildBanksList(context, data.banks)),
-              const SizedBox(width: AppSpacing.m),
-              Expanded(child: _buildTopExpensesList(context, data.topExpenses)),
-            ],
-          );
-        } else {
-          return Column(
-            children: [
-              _buildBanksList(context, data.banks),
-              const SizedBox(height: AppSpacing.m),
-              _buildTopExpensesList(context, data.topExpenses),
-            ],
-          );
-        }
-      },
-    );
+    return _buildBanksList(context, data.banks);
   }
 
   Widget _buildBanksList(BuildContext context, List<BankAccount> banks) {
@@ -1169,6 +1151,170 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSearchSearchBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.m),
+      child: InkWell(
+        onTap: () => _showDashboardSearchDialog(context),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white10 : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isDark ? Colors.white10 : Colors.grey.shade200,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.search,
+                color: isDark ? Colors.white54 : Colors.grey.shade500,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Search customers, items, invoices...',
+                style: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.grey.shade500,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDashboardSearchDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Global Search'),
+              content: SizedBox(
+                width: 400,
+                height: 350,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Search customers, items, invoices, quotes...',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (val) {
+                        setDialogState(() {
+                          query = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    if (query.trim().isNotEmpty)
+                      Expanded(
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final searchAsync = ref.watch(globalSearchProvider(query));
+                            return searchAsync.when(
+                              data: (results) {
+                                final customers = results['customers'] as List? ?? [];
+                                final items = results['items'] as List? ?? [];
+                                final invoices = results['invoices'] as List? ?? [];
+                                final quotes = results['quotes'] as List? ?? [];
+                                
+                                if (customers.isEmpty && items.isEmpty && invoices.isEmpty && quotes.isEmpty) {
+                                  return const Center(child: Text('No results found.'));
+                                }
+                                
+                                return ListView(
+                                  children: [
+                                    if (customers.isNotEmpty) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Text('CUSTOMERS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
+                                      ),
+                                      ...customers.map((c) => ListTile(
+                                        title: Text(c['display_name'] ?? c['company_name'] ?? ''),
+                                        subtitle: Text(c['email'] ?? ''),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          context.push('/customers/${c['id']}');
+                                        },
+                                      )),
+                                      const Divider(),
+                                    ],
+                                    if (items.isNotEmpty) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Text('ITEMS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
+                                      ),
+                                      ...items.map((it) => ListTile(
+                                        title: Text(it['name'] ?? ''),
+                                        subtitle: Text('SKU: ${it['sku'] ?? ""} | Price: ₹${it['selling_price'] ?? "0"}'),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          context.push('/items/${it['id']}');
+                                        },
+                                      )),
+                                      const Divider(),
+                                    ],
+                                    if (invoices.isNotEmpty) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Text('INVOICES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
+                                      ),
+                                      ...invoices.map((inv) => ListTile(
+                                        title: Text(inv['invoice_number'] ?? ''),
+                                        subtitle: Text('Total: ₹${inv['total_amount'] ?? "0"} | Status: ${inv['status'] ?? ""}'),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          context.push('/invoices/${inv['id']}');
+                                        },
+                                      )),
+                                      const Divider(),
+                                    ],
+                                    if (quotes.isNotEmpty) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                                        child: Text('QUOTES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A))),
+                                      ),
+                                      ...quotes.map((q) => ListTile(
+                                        title: Text(q['quote_number'] ?? ''),
+                                        subtitle: Text('Total: ₹${q['total_amount'] ?? "0"} | Status: ${q['status'] ?? ""}'),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          context.push('/quotes/${q['id']}');
+                                        },
+                                      )),
+                                    ],
+                                  ],
+                                );
+                              },
+                              loading: () => const Center(child: CircularProgressIndicator()),
+                              error: (err, stack) => Center(child: Text('Error: $err')),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

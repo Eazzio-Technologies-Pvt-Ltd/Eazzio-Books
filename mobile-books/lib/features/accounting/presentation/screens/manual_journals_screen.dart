@@ -8,6 +8,9 @@ import 'package:mobile_books/features/accounting/data/models/journal_entry.dart'
 import 'package:mobile_books/features/accounting/presentation/providers/accounting_provider.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
+import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
 
 class ManualJournalsScreen extends ConsumerWidget {
   const ManualJournalsScreen({super.key});
@@ -68,12 +71,32 @@ class ManualJournalsScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/accounting/journals/new'),
+        onPressed: () {
+          final planGate = ref.read(planGateProvider);
+          if (!planGate.canCreate('journal_entry')) {
+            final limit = planGate.getMaxLimit('journal_entry') ?? 10;
+            final currentPlanName = planGate.planId.toLowerCase() == 'free' ? 'Free' : 'Standard Premium';
+            UpgradeContinueSheet.show(
+              context,
+              title: 'Journal Limit Reached',
+              description: 'You have reached the maximum limit of $limit journal entries allowed on the $currentPlanName plan. Upgrade to a higher plan to add more.',
+            );
+          } else {
+            context.push('/accounting/journals/new');
+          }
+        },
         child: const Icon(Icons.add),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(journalsProvider.notifier).refresh(),
-        child: journalsState.when(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs),
+            child: const PlanLimitBanner(resourceType: 'journal_entry', resourceName: 'journal entry'),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.read(journalsProvider.notifier).refresh(),
+              child: journalsState.when(
           data: (journals) {
             if (journals.isEmpty) {
               return const Center(child: Text('No manual journals recorded.'));
@@ -162,6 +185,9 @@ class ManualJournalsScreen extends ConsumerWidget {
           error: (err, _) => Center(child: Text('Error: $err')),
         ),
       ),
-    );
+    ),
+  ],
+),
+);
   }
 }

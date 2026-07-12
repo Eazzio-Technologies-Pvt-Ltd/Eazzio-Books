@@ -79,6 +79,9 @@ class AuthService {
     required String companyName,
     required String fullName,
     String planId = 'free',
+    String? razorpayOrderId,
+    String? razorpayPaymentId,
+    String? razorpaySignature,
   }) async {
     try {
       final response = await _networkClient.post(
@@ -89,6 +92,9 @@ class AuthService {
           'companyName': companyName.trim(),
           'fullName': fullName.trim(),
           'plan_id': planId,
+          if (razorpayOrderId != null) 'razorpay_order_id': razorpayOrderId,
+          if (razorpayPaymentId != null) 'razorpay_payment_id': razorpayPaymentId,
+          if (razorpaySignature != null) 'razorpay_signature': razorpaySignature,
         },
       );
 

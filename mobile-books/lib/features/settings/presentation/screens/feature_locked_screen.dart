@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_books/core/theme/theme.dart';
+import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 
-class FeatureLockedScreen extends StatelessWidget {
+class FeatureLockedScreen extends ConsumerWidget {
   final String featureName;
 
   const FeatureLockedScreen({
@@ -12,7 +14,7 @@ class FeatureLockedScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -92,16 +94,30 @@ class FeatureLockedScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.m),
 
               // Explanation text
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-                child: Text(
-                  'This feature is not included in your current subscription plan. Upgrade your plan to get instant access to $featureName and other premium capabilities.',
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: const Color(0xFF64748B),
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+              Builder(
+                builder: (context) {
+                  final authState = ref.watch(authNotifierProvider);
+                  final user = authState is AuthAuthenticated ? authState.user : null;
+                  final isFreePlan = user == null || 
+                      user.planId.toLowerCase() == 'free' || 
+                      (user.planId.toLowerCase() == 'trial' && user.remainingTrialDays <= 0);
+
+                  final message = isFreePlan 
+                      ? 'You are currently on the Free Plan. $featureName is not available on the Free Plan. If you want this feature, please upgrade to one of our premium plans to get instant access.'
+                      : 'This feature is not included in your current subscription plan. Upgrade your plan to get instant access to $featureName and other premium capabilities.';
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+                    child: Text(
+                      message,
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.xxl),
 

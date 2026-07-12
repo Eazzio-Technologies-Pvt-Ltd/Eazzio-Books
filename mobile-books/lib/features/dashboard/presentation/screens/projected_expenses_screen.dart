@@ -14,6 +14,20 @@ class ProjectedExpensesScreen extends ConsumerWidget {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
+  double _parseDouble(dynamic val) {
+    if (val == null) return 0.0;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val) ?? 0.0;
+    return 0.0;
+  }
+
+  int _parseInt(dynamic val) {
+    if (val == null) return 0;
+    if (val is num) return val.toInt();
+    if (val is String) return int.tryParse(val) ?? 0;
+    return 0;
+  }
+
   String _formatCurrency(double amount) {
     final format = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
     return format.format(amount);
@@ -83,9 +97,13 @@ class ProjectedExpensesScreen extends ConsumerWidget {
           ),
         ),
         data: (data) {
-          final totalProjected = (data['total_projected_expense'] as num?)?.toDouble() ?? 0.0;
-          final projMonth = (data['projected_month'] as num?)?.toInt() ?? (DateTime.now().month + 1);
-          final projYear = (data['projected_year'] as num?)?.toInt() ?? DateTime.now().year;
+          final totalProjected = _parseDouble(data['total_projected_expense']);
+          final projMonth = _parseInt(data['projected_month']) == 0 
+              ? (DateTime.now().month + 1) 
+              : _parseInt(data['projected_month']);
+          final projYear = _parseInt(data['projected_year']) == 0 
+              ? DateTime.now().year 
+              : _parseInt(data['projected_year']);
           final expenses = (data['expenses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
           final monthStr = _monthNames[(projMonth - 1).clamp(0, 11)];
 
@@ -315,8 +333,8 @@ class ProjectedExpensesScreen extends ConsumerWidget {
             rows: expenses.map((expense) {
               final status = (expense['status'] ?? '').toString();
               final type = (expense['type'] ?? '').toString();
-              final totalAmount = (expense['total_amount'] as num?)?.toDouble() ?? 0.0;
-              final pendingAmount = (expense['pending_amount'] as num?)?.toDouble() ?? 0.0;
+              final totalAmount = _parseDouble(expense['total_amount']);
+              final pendingAmount = _parseDouble(expense['pending_amount']);
 
               return DataRow(cells: [
                 DataCell(Text(_formatDate(expense['date']?.toString()))),

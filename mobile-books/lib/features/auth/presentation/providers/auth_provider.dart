@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_books/features/auth/data/models/user.dart';
 import 'package:mobile_books/features/auth/data/services/auth_service.dart';
+import 'package:mobile_books/features/settings/data/services/users_service.dart';
 import 'package:mobile_books/core/navigation/router.dart';
 
 sealed class AuthState {
@@ -36,7 +37,9 @@ class AuthNotifier extends Notifier<AuthState> {
 
   SharedPreferences? _getPrefs() {
     try {
-      return ref.read(sharedPreferencesProvider);
+      final prefs = ref.read(sharedPreferencesProvider);
+      User.prefs = prefs;
+      return prefs;
     } catch (_) {
       return null;
     }
@@ -65,6 +68,7 @@ class AuthNotifier extends Notifier<AuthState> {
       final user = await authService.getProfile();
       await _cacheUser(user);
       state = AuthAuthenticated(user);
+      _syncTrialStartDate();
     } catch (_) {
       // If we failed to get the profile but we had a cached user, we keep it as fallback (until next request)
       if (state is! AuthAuthenticated) {
@@ -113,6 +117,7 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       await _cacheUser(user);
       state = AuthAuthenticated(user);
+      _syncTrialStartDate();
     } on AuthException catch (e) {
       state = AuthUnauthenticated(errorMessage: e.message);
     } catch (e) {
@@ -127,6 +132,9 @@ class AuthNotifier extends Notifier<AuthState> {
     required String companyName,
     required String fullName,
     String planId = 'free',
+    String? razorpayOrderId,
+    String? razorpayPaymentId,
+    String? razorpaySignature,
   }) async {
     state = const AuthLoading();
     final authService = ref.read(authServiceProvider);
@@ -137,6 +145,9 @@ class AuthNotifier extends Notifier<AuthState> {
         companyName: companyName,
         fullName: fullName,
         planId: planId,
+        razorpayOrderId: razorpayOrderId,
+        razorpayPaymentId: razorpayPaymentId,
+        razorpaySignature: razorpaySignature,
       );
       await _cacheUser(user);
       state = AuthAuthenticated(user);
@@ -186,6 +197,19 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Downgrades the subscription to free (triggered by trial expiration)
+  Future<void> downgradeToFree() async {
+    final currentState = state;
+    if (currentState is AuthAuthenticated) {
+      final updatedUser = currentState.user.copyWith(
+        planId: 'free',
+        subscriptionStatus: 'active',
+      );
+      await _cacheUser(updatedUser);
+      state = AuthAuthenticated(updatedUser);
+    }
+  }
+
   /// Submits email for password reset instruction.
   Future<String> forgotPassword({required String email}) async {
     final authService = ref.read(authServiceProvider);
@@ -210,6 +234,23 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       _cacheUser(updatedUser);
       state = AuthAuthenticated(updatedUser);
+    }
+  }
+
+  Future<void> _syncTrialStartDate() async {
+    try {
+      final usersService = ref.read(usersServiceProvider);
+      final members = await usersService.getTeamMembers();
+      final currentUser = state is AuthAuthenticated ? (state as AuthAuthenticated).user : null;
+      if (currentUser != null) {
+        final match = members.firstWhere((u) => u.email.trim().toLowerCase() == currentUser.email.trim().toLowerCase());
+        if (state is AuthAuthenticated) {
+          state = AuthAuthenticated(match);
+          await _cacheUser(match);
+        }
+      }
+    } catch (_) {
+      // Ignore background sync errors
     }
   }
 }

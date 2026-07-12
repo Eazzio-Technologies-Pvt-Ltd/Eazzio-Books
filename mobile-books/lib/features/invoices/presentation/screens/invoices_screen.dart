@@ -8,6 +8,9 @@ import 'package:mobile_books/features/invoices/presentation/providers/invoice_pr
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
+import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
   'draft':          _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',          Icons.edit_note),
@@ -174,11 +177,28 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
         title: const Text('Invoices'),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/invoices/new'),
+        onPressed: () {
+          final planGate = ref.read(planGateProvider);
+          if (!planGate.canCreate('invoice')) {
+            final limit = planGate.getMaxLimit('invoice') ?? 10;
+            final currentPlanName = planGate.planId.toLowerCase() == 'free' ? 'Free' : 'Standard Premium';
+            UpgradeContinueSheet.show(
+              context,
+              title: 'Invoice Limit Reached',
+              description: 'You have reached the maximum limit of $limit invoices allowed on the $currentPlanName plan. Upgrade to a higher plan to add more.',
+            );
+          } else {
+            context.push('/invoices/new');
+          }
+        },
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs),
+            child: const PlanLimitBanner(resourceType: 'invoice', resourceName: 'invoice'),
+          ),
           // ─── Search Bar ─────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(

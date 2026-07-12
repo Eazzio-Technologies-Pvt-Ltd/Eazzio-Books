@@ -1,9 +1,13 @@
+import 'package:mobile_books/core/config/plan_limits.dart';
+import 'package:mobile_books/core/permissions/plan_limits_service.dart';
+
 class PlanPermissionHelper {
-  /// Check if a plan has access to a specific route path
-  static bool hasAccess(String planId, String path) {
+  static final _service = PlanLimitsService(PlanLimitsConfig.data);
+
+  static bool hasAccess(String planId, String path, {int remainingTrialDays = 0}) {
     final cleanPath = Uri.parse(path).path.toLowerCase();
     
-    // Auth routes, dashboard, pricing, logout, support, and the lock page are always allowed
+    // Auth routes, dashboard, pricing, logout, support, more, and the lock page are always allowed
     if (cleanPath.startsWith('/login') ||
         cleanPath.startsWith('/register') ||
         cleanPath.startsWith('/forgot-password') ||
@@ -13,45 +17,38 @@ class PlanPermissionHelper {
         cleanPath == '/pricing' ||
         cleanPath == '/logout' ||
         cleanPath == '/support' ||
+        cleanPath == '/more' ||
         cleanPath.startsWith('/feature-locked')) {
       return true;
     }
 
-    final normalizedPlan = planId.toLowerCase();
+    var normalizedPlan = planId.toLowerCase();
 
-    // Enterprise and Professional have access to everything
-    if (normalizedPlan == 'enterprise' || normalizedPlan == 'professional') {
-      return true;
+    // Active trial accounts get Standard Premium ('premium' / 'standard') access. Expired ones get Free ('free') access.
+    if (normalizedPlan == 'trial') {
+      if (remainingTrialDays > 0) {
+        normalizedPlan = 'standard';
+      } else {
+        normalizedPlan = 'free';
+      }
     }
 
-    // Premium plan restrictions
+    // Standardize 'premium' check to 'standard' (since standard premium uses 'standard' config key)
     if (normalizedPlan == 'premium') {
-      // Blocked: projects, timesheets, P&L/Balance Sheet/Cash Flow reports, and recurring invoices
-      if (cleanPath.startsWith('/projects') || 
-          cleanPath.startsWith('/timesheets') ||
-          cleanPath.startsWith('/recurring-invoices') ||
-          cleanPath.startsWith('/reports/profit-loss') ||
-          cleanPath.startsWith('/reports/balance-sheet') ||
-          cleanPath.startsWith('/reports/cash-flow') ||
-          cleanPath.startsWith('/reports/trial-balance')) {
-        return false;
-      }
-      return true;
+      normalizedPlan = 'standard';
     }
 
-    // Free / Trial plan limits (only allowed: Invoices, Payments Received, Customers, Manual journals, Dashboard overview)
-    if (normalizedPlan == 'free' || normalizedPlan == 'trial') {
-      if (cleanPath == '/customers' ||
-          cleanPath.startsWith('/customers/') ||
-          cleanPath == '/invoices' ||
-          cleanPath.startsWith('/invoices/') ||
-          cleanPath == '/payments-received' ||
-          cleanPath.startsWith('/payments-received/') ||
-          cleanPath == '/accounting/journals' ||
-          cleanPath.startsWith('/accounting/journals/')) {
-        return true;
-      }
-      return false;
+    final plan = _service.getPlan(normalizedPlan);
+    final routeAccessMode = plan['route_access_mode'] as String? ?? 'unrestricted';
+
+    if (routeAccessMode == 'allowlist') {
+      final allowedRoutes = List<String>.from(plan['allowed_routes'] ?? []);
+      return allowedRoutes.any((route) => cleanPath == route || cleanPath.startsWith('$route/'));
+    }
+
+    if (routeAccessMode == 'blocklist') {
+      final blockedRoutes = List<String>.from(plan['blocked_routes'] ?? []);
+      return !blockedRoutes.any((route) => cleanPath == route || cleanPath.startsWith('$route/'));
     }
 
     return true;

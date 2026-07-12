@@ -8,6 +8,9 @@ import 'package:mobile_books/features/quotes/presentation/providers/quote_provid
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
+import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
 
 /// Status badge color configuration matching the web frontend QuoteDetail.js
 const Map<String, _StatusStyle> _statusStyles = {
@@ -171,12 +174,29 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         title: const Text('Quotes'),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/quotes/new'),
+        onPressed: () {
+          final planGate = ref.read(planGateProvider);
+          if (!planGate.canCreate('quote')) {
+            final limit = planGate.getMaxLimit('quote') ?? 10;
+            final currentPlanName = planGate.planId.toLowerCase() == 'free' ? 'Free' : 'Standard Premium';
+            UpgradeContinueSheet.show(
+              context,
+              title: 'Quote Limit Reached',
+              description: 'You have reached the maximum limit of $limit quotes allowed on the $currentPlanName plan. Upgrade to a higher plan to add more.',
+            );
+          } else {
+            context.push('/quotes/new');
+          }
+        },
         backgroundColor: AppColors.primaryBlue,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.xs),
+            child: const PlanLimitBanner(resourceType: 'quote', resourceName: 'quote'),
+          ),
           // ─── Search Bar ─────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(

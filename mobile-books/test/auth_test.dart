@@ -22,6 +22,9 @@ class FakeAuthService implements AuthService {
     required String companyName,
     required String fullName,
     String planId = 'free',
+    String? razorpayOrderId,
+    String? razorpayPaymentId,
+    String? razorpaySignature,
   }) async {
     if (shouldFail) throw AuthException('Registration failed');
     return mockUser!;

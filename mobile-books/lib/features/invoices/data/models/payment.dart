@@ -33,6 +33,7 @@ class Payment {
   final DateTime? updatedAt;
   final String? customerName;  // Add helper for full list view
   final String? invoiceNumber; // Add helper for full list view
+  final String? depositTo;
 
   Payment({
     required this.id,
@@ -49,6 +50,7 @@ class Payment {
     this.updatedAt,
     this.customerName,
     this.invoiceNumber,
+    this.depositTo,
   });
 
   factory Payment.fromJson(Map<String, dynamic> json) {
@@ -69,6 +71,7 @@ class Payment {
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
       customerName: json['customer_name'] as String?,
       invoiceNumber: json['invoice_number'] as String?,
+      depositTo: json['deposit_to'] as String? ?? json['depositTo'] as String?,
     );
   }
 
@@ -88,6 +91,7 @@ class Payment {
       'updated_at': updatedAt?.toIso8601String(),
       'customer_name': customerName,
       'invoice_number': invoiceNumber,
+      'deposit_to': depositTo,
     };
   }
 
@@ -106,6 +110,7 @@ class Payment {
     DateTime? updatedAt,
     String? customerName,
     String? invoiceNumber,
+    String? depositTo,
   }) {
     return Payment(
       id: id ?? this.id,
@@ -122,6 +127,7 @@ class Payment {
       updatedAt: updatedAt ?? this.updatedAt,
       customerName: customerName ?? this.customerName,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      depositTo: depositTo ?? this.depositTo,
     );
   }
 }

@@ -180,9 +180,25 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
-                IconButton(
-                  icon: const Icon(Icons.sort),
-                  onPressed: () => _showSortBottomSheet(context),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  onSelected: (val) {
+                    if (val == 'sort') {
+                      _showSortBottomSheet(context);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'sort',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sort, size: 18),
+                          SizedBox(width: 8),
+                          Text('Sort Bills'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

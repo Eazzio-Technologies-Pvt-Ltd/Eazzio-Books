@@ -3,12 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/theme/app_assets.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/permissions/permission_helper.dart';
 import 'package:mobile_books/core/network/network_client.dart';
 import 'package:mobile_books/features/organizations/presentation/providers/organization_provider.dart';
+import 'package:mobile_books/features/dashboard/presentation/providers/notification_provider.dart';
+import 'package:mobile_books/features/dashboard/data/models/notification_model.dart';
+import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
 
 final globalSearchProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, query) async {
   if (query.trim().isEmpty) return {};
@@ -393,12 +399,40 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
     
     return PopupMenuButton<String>(
       onSelected: (value) async {
+        final planId = authState is AuthAuthenticated ? authState.user.planId : 'free';
+        final isFree = planId == 'free' || (authState is AuthAuthenticated && authState.user.remainingTrialDays <= 0 && authState.user.planId == 'trial');
+
         if (value == 'create_new') {
+          if (isFree) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Multiple organizations are a premium feature. Please upgrade your plan.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            context.push('/pricing');
+            return;
+          }
           _showCreateOrgDialog(context);
         } else if (value.startsWith('switch_')) {
           final parts = value.split('_');
           final orgId = int.tryParse(parts[1]) ?? 0;
           final orgName = parts.sublist(2).join('_');
+          
+          if (isFree) {
+            final firstOrgId = orgState.organizations.isNotEmpty ? orgState.organizations.first.id : 0;
+            if (orgId != firstOrgId) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Switching to other organizations is a premium feature. Please upgrade your plan.'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              context.push('/pricing');
+              return;
+            }
+          }
+          
           final success = await ref.read(organizationsProvider.notifier).switchOrg(orgId, orgName);
           if (success && context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -736,6 +770,245 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
 
 
 
+  Widget _buildNotificationBellButton(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final notificationsAsync = ref.watch(notificationsProvider);
+        return notificationsAsync.maybeWhen(
+          data: (list) {
+            final hasNotifications = list.isNotEmpty;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () => _showNotificationsBottomSheet(context, ref, list),
+                ),
+                if (hasNotifications)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      child: Text(
+                        '${list.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+          orElse: () => IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => _showNotificationsBottomSheet(context, ref, []),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showNotificationsBottomSheet(BuildContext context, WidgetRef ref, List<NotificationModel> notifications) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Notifications',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            ref.read(notificationsProvider.notifier).refresh();
+                          },
+                          child: const Text('Refresh'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: notifications.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No new notifications',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: notifications.length,
+                            itemBuilder: (context, index) {
+                              final n = notifications[index];
+                              final formattedAmount = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2).format(n.balanceAmount);
+                              final formattedDate = DateFormat('dd/MM/yyyy').format(n.dueDate);
+                              
+                              return ListTile(
+                                leading: const CircleAvatar(
+                                  backgroundColor: Colors.amberAccent,
+                                  child: Icon(Icons.payment_outlined, color: Colors.black87),
+                                ),
+                                title: Text(
+                                  'Installment Due: ${n.invoiceNumber}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: Text(
+                                  '$formattedAmount due ${n.isBill ? "to" : "from"} ${n.customerName}\nDue Date: $formattedDate',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                isThreeLine: true,
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _showNotificationActionDialog(context, n);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showNotificationActionDialog(BuildContext context, NotificationModel n) {
+    final formattedAmount = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2).format(n.balanceAmount);
+    final formattedDate = DateFormat('dd/MM/yyyy').format(n.dueDate);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Pending Installment Action'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(n.isBill ? 'Vendor' : 'Customer', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(n.customerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(n.isBill ? 'Bill' : 'Invoice', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text(n.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Pending Amount', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text(formattedAmount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text('Due Date', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(formattedDate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.chat_bubble_outline, size: 16),
+              label: const Text('Send to WhatsApp'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                final msg = 'Dear ${n.customerName}, your installment of Rs.${n.balanceAmount.toStringAsFixed(2)} for ${n.isBill ? "Bill" : "Invoice"} ${n.invoiceNumber} is due on $formattedDate. Please remit payment.';
+                final phoneClean = n.customerPhone.replaceAll(RegExp(r'\D'), '');
+                final targetPhone = phoneClean.length == 10 ? '91$phoneClean' : phoneClean;
+                if (targetPhone.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${n.isBill ? "Vendor" : "Customer"} phone number is missing.')),
+                  );
+                  return;
+                }
+                final whatsappUrl = Uri.parse('https://wa.me/$targetPhone?text=${Uri.encodeComponent(msg)}');
+                if (await canLaunchUrl(whatsappUrl)) {
+                  await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Could not launch WhatsApp.')),
+                  );
+                }
+              },
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.email_outlined, size: 16),
+              label: const Text('Send to Email'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF006EE6),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                final msg = 'Dear ${n.customerName},\n\nThis is a reminder that your installment of Rs.${n.balanceAmount.toStringAsFixed(2)} for ${n.isBill ? "Bill" : "Invoice"} ${n.invoiceNumber} is due on $formattedDate.\n\nPlease remit payment at your earliest convenience.\n\nThank you!';
+                if (n.customerEmail.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${n.isBill ? "Vendor" : "Customer"} email is missing.')),
+                  );
+                  return;
+                }
+                final emailUrl = Uri.parse('mailto:${n.customerEmail}?subject=Payment Reminder: Invoice ${n.invoiceNumber}&body=${Uri.encodeComponent(msg)}');
+                if (await canLaunchUrl(emailUrl)) {
+                  await launchUrl(emailUrl);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Could not open email client.')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   PreferredSizeWidget? _buildAppBar(BuildContext context, bool isMobile) {
     if (widget.appBar != null) {
       if (widget.appBar is AppBar) {
@@ -744,16 +1017,10 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
         
         final mergedActions = <Widget>[
           if (isMobile) ...[
-            if (canPop)
-              ...?originalAppBar.actions
-            else ...[
-              IconButton(
-                key: const Key('globalSearchButton'),
-                icon: const Icon(Icons.search),
-                onPressed: () => _showSearchDialog(context),
-              ),
-              if (originalAppBar.actions != null && originalAppBar.actions!.isNotEmpty)
-                ...?originalAppBar.actions,
+            if (canPop) ...[
+              if (originalAppBar.actions != null) ...originalAppBar.actions!,
+            ] else ...[
+              if (originalAppBar.actions != null) ...originalAppBar.actions!,
               Tooltip(
                 message: 'Upgrade',
                 child: IconButton(
@@ -765,16 +1032,11 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 ),
               ),
               const SizedBox(width: 2),
+              _buildNotificationBellButton(context),
               _buildOrgSwitcherButton(context, isMobile),
-              _buildProfileAvatarButton(context),
             ]
           ] else ...[
-            ...?originalAppBar.actions,
-            IconButton(
-              key: const Key('globalSearchButton'),
-              icon: const Icon(Icons.search),
-              onPressed: () => _showSearchDialog(context),
-            ),
+            if (originalAppBar.actions != null) ...originalAppBar.actions!,
             TextButton.icon(
               key: const Key('appbarUpgradeButton'),
               icon: const Icon(Icons.workspace_premium, color: Colors.amber, size: 16),
@@ -796,8 +1058,8 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               onPressed: () => context.push('/pricing'),
             ),
             const SizedBox(width: 2),
+            _buildNotificationBellButton(context),
             _buildOrgSwitcherButton(context, isMobile),
-            _buildProfileAvatarButton(context),
           ]
         ];
 
@@ -864,15 +1126,8 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                   ))
             : null,
         actions: [
-          if (!canPop || !isMobile) ...[
-            IconButton(
-              key: const Key('globalSearchButton'),
-              icon: const Icon(Icons.search),
-              onPressed: () => _showSearchDialog(context),
-            ),
-            _buildOrgSwitcherButton(context, isMobile),
-            _buildProfileAvatarButton(context),
-          ]
+          _buildNotificationBellButton(context),
+          _buildOrgSwitcherButton(context, isMobile),
         ],
       );
     }
@@ -1159,13 +1414,20 @@ class CustomSidebar extends ConsumerWidget {
 
                 if (isCollapsed) {
                   // Collapsed Sidebar Menu Item
+                  final isLocked = menu.path != null && !ref.watch(planGateProvider).isPathEnabled(menu.path!);
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Tooltip(
                       message: menu.label,
                       child: InkWell(
                         onTap: () {
-                          if (hasChildren) {
+                          if (isLocked) {
+                            UpgradeContinueSheet.show(
+                              context,
+                              title: '${menu.label} Locked',
+                              description: 'This feature is not available on your current plan. Please upgrade to unlock.',
+                            );
+                          } else if (hasChildren) {
                             onForceExpandMenu(menu.label);
                           } else if (menu.path != null) {
                             context.go(menu.path!);
@@ -1180,12 +1442,25 @@ class CustomSidebar extends ConsumerWidget {
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(
-                            menu.icon,
-                            color: isSelected || anyChildSelected
-                                ? textSelected
-                                : textUnselected,
-                            size: 22,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                menu.icon,
+                                color: isLocked
+                                    ? Colors.grey
+                                    : (isSelected || anyChildSelected
+                                        ? textSelected
+                                        : textUnselected),
+                                size: 22,
+                              ),
+                              if (isLocked)
+                                const Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: Icon(Icons.lock, size: 10, color: Colors.amber),
+                                ),
+                            ],
                           ),
                         ),
                       ),
@@ -1194,6 +1469,7 @@ class CustomSidebar extends ConsumerWidget {
                 }
 
                 // Expanded Sidebar Menu Item
+                final isLocked = menu.path != null && !ref.watch(planGateProvider).isPathEnabled(menu.path!);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1201,7 +1477,13 @@ class CustomSidebar extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 2),
                       child: InkWell(
                         onTap: () {
-                          if (hasChildren) {
+                          if (isLocked) {
+                            UpgradeContinueSheet.show(
+                              context,
+                              title: '${menu.label} Locked',
+                              description: 'This feature is not available on your current plan. Please upgrade to unlock.',
+                            );
+                          } else if (hasChildren) {
                             onMenuToggle(menu.label);
                           } else if (menu.path != null) {
                             context.go(menu.path!);
@@ -1221,9 +1503,11 @@ class CustomSidebar extends ConsumerWidget {
                             children: [
                               Icon(
                                 menu.icon,
-                                color: (isSelected && !hasChildren) || anyChildSelected
-                                    ? textSelected
-                                    : textUnselected,
+                                color: isLocked
+                                    ? Colors.grey
+                                    : ((isSelected && !hasChildren) || anyChildSelected
+                                        ? textSelected
+                                        : textUnselected),
                                 size: 18,
                               ),
                               const SizedBox(width: 12),
@@ -1231,9 +1515,11 @@ class CustomSidebar extends ConsumerWidget {
                                 child: Text(
                                   menu.label,
                                   style: TextStyle(
-                                    color: (isSelected && !hasChildren) || anyChildSelected
-                                        ? textSelected
-                                        : textUnselected,
+                                    color: isLocked
+                                        ? Colors.grey
+                                        : ((isSelected && !hasChildren) || anyChildSelected
+                                            ? textSelected
+                                            : textUnselected),
                                     fontSize: 14,
                                     fontWeight: isSelected || anyChildSelected
                                         ? FontWeight.w600
@@ -1241,7 +1527,9 @@ class CustomSidebar extends ConsumerWidget {
                                   ),
                                 ),
                               ),
-                              if (hasChildren)
+                              if (isLocked)
+                                const Icon(Icons.lock, size: 14, color: Colors.amber)
+                              else if (hasChildren)
                                 Icon(
                                   isExpanded
                                       ? Icons.keyboard_arrow_down
@@ -1266,27 +1554,51 @@ class CustomSidebar extends ConsumerWidget {
                           child: Column(
                             children: menu.children!.map((child) {
                               final isSubSelected = currentRoute == child.path || currentRoute.startsWith('${child.path}/');
+                              final isSubLocked = !ref.watch(planGateProvider).isPathEnabled(child.path);
                               return Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 1),
                                 child: InkWell(
-                                  onTap: () => context.go(child.path),
+                                  onTap: () {
+                                    if (isSubLocked) {
+                                      UpgradeContinueSheet.show(
+                                        context,
+                                        title: '${child.label} Locked',
+                                        description: 'This feature is not available on your current plan. Please upgrade to unlock.',
+                                      );
+                                    } else {
+                                      context.go(child.path);
+                                    }
+                                  },
                                   borderRadius: BorderRadius.circular(6),
                                   child: Container(
                                     height: 34,
                                     width: double.infinity,
                                     alignment: Alignment.centerLeft,
                                     padding: const EdgeInsets.only(left: 16),
-                                    child: Text(
-                                      child.label,
-                                      style: TextStyle(
-                                        color: isSubSelected
-                                            ? const Color(0xFF56b4ff)
-                                            : const Color(0xFF8892b0),
-                                        fontSize: 13,
-                                        fontWeight: isSubSelected
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
-                                      ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            child.label,
+                                            style: TextStyle(
+                                              color: isSubLocked
+                                                  ? Colors.grey
+                                                  : (isSubSelected
+                                                      ? const Color(0xFF56b4ff)
+                                                      : const Color(0xFF8892b0)),
+                                              fontSize: 13,
+                                              fontWeight: isSubSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isSubLocked)
+                                          const Padding(
+                                            padding: EdgeInsets.only(right: 12),
+                                            child: Icon(Icons.lock, size: 12, color: Colors.amber),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -1464,32 +1776,66 @@ class AppNavigationDrawer extends ConsumerWidget {
                 final isSelected = menu.path != null && currentRoute == menu.path;
                 final anyChildSelected = hasChildren &&
                     menu.children!.any((c) => currentRoute.startsWith(c.path));
+                final isLocked = menu.path != null && !ref.watch(planGateProvider).isPathEnabled(menu.path!);
 
                 if (!hasChildren) {
                   return ListTile(
-                    leading: Icon(menu.icon),
-                    title: Text(menu.label),
+                    leading: Icon(menu.icon, color: isLocked ? Colors.grey : null),
+                    title: Text(menu.label, style: TextStyle(color: isLocked ? Colors.grey : null)),
+                    trailing: isLocked ? const Icon(Icons.lock, size: 14, color: Colors.amber) : null,
                     selected: isSelected,
                     onTap: () {
                       Navigator.pop(context);
-                      context.go(menu.path!);
+                      if (isLocked) {
+                        UpgradeContinueSheet.show(
+                          context,
+                          title: '${menu.label} Locked',
+                          description: 'This feature is not available on your current plan. Please upgrade to unlock.',
+                        );
+                      } else {
+                        context.go(menu.path!);
+                      }
                     },
                   );
                 }
 
                 return ExpansionTile(
-                  leading: Icon(menu.icon),
-                  title: Text(menu.label),
+                  leading: Icon(menu.icon, color: isLocked ? Colors.grey : null),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          menu.label,
+                          style: TextStyle(color: isLocked ? Colors.grey : null),
+                        ),
+                      ),
+                      if (isLocked)
+                        const Icon(Icons.lock, size: 14, color: Colors.amber),
+                    ],
+                  ),
                   initiallyExpanded: anyChildSelected,
                   childrenPadding: const EdgeInsets.only(left: AppSpacing.m),
                   children: menu.children!.map((child) {
                     final isSubSelected = currentRoute == child.path || currentRoute.startsWith('${child.path}/');
+                    final isSubLocked = !ref.watch(planGateProvider).isPathEnabled(child.path);
                     return ListTile(
-                      title: Text(child.label),
+                      title: Text(
+                        child.label,
+                        style: TextStyle(color: isSubLocked ? Colors.grey : null),
+                      ),
+                      trailing: isSubLocked ? const Icon(Icons.lock, size: 12, color: Colors.amber) : null,
                       selected: isSubSelected,
                       onTap: () {
                         Navigator.pop(context);
-                        context.go(child.path);
+                        if (isSubLocked) {
+                          UpgradeContinueSheet.show(
+                            context,
+                            title: '${child.label} Locked',
+                            description: 'This feature is not available on your current plan. Please upgrade to unlock.',
+                          );
+                        } else {
+                          context.go(child.path);
+                        }
                       },
                     );
                   }).toList(),
