@@ -84,9 +84,8 @@ class PermissionHelper {
     // Super Admin has access to everything
     if (normalizedRole == superAdmin) return true;
 
-    // Admin has access to everything EXCEPT global organizations
+    // Admin has access to everything including organizations
     if (normalizedRole == admin) {
-      if (module == organizations) return false;
       return true;
     }
 
