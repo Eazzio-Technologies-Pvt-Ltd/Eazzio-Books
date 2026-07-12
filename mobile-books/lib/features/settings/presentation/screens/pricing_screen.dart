@@ -153,7 +153,7 @@ class _PricingScreenState extends ConsumerState<PricingScreen> {
       final verifyResponse = await networkClient.post(
         '/subscription/renew',
         data: {
-          'plan_id': _pendingPlanId,
+          'plan_id': _pendingPlanId == 'standard' ? 'premium' : _pendingPlanId,
           'razorpay_order_id': response.orderId ?? '',
           'razorpay_payment_id': response.paymentId ?? '',
           'razorpay_signature': response.signature ?? '',
@@ -232,7 +232,7 @@ class _PricingScreenState extends ConsumerState<PricingScreen> {
       final networkClient = ref.read(networkClientProvider);
       final response = await networkClient.post(
         '/subscription/create-order',
-        data: {'plan_id': plan.id},
+        data: {'plan_id': plan.id == 'standard' ? 'premium' : plan.id},
       );
 
       final data = response.data as Map<String, dynamic>;
