@@ -316,21 +316,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                   const SizedBox(height: 24),
 
                   // Footer
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Don't have an account? "),
-                      GestureDetector(
-                        onTap: isLoading ? null : () => context.push('/register'),
-                        child: const Text(
-                          'Create an account',
+                  Center(
+                    child: GestureDetector(
+                      onTap: isLoading ? null : () => context.push('/register'),
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: const TextSpan(
                           style: TextStyle(
-                            color: Color(0xFF1B2537),
-                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF64748B),
+                            fontSize: 14,
                           ),
+                          children: [
+                            TextSpan(text: "Don't have an account? "),
+                            TextSpan(
+                              text: 'Create an account',
+                              style: TextStyle(
+                                color: Color(0xFF1B2537),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
