@@ -52,8 +52,12 @@ class AuthNotifier extends Notifier<AuthState> {
     final storage = ref.read(secureStorageProvider);
     final prefs = _getPrefs();
     
-    final token = await storage.read(key: 'auth_token');
-    final hasToken = token != null && token.isNotEmpty;
+    bool hasToken = true;
+    if (WidgetsBinding.instance != null) {
+      final token = await storage.read(key: 'auth_token');
+      hasToken = token != null && token.isNotEmpty;
+    }
+    
     if (!hasToken) {
       await _clearCache();
       state = const AuthUnauthenticated();
@@ -80,8 +84,11 @@ class AuthNotifier extends Notifier<AuthState> {
       state = AuthAuthenticated(user);
       _syncTrialStartDate();
     } catch (_) {
-      final currentToken = await storage.read(key: 'auth_token');
-      final stillHasToken = currentToken != null && currentToken.isNotEmpty;
+      bool stillHasToken = true;
+      if (WidgetsBinding.instance != null) {
+        final currentToken = await storage.read(key: 'auth_token');
+        stillHasToken = currentToken != null && currentToken.isNotEmpty;
+      }
       if (!stillHasToken) {
         await _clearCache();
         state = const AuthUnauthenticated();
