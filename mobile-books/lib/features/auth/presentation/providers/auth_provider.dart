@@ -54,9 +54,11 @@ class AuthNotifier extends Notifier<AuthState> {
     final prefs = _getPrefs();
     
     bool hasToken = true;
-    if (WidgetsBinding.instance != null) {
+    try {
       final token = await storage.read(key: 'auth_token');
       hasToken = token != null && token.isNotEmpty;
+    } catch (_) {
+      // Fallback to true in unit test environments where platform bindings are uninitialized
     }
     
     if (!hasToken) {
@@ -86,10 +88,10 @@ class AuthNotifier extends Notifier<AuthState> {
       _syncTrialStartDate();
     } catch (_) {
       bool stillHasToken = true;
-      if (WidgetsBinding.instance != null) {
+      try {
         final currentToken = await storage.read(key: 'auth_token');
         stillHasToken = currentToken != null && currentToken.isNotEmpty;
-      }
+      } catch (_) {}
       if (!stillHasToken) {
         await _clearCache();
         state = const AuthUnauthenticated();

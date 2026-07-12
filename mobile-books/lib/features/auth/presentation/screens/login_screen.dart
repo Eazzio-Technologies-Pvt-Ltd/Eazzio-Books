@@ -245,22 +245,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: _rememberMe,
-                            activeColor: AppColors.primary,
-                            onChanged: (val) {
-                              setState(() {
-                                _rememberMe = val ?? false;
-                              });
-                            },
-                          ),
-                          const Text('Remember me'),
-                        ],
+                      Flexible(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 32,
+                              child: Checkbox(
+                                value: _rememberMe,
+                                activeColor: AppColors.primary,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _rememberMe = val ?? false;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Flexible(
+                              child: Text(
+                                'Remember me',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       TextButton(
                         onPressed: () => context.push('/forgot-password'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                        ),
                         child: const Text(
                           'Forgot password?',
                           style: TextStyle(
