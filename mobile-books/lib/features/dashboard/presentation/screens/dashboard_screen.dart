@@ -1180,11 +1180,14 @@ class DashboardScreen extends ConsumerWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Search customers, items, invoices...',
-                style: TextStyle(
-                  color: isDark ? Colors.white54 : Colors.grey.shade500,
-                  fontSize: 14,
+              Expanded(
+                child: Text(
+                  'Search customers, items, invoices...',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
