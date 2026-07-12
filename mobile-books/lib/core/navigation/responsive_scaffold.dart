@@ -1199,9 +1199,9 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: currentBottomNavIndex,
                 type: BottomNavigationBarType.fixed,
-                backgroundColor: Colors.white,
+                backgroundColor: Colors.black,
                 selectedItemColor: theme.colorScheme.primary,
-                unselectedItemColor: theme.colorScheme.secondary,
+                unselectedItemColor: Colors.white70,
                 onTap: (index) {
                   switch (index) {
                     case 0:

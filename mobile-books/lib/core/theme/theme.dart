@@ -47,29 +47,52 @@ class AppTheme {
   static final String? fontFamily = GoogleFonts.inter().fontFamily;
 
   static TextTheme _buildTextTheme(Color primaryColor, Color secondaryColor) {
-    final base = TextTheme(
+    final defaultFont = GoogleFonts.inter().fontFamily;
+    final base = GoogleFonts.interTextTheme().copyWith(
       headlineLarge: TextStyle(
+        fontFamily: defaultFont,
         fontSize: 24.0,
         fontWeight: FontWeight.bold,
         color: primaryColor,
       ),
       titleMedium: TextStyle(
+        fontFamily: defaultFont,
         fontSize: 16.0,
         fontWeight: FontWeight.bold,
         color: primaryColor,
       ),
       bodyLarge: TextStyle(
+        fontFamily: defaultFont,
+        fontSize: 14.0,
+        fontWeight: FontWeight.normal,
+        color: primaryColor,
+      ),
+      bodyMedium: TextStyle(
+        fontFamily: defaultFont,
         fontSize: 14.0,
         fontWeight: FontWeight.normal,
         color: primaryColor,
       ),
       bodySmall: TextStyle(
+        fontFamily: defaultFont,
         fontSize: 12.0,
         fontWeight: FontWeight.normal,
         color: secondaryColor,
       ),
+      labelLarge: TextStyle(
+        fontFamily: defaultFont,
+        color: primaryColor,
+      ),
+      labelMedium: TextStyle(
+        fontFamily: defaultFont,
+        color: secondaryColor,
+      ),
+      labelSmall: TextStyle(
+        fontFamily: defaultFont,
+        color: secondaryColor,
+      ),
     );
-    return GoogleFonts.interTextTheme(base);
+    return base;
   }
 
   static const _pageTransitionsTheme = PageTransitionsTheme(
@@ -158,9 +181,9 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.backgroundLight,
-        selectedItemColor: AppColors.primaryBlueDark,
-        unselectedItemColor: AppColors.textSecondaryLight,
+        backgroundColor: Colors.black,
+        selectedItemColor: AppColors.primaryBlue,
+        unselectedItemColor: Colors.white70,
         elevation: 10,
         type: BottomNavigationBarType.fixed,
         showUnselectedLabels: true,
@@ -243,9 +266,9 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: Colors.black,
         selectedItemColor: AppColors.primaryBlue,
-        unselectedItemColor: AppColors.textSecondaryDark,
+        unselectedItemColor: Colors.white70,
         elevation: 10,
         type: BottomNavigationBarType.fixed,
       ),
