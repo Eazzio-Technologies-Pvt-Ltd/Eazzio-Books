@@ -5,6 +5,7 @@ import 'package:mobile_books/features/auth/data/models/user.dart';
 import 'package:mobile_books/features/auth/data/services/auth_service.dart';
 import 'package:mobile_books/features/settings/data/services/users_service.dart';
 import 'package:mobile_books/core/navigation/router.dart';
+import 'package:mobile_books/core/network/api_client.dart';
 
 sealed class AuthState {
   const AuthState();
@@ -48,7 +49,15 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Verifies if a valid session exists on startup.
   Future<void> bootstrap() async {
     final authService = ref.read(authServiceProvider);
+    final apiClient = ref.read(apiClientProvider);
     final prefs = _getPrefs();
+    
+    final hasToken = await apiClient.hasToken();
+    if (!hasToken) {
+      await _clearCache();
+      state = const AuthUnauthenticated();
+      return;
+    }
     
     // Attempt to load from offline cache first (only until first backend response)
     if (prefs != null) {
@@ -70,9 +79,15 @@ class AuthNotifier extends Notifier<AuthState> {
       state = AuthAuthenticated(user);
       _syncTrialStartDate();
     } catch (_) {
-      // If we failed to get the profile but we had a cached user, we keep it as fallback (until next request)
-      if (state is! AuthAuthenticated) {
+      final stillHasToken = await apiClient.hasToken();
+      if (!stillHasToken) {
+        await _clearCache();
         state = const AuthUnauthenticated();
+      } else {
+        // If we failed to get the profile but we had a cached user, we keep it as fallback (until next request)
+        if (state is! AuthAuthenticated) {
+          state = const AuthUnauthenticated();
+        }
       }
     }
   }

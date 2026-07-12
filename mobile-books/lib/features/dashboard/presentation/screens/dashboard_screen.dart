@@ -302,7 +302,7 @@ class DashboardScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 6,
           mainAxisSpacing: 6,
-          childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.45,
+          childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.55,
           children: [
             _buildStatCard(
               context,
@@ -422,7 +422,7 @@ class DashboardScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 6,
           mainAxisSpacing: 6,
-          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : 1.5,
+          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : 1.75,
           children: [
             _buildMetricCard(context, 'INCOME', selected.incomeReceived, const Color(0xFF059669)),
             _buildMetricCard(context, 'EXPENSES', selected.expenses, const Color(0xFFDC2626)),
