@@ -302,7 +302,7 @@ class DashboardScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 6,
           mainAxisSpacing: 6,
-          childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.65,
+          childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.45,
           children: [
             _buildStatCard(
               context,
@@ -422,7 +422,7 @@ class DashboardScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 6,
           mainAxisSpacing: 6,
-          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : 1.75,
+          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : 1.5,
           children: [
             _buildMetricCard(context, 'INCOME', selected.incomeReceived, const Color(0xFF059669)),
             _buildMetricCard(context, 'EXPENSES', selected.expenses, const Color(0xFFDC2626)),
@@ -530,9 +530,13 @@ class DashboardScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 GestureDetector(
                   onTap: onViewTap,
@@ -706,9 +710,13 @@ class DashboardScreen extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Petty Cash Balance',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                        const Expanded(
+                          child: Text(
+                            'Petty Cash Balance',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         Icon(Icons.wallet, size: 16, color: const Color(0xFF059669)),
                       ],
@@ -746,9 +754,13 @@ class DashboardScreen extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Undeposited Funds',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                        const Expanded(
+                          child: Text(
+                            'Undeposited Funds',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         Icon(Icons.business_center, size: 16, color: AppColors.primaryBlue),
                       ],
