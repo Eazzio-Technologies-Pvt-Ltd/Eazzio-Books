@@ -72,7 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   Widget _buildSplash(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: double.infinity,
+      height: MediaQuery.of(context).size.height,
       color: Colors.white,
       child: Center(
         child: AnimatedBuilder(
