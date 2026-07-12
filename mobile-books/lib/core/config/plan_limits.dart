@@ -40,6 +40,9 @@ class PlanLimitsConfig {
       "/invoices",
       "/payments-received",
       "/customers",
+      "/vendors",
+      "/expenses",
+      "/quotes",
       "/accounting/journals",
       "/dashboard"
     ],
