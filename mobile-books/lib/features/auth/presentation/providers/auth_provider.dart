@@ -49,10 +49,11 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Verifies if a valid session exists on startup.
   Future<void> bootstrap() async {
     final authService = ref.read(authServiceProvider);
-    final apiClient = ref.read(apiClientProvider);
+    final storage = ref.read(secureStorageProvider);
     final prefs = _getPrefs();
     
-    final hasToken = await apiClient.hasToken();
+    final token = await storage.read(key: 'auth_token');
+    final hasToken = token != null && token.isNotEmpty;
     if (!hasToken) {
       await _clearCache();
       state = const AuthUnauthenticated();
@@ -79,7 +80,8 @@ class AuthNotifier extends Notifier<AuthState> {
       state = AuthAuthenticated(user);
       _syncTrialStartDate();
     } catch (_) {
-      final stillHasToken = await apiClient.hasToken();
+      final currentToken = await storage.read(key: 'auth_token');
+      final stillHasToken = currentToken != null && currentToken.isNotEmpty;
       if (!stillHasToken) {
         await _clearCache();
         state = const AuthUnauthenticated();
