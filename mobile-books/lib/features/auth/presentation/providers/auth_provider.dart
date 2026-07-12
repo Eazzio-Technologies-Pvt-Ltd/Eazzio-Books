@@ -31,8 +31,14 @@ class AuthUnauthenticated extends AuthState {
 }
 
 class AuthNotifier extends Notifier<AuthState> {
+  bool _isDisposed = false;
+
   @override
   AuthState build() {
+    _isDisposed = false;
+    ref.onDispose(() {
+      _isDisposed = true;
+    });
     bootstrap();
     return const AuthInitial();
   }
@@ -56,13 +62,16 @@ class AuthNotifier extends Notifier<AuthState> {
     bool hasToken = true;
     try {
       final token = await storage.read(key: 'auth_token');
+      if (_isDisposed) return;
       hasToken = token != null && token.isNotEmpty;
     } catch (_) {
       // Fallback to true in unit test environments where platform bindings are uninitialized
     }
     
     if (!hasToken) {
+      if (_isDisposed) return;
       await _clearCache();
+      if (_isDisposed) return;
       state = const AuthUnauthenticated();
       return;
     }
@@ -74,6 +83,7 @@ class AuthNotifier extends Notifier<AuthState> {
         try {
           final decoded = jsonDecode(cachedUserJson) as Map<String, dynamic>;
           final cachedUser = User.fromJson(decoded);
+          if (_isDisposed) return;
           state = AuthAuthenticated(cachedUser);
         } catch (_) {
           // Ignore cache corruption
@@ -83,19 +93,26 @@ class AuthNotifier extends Notifier<AuthState> {
 
     try {
       final user = await authService.getProfile();
+      if (_isDisposed) return;
       await _cacheUser(user);
+      if (_isDisposed) return;
       state = AuthAuthenticated(user);
       _syncTrialStartDate();
     } catch (_) {
+      if (_isDisposed) return;
       bool stillHasToken = true;
       try {
         final currentToken = await storage.read(key: 'auth_token');
+        if (_isDisposed) return;
         stillHasToken = currentToken != null && currentToken.isNotEmpty;
       } catch (_) {}
       if (!stillHasToken) {
+        if (_isDisposed) return;
         await _clearCache();
+        if (_isDisposed) return;
         state = const AuthUnauthenticated();
       } else {
+        if (_isDisposed) return;
         // If we failed to get the profile but we had a cached user, we keep it as fallback (until next request)
         if (state is! AuthAuthenticated) {
           state = const AuthUnauthenticated();
