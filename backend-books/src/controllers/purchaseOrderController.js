@@ -350,7 +350,7 @@ const updatePurchaseOrder = async (req, res) => {
 };
 
 // ================= CANCEL / DELETE PURCHASE ORDER =================
-const deletePurchaseOrder = async (req, res) => {
+const deletePurchaseOrder = async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -363,7 +363,7 @@ const deletePurchaseOrder = async (req, res) => {
     res.json({ message: "Purchase Order deleted" });
   } catch (err) {
     console.error("DELETE PURCHASE ORDER ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

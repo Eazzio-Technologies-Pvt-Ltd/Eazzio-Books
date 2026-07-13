@@ -264,7 +264,7 @@ const updateDeliveryChallan = async (req, res) => {
 };
 
 // ================= DELETE DELIVERY CHALLAN =================
-const deleteDeliveryChallan = async (req, res) => {
+const deleteDeliveryChallan = async (req, res, next) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -294,7 +294,7 @@ const deleteDeliveryChallan = async (req, res) => {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("DELETE DELIVERY CHALLAN ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   } finally {
     client.release();
   }

@@ -306,7 +306,7 @@ const updateSalesOrder = async (req, res) => {
 };
 
 // ================= DELETE SALES ORDER =================
-const deleteSalesOrder = async (req, res) => {
+const deleteSalesOrder = async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -319,7 +319,7 @@ const deleteSalesOrder = async (req, res) => {
     res.json({ message: "Sales Order deleted" });
   } catch (err) {
     console.error("DELETE SALES ORDER ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

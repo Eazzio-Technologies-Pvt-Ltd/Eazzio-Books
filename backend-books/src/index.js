@@ -147,6 +147,10 @@ app.get('/', (req, res) => {
   res.send('Server running');
 });
 
+// ✅ GLOBAL ERROR HANDLER
+const errorHandler = require("./middleware/errorHandler");
+app.use(errorHandler);
+
 // ✅ START
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {

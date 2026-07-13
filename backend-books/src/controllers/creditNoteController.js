@@ -335,7 +335,7 @@ const updateCreditNote = async (req, res) => {
 };
 
 // ================= DELETE CREDIT NOTE =================
-const deleteCreditNote = async (req, res) => {
+const deleteCreditNote = async (req, res, next) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -364,7 +364,7 @@ const deleteCreditNote = async (req, res) => {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("DELETE CREDIT NOTE ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   } finally {
     client.release();
   }

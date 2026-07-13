@@ -14,9 +14,11 @@ const {
   getCustomerStatement
 } = require("../controllers/customerController");
 
+const checkSubscription = require('../middleware/checkSubscription');
+
 router.get("/customers", authMiddleware, tenantMiddleware, requirePermission(MODULES.CUSTOMERS, ACTIONS.VIEW), getCustomers);
 router.get("/customers/:id", authMiddleware, tenantMiddleware, requirePermission(MODULES.CUSTOMERS, ACTIONS.VIEW), getCustomerById);
-router.post("/customers", authMiddleware, tenantMiddleware, requirePermission(MODULES.CUSTOMERS, ACTIONS.CREATE), createCustomer);
+router.post("/customers", authMiddleware, tenantMiddleware, requirePermission(MODULES.CUSTOMERS, ACTIONS.CREATE), checkSubscription('customer'), createCustomer);
 router.put("/customers/:id", authMiddleware, tenantMiddleware, requirePermission(MODULES.CUSTOMERS, ACTIONS.EDIT), updateCustomer);
 router.delete("/customers/:id", authMiddleware, tenantMiddleware, requirePermission(MODULES.CUSTOMERS, ACTIONS.DELETE), deleteCustomer);
 router.get("/customers/:id/activity", authMiddleware, tenantMiddleware, requirePermission(MODULES.CUSTOMERS, ACTIONS.VIEW), getActivityLog);

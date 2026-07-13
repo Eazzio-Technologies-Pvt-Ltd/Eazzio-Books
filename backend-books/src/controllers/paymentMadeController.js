@@ -32,9 +32,9 @@ const getAllPaymentsMade = async (req, res) => {
        FROM payments_made pm
        LEFT JOIN vendors v ON pm.vendor_id = v.id
        LEFT JOIN bills b ON pm.bill_id = b.id
-       WHERE pm.user_id = $1
+       WHERE pm.user_id = $1` + (req.tenantId ? " AND pm.organization_id = $2" : "") + `
        ORDER BY pm.payment_date DESC, pm.created_at DESC`,
-      [req.user.id]
+      req.tenantId ? [req.user.id, req.tenantId] : [req.user.id]
     );
     res.json({ payments: result.rows });
   } catch (err) {
@@ -51,8 +51,8 @@ const getPaymentMadeById = async (req, res) => {
        FROM payments_made pm
        LEFT JOIN vendors v ON pm.vendor_id = v.id
        LEFT JOIN bills b ON pm.bill_id = b.id
-       WHERE pm.id = $1 AND pm.user_id = $2`,
-      [id, req.user.id]
+       WHERE pm.id = $1 AND pm.user_id = $2` + (req.tenantId ? " AND pm.organization_id = $3" : ""),
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: "Payment not found" });
     res.json({ payment: result.rows[0] });
@@ -83,9 +83,9 @@ const createPaymentMade = async (req, res) => {
 
     // Insert payment
     const payRes = await client.query(
-      `INSERT INTO payments_made (user_id, vendor_id, bill_id, amount, payment_date, payment_mode, reference_number, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [req.user.id, vendor_id, bill_id, payAmount, payment_date, payment_mode, reference_number, notes]
+      `INSERT INTO payments_made (user_id, vendor_id, bill_id, amount, payment_date, payment_mode, reference_number, notes, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [req.user.id, vendor_id, bill_id, payAmount, payment_date, payment_mode, reference_number, notes, req.tenantId]
     );
 
     // Update bill
@@ -108,7 +108,7 @@ const createPaymentMade = async (req, res) => {
   }
 };
 
-const deletePaymentMade = async (req, res) => {
+const deletePaymentMade = async (req, res, next) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -137,7 +137,7 @@ const deletePaymentMade = async (req, res) => {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("DELETE PAYMENT MADE ERROR:", err);
-    res.status(400).json({ message: err.message || "Failed to delete payment" });
+    next(err);
   } finally {
     client.release();
   }

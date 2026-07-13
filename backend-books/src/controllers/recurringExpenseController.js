@@ -3,8 +3,8 @@ const pool = require("../config/db");
 const getRecurringExpenses = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM recurring_expenses WHERE created_by = $1 ORDER BY created_at DESC`,
-      [req.user.id]
+      `SELECT * FROM recurring_expenses WHERE created_by = $1` + (req.tenantId ? " AND organization_id = $2" : "") + ` ORDER BY created_at DESC`,
+      req.tenantId ? [req.user.id, req.tenantId] : [req.user.id]
     );
     res.json({ recurringExpenses: result.rows });
   } catch (err) {
@@ -17,8 +17,8 @@ const getRecurringExpenseById = async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT * FROM recurring_expenses WHERE id = $1 AND created_by = $2`,
-      [id, req.user.id]
+      `SELECT * FROM recurring_expenses WHERE id = $1 AND created_by = $2` + (req.tenantId ? " AND organization_id = $3" : ""),
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Recurring expense not found" });
@@ -40,10 +40,10 @@ const createRecurringExpense = async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO recurring_expenses 
-       (expense_name, category, amount, frequency, due_day, start_date, end_date, status, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       (expense_name, category, amount, frequency, due_day, start_date, end_date, status, notes, created_by, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [expense_name, category, amount, frequency, due_day, start_date, end_date || null, status || 'Active', notes || null, req.user.id]
+      [expense_name, category, amount, frequency, due_day, start_date, end_date || null, status || 'Active', notes || null, req.user.id, req.tenantId]
     );
     res.status(201).json({ message: "Recurring expense created", recurringExpense: result.rows[0] });
   } catch (err) {
@@ -64,9 +64,9 @@ const updateRecurringExpense = async (req, res) => {
     const result = await pool.query(
       `UPDATE recurring_expenses
        SET expense_name = $1, category = $2, amount = $3, frequency = $4, due_day = $5, start_date = $6, end_date = $7, status = $8, notes = $9, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10 AND created_by = $11
+       WHERE id = $10 AND created_by = $11` + (req.tenantId ? " AND organization_id = $12" : "") + `
        RETURNING *`,
-      [expense_name, category, amount, frequency, due_day, start_date, end_date || null, status || 'Active', notes || null, id, req.user.id]
+      req.tenantId ? [expense_name, category, amount, frequency, due_day, start_date, end_date || null, status || 'Active', notes || null, id, req.user.id, req.tenantId] : [expense_name, category, amount, frequency, due_day, start_date, end_date || null, status || 'Active', notes || null, id, req.user.id]
     );
 
     if (result.rows.length === 0) {
@@ -80,12 +80,12 @@ const updateRecurringExpense = async (req, res) => {
   }
 };
 
-const deleteRecurringExpense = async (req, res) => {
+const deleteRecurringExpense = async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `DELETE FROM recurring_expenses WHERE id = $1 AND created_by = $2 RETURNING *`,
-      [id, req.user.id]
+      `DELETE FROM recurring_expenses WHERE id = $1 AND created_by = $2` + (req.tenantId ? " AND organization_id = $3" : "") + ` RETURNING *`,
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Recurring expense not found" });
@@ -93,7 +93,7 @@ const deleteRecurringExpense = async (req, res) => {
     res.json({ message: "Recurring expense deleted successfully" });
   } catch (err) {
     console.error("DELETE RECURRING EXPENSE ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 
@@ -107,8 +107,8 @@ const updateStatus = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `UPDATE recurring_expenses SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND created_by = $3 RETURNING *`,
-      [status, id, req.user.id]
+      `UPDATE recurring_expenses SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND created_by = $3` + (req.tenantId ? " AND organization_id = $4" : "") + ` RETURNING *`,
+      req.tenantId ? [status, id, req.user.id, req.tenantId] : [status, id, req.user.id]
     );
 
     if (result.rows.length === 0) {

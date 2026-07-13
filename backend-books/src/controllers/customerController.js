@@ -409,7 +409,7 @@ const updateCustomer = async (req, res) => {
 };
 
 // ================= DELETE CUSTOMER =================
-const deleteCustomer = async (req, res) => {
+const deleteCustomer = async (req, res, next) => {
   const { id } = req.params;
   try {
     let query = `DELETE FROM customers WHERE id = $1`;
@@ -427,7 +427,7 @@ const deleteCustomer = async (req, res) => {
     res.json({ message: "Customer deleted" });
   } catch (err) {
     console.error("DELETE CUSTOMER ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

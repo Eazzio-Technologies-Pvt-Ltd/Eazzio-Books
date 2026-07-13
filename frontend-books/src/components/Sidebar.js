@@ -3,7 +3,7 @@
  * Responsive: auto-collapses on mobile, has hamburger toggle on Topbar
  * Dependencies: react-router-dom
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./Sidebar.css";
 
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../AuthContext";
 import { canAccess, MODULES, ACTIONS } from "../utils/permissions";
+import { apiRequest } from "../api";
 
 /* ── Sidebar menu definition ── */
 const sidebarMenus = [
@@ -102,11 +103,33 @@ const sidebarMenus = [
 function Sidebar({ onCollapseChange }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("/logout", { method: "POST" });
+    } catch (err) {
+      console.error(err);
+    }
+    setUser(null);
+    navigate("/");
+  };
 
   /* Notify parent of collapse changes */
   const handleCollapse = (val) => {
@@ -274,6 +297,107 @@ function Sidebar({ onCollapseChange }) {
           })}
         </nav>
 
+        {/* User Info Display */}
+        {user && (
+          <div className="sidebar-profile-container" ref={profileMenuRef} style={{ marginTop: "auto", position: "relative" }}>
+            <div 
+              className="sidebar-profile-btn"
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              style={{
+                display: "flex", alignItems: "center", gap: "12px",
+                padding: "16px 20px", borderTop: "1px solid #283352",
+                cursor: "pointer", transition: "background 0.2s"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(47, 128, 237, 0.12)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            >
+              <div style={{
+                width: "36px", height: "36px", borderRadius: "50%",
+                background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                fontWeight: "600", fontSize: "15px", flexShrink: 0
+              }}>
+                {user.email?.[0]?.toUpperCase() || "U"}
+              </div>
+              
+              {showLabels && (
+                <div style={{ overflow: "hidden", flex: 1 }}>
+                  <div style={{ fontWeight: "600", color: "#ffffff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {user.email}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#8892b0", marginTop: "2px" }}>
+                    {user.role || "Admin"}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {showProfileMenu && (
+              <div style={{
+                position: "absolute", bottom: "100%", left: "16px",
+                background: "#fff", width: "240px", borderRadius: "10px",
+                boxShadow: "0 -4px 20px rgba(0,0,0,0.12)", padding: "8px 0",
+                zIndex: 1000, marginBottom: "8px", border: "1px solid #e2e8f0"
+              }}>
+                <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", marginBottom: "4px" }}>
+                  <strong style={{ color: "#0f172a", fontSize: "14px" }}>{user.email}</strong><br/>
+                  <span style={{ fontSize: "12px", color: "#475569" }}>Role: {user.role || "Admin"}</span>
+                </div>
+                
+                {user.role === "Admin" && (
+                  <>
+                    <div 
+                      style={{ padding: "10px 16px", cursor: "pointer", fontSize: "14px", color: "#334155" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onClick={() => { setShowProfileMenu(false); navigate("/organization-settings"); }}
+                    >
+                      Organization Settings
+                    </div>
+                    <div 
+                      style={{ padding: "10px 16px", cursor: "pointer", fontSize: "14px", color: "#334155" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onClick={() => { setShowProfileMenu(false); navigate("/users-roles"); }}
+                    >
+                      Users & Roles
+                    </div>
+                    <div 
+                      style={{ padding: "10px 16px", cursor: "pointer", fontSize: "14px", color: "#334155" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onClick={() => { setShowProfileMenu(false); navigate("/taxes"); }}
+                    >
+                      Taxes
+                    </div>
+                  </>
+                )}
+                {user.role === "Super Admin" && (
+                  <>
+                    <div style={{ padding: "0 16px", margin: "4px 0" }}><hr style={{ border: 0, borderTop: "1px solid #e2e8f0" }}/></div>
+                    <div 
+                      style={{ padding: "10px 16px", cursor: "pointer", fontSize: "14px", color: "#7c3aed", fontWeight: "600" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f1f5f9"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onClick={() => { setShowProfileMenu(false); navigate("/super-admin/organizations"); }}
+                    >
+                      ⚡ Control Center
+                    </div>
+                  </>
+                )}
+                <div style={{ padding: "0 16px", margin: "4px 0" }}><hr style={{ border: 0, borderTop: "1px solid #e2e8f0" }}/></div>
+                <div 
+                  style={{ padding: "10px 16px", cursor: "pointer", fontSize: "14px", color: "#dc2626", fontWeight: "500" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "#fef2f2"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  onClick={handleLogout}
+                >
+                  Logout
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       </aside>
     </>

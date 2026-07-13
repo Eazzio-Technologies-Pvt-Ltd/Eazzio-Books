@@ -74,7 +74,7 @@ const updateStudent = async (req, res) => {
 };
 
 // ================= DELETE STUDENT =================
-const deleteStudent = async (req, res) => {
+const deleteStudent = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -90,7 +90,7 @@ const deleteStudent = async (req, res) => {
     res.json({ message: "Student deleted" });
   } catch (err) {
     console.error("DELETE STUDENT ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

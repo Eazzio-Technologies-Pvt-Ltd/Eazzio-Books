@@ -231,7 +231,7 @@ const updateItem = async (req, res) => {
 };
 
 // ================= DELETE ITEM =================
-const deleteItem = async (req, res) => {
+const deleteItem = async (req, res, next) => {
   const { id } = req.params;
   try {
     let query = `DELETE FROM items WHERE id = $1`;
@@ -251,7 +251,7 @@ const deleteItem = async (req, res) => {
     res.json({ message: "Item deleted" });
   } catch (err) {
     console.error("DELETE ITEM ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

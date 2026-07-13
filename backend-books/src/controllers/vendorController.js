@@ -181,7 +181,7 @@ const updateVendor = async (req, res) => {
 };
 
 // ===== DELETE VENDOR (soft delete) =====
-const deleteVendor = async (req, res) => {
+const deleteVendor = async (req, res, next) => {
   const { id } = req.params;
   try {
     let query = `UPDATE vendors SET is_deleted = true, updated_at = CURRENT_TIMESTAMP
@@ -201,7 +201,7 @@ const deleteVendor = async (req, res) => {
     res.json({ message: "Vendor deleted" });
   } catch (err) {
     console.error("DELETE VENDOR ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

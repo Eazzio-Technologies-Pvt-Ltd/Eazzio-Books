@@ -349,3 +349,82 @@
   .dash-section-header { flex-direction: column; align-items: flex-start; }
   .dash-welcome-filters { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
 }
+
+/* ── Upgrade / Subscription Section (Admin Only) ── */
+.dash-upgrade-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.dash-upgrade-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dash-upgrade-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.dash-upgrade-plan-card {
+  position: relative;
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: var(--bg-card);
+}
+
+.dash-upgrade-plan-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.dash-upgrade-plan-card.selected {
+  transform: translateY(-3px);
+}
+
+.dash-upgrade-badge {
+  display: inline-block;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+}
+
+.dash-upgrade-pay-btn {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  transition: opacity 0.2s, transform 0.15s;
+  letter-spacing: 0.2px;
+}
+
+.dash-upgrade-pay-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+  .dash-upgrade-plans-grid { grid-template-columns: 1fr; }
+  .dash-upgrade-header { flex-direction: column; align-items: flex-start; }
+}

@@ -281,7 +281,7 @@ const updateBill = async (req, res) => {
 };
 
 // ===== DELETE BILL (soft delete) =====
-const deleteBill = async (req, res) => {
+const deleteBill = async (req, res, next) => {
   const { id } = req.params;
   try {
     let checkQuery = `SELECT bill_date FROM bills WHERE id = $1 AND is_deleted = false`;
@@ -310,7 +310,7 @@ const deleteBill = async (req, res) => {
     res.json({ message: "Bill deleted" });
   } catch (err) {
     console.error("DELETE BILL ERROR:", err);
-    res.status(err.message.includes("locked") ? 403 : 500).json({ message: err.message || "Server error" });
+    next(err);
   }
 };
 

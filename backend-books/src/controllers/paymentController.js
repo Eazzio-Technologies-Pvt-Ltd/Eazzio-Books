@@ -74,9 +74,9 @@ const recordPayment = async (req, res) => {
     for (const split of paymentSplits) {
       if (parseFloat(split.amount) > 0) {
         const pRes = await client.query(
-          `INSERT INTO payments (invoice_id, user_id, customer_id, amount, payment_date, payment_mode, deposit_to, reference, notes)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-          [invoiceId, req.user.id, finalCustomerId, split.amount, payment_date || new Date(), split.payment_mode || "cash", split.deposit_to || null, split.reference || reference, notes]
+          `INSERT INTO payments (invoice_id, user_id, customer_id, amount, payment_date, payment_mode, deposit_to, reference, notes, organization_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+          [invoiceId, req.user.id, finalCustomerId, split.amount, payment_date || new Date(), split.payment_mode || "cash", split.deposit_to || null, split.reference || reference, notes, req.tenantId]
         );
         paymentRecords.push(pRes.rows[0]);
       }
@@ -217,8 +217,8 @@ const getPayments = async (req, res) => {
   const { id: invoiceId } = req.params;
   try {
     const result = await pool.query(
-      "SELECT * FROM payments WHERE invoice_id = $1 AND user_id = $2 ORDER BY payment_date DESC",
-      [invoiceId, req.user.id]
+      "SELECT * FROM payments WHERE invoice_id = $1 AND user_id = $2" + (req.tenantId ? " AND organization_id = $3" : "") + " ORDER BY payment_date DESC",
+      req.tenantId ? [invoiceId, req.user.id, req.tenantId] : [invoiceId, req.user.id]
     );
     res.json({ payments: result.rows });
   } catch (err) {
@@ -235,9 +235,9 @@ const getAllPayments = async (req, res) => {
        FROM payments p
        LEFT JOIN customers c ON p.customer_id = c.id
        LEFT JOIN invoices i ON p.invoice_id = i.id
-       WHERE p.user_id = $1
+       WHERE p.user_id = $1` + (req.tenantId ? " AND p.organization_id = $2" : "") + `
        ORDER BY p.payment_date DESC`,
-      [req.user.id]
+      req.tenantId ? [req.user.id, req.tenantId] : [req.user.id]
     );
     res.json({ payments: result.rows });
   } catch (err) {
@@ -259,8 +259,8 @@ const getPaymentById = async (req, res) => {
        FROM payments p
        LEFT JOIN customers c ON p.customer_id = c.id
        LEFT JOIN invoices i ON p.invoice_id = i.id
-       WHERE p.id = $1 AND p.user_id = $2`,
-      [id, req.user.id]
+       WHERE p.id = $1 AND p.user_id = $2` + (req.tenantId ? " AND p.organization_id = $3" : ""),
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
 
     if (result.rows.length === 0) {
@@ -279,9 +279,9 @@ const getDepositBalances = async (req, res) => {
     const result = await pool.query(
       `SELECT deposit_to, SUM(amount) as total_balance 
        FROM payments 
-       WHERE user_id = $1 AND deposit_to IN ('Petty Cash', 'Undeposited Funds') 
+       WHERE user_id = $1 AND deposit_to IN ('Petty Cash', 'Undeposited Funds')` + (req.tenantId ? " AND organization_id = $2" : "") + ` 
        GROUP BY deposit_to`,
-      [req.user.id]
+      req.tenantId ? [req.user.id, req.tenantId] : [req.user.id]
     );
     
     let balances = { petty_cash: 0, undeposited_funds: 0 };

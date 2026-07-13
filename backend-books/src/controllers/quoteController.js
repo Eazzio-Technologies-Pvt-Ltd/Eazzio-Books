@@ -307,7 +307,7 @@ const updateQuote = async (req, res) => {
 };
 
 // ================= DELETE QUOTE =================
-const deleteQuote = async (req, res) => {
+const deleteQuote = async (req, res, next) => {
   const { id } = req.params;
   try {
     let query = `DELETE FROM quotes WHERE id = $1`;
@@ -327,7 +327,7 @@ const deleteQuote = async (req, res) => {
     res.json({ message: "Quote deleted" });
   } catch (err) {
     console.error("DELETE QUOTE ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

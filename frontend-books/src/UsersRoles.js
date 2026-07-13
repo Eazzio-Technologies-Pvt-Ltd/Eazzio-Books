@@ -164,7 +164,6 @@ function UsersRoles() {
             { role: "Admin", desc: "Full access to all modules and settings.", icon: "🛡️" },
             { role: "Accountant", desc: "Accounting, Reports, Taxes, and Banking.", icon: "📊" },
             { role: "Staff", desc: "Sales and Purchases: Invoices, Bills, Customers, Vendors.", icon: "👤" },
-            { role: "Viewer", desc: "Read-only access across the application.", icon: "👁️" },
           ].map(({ role, desc, icon }) => (
             <div key={role} style={styles.permCard}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
@@ -246,7 +245,6 @@ function UsersRoles() {
                         <option value="Admin">Admin</option>
                         <option value="Accountant">Accountant</option>
                         <option value="Staff">Staff</option>
-                        <option value="Viewer">Viewer</option>
                       </select>
                     ) : (
                       getRoleBadge(u.role)

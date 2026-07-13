@@ -378,7 +378,7 @@ const updateInvoice = async (req, res) => {
 };
 
 // DELETE invoice
-const deleteInvoice = async (req, res) => {
+const deleteInvoice = async (req, res, next) => {
   const { id } = req.params;
   try {
     let checkQuery = `SELECT invoice_date FROM invoices WHERE id = $1`;
@@ -406,7 +406,7 @@ const deleteInvoice = async (req, res) => {
     res.json({ message: "Invoice deleted" });
   } catch (err) {
     console.error("DELETE INVOICE ERROR:", err);
-    res.status(err.message.includes("locked") ? 403 : 500).json({ message: err.message || "Server error" });
+    next(err);
   }
 };
 

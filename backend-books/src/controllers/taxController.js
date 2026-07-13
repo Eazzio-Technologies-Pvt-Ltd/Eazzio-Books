@@ -126,7 +126,7 @@ const updateTax = async (req, res) => {
 };
 
 // ===== DELETE TAX (soft delete) =====
-const deleteTax = async (req, res) => {
+const deleteTax = async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -140,7 +140,7 @@ const deleteTax = async (req, res) => {
     res.json({ message: "Tax deleted successfully" });
   } catch (err) {
     console.error("DELETE TAX ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

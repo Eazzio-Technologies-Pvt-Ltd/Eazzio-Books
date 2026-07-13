@@ -6,15 +6,20 @@ import "./LandingPage.css";
 const pricingPlans = [
   {
     id: "free",
-    name: "FREE PLAN",
+    name: "FREE",
     price: "0",
-    description: "Basic features to get started",
+    tagline: "Everything you need to send your first invoice.",
+    description: "No card, no trial countdown, no catch — just the essentials to see if Eazzio fits how you work.",
     button: "Get started for free",
     featuresTitle: "Includes:",
     features: [
-      { text: "Basic invoice" },
-      { text: "Tracking payments" },
-      { text: "1 user access" }
+      { text: "Create and send professional invoices in minutes" },
+      { text: "Track payments as customers pay you" },
+      { text: "Manage your core customer list" },
+      { text: "Record manual journal entries for basic bookkeeping" },
+      { text: "A dashboard overview of where your money stands" },
+      { text: "1 admin user, so you're fully in control from day one" },
+      { text: "Community support to help you get unstuck" }
     ],
     support: "Community Support",
     users: "1 User"
@@ -24,13 +29,25 @@ const pricingPlans = [
     name: "STANDARD PREMIUM",
     price: "749",
     isPaid: true,
-    description: "Advanced features for growing businesses",
+    tagline: "Payments and forecasting, done right.",
+    description: "Everything a growing business needs to run sales, purchases, inventory, and cash flow — with tools Zoho Books doesn't have.",
     button: "Start 14 Days Trial",
     featuresTitle: "Includes:",
     features: [
-      { text: "Automated payment reminders" },
-      { text: "Complete inventory" },
-      { text: "GST tracking reporting" }
+      { text: "Split a single payment across Cash, UPI, Bank, and Petty Cash — simultaneously" },
+      { text: "Installment scheduler — auto-generates the full payment plan from one entry" },
+      { text: "Due installment alerts with WhatsApp and email quick-actions" },
+      { text: "Full financial reports — P&L, Balance Sheet, Cash Flow, Trial Balance" },
+      { text: "Projected Income widget — see next month's expected receipts, today" },
+      { text: "Projected Expense widget — know what's due before it hits your account" },
+      { text: "WhatsApp payment reminders — one tap from the notification bell" },
+      { text: "Dedicated Petty Cash ledger with live dashboard balance" },
+      { text: "Dedicated Undeposited Funds ledger — nothing slips through" },
+      { text: "Unlimited invoices, quotes, and sales orders" },
+      { text: "Full vendor management — purchase orders, bills, vendor credits" },
+      { text: "Complete inventory tracking with low-stock alerts" },
+      { text: "Recurring invoices and recurring expenses" },
+      { text: "Unlimited users with role-based access" }
     ],
     support: "Priority Support",
     users: "Unlimited Users"
@@ -40,31 +57,27 @@ const pricingPlans = [
     name: "PROFESSIONAL",
     price: "1499",
     isPaid: true,
-    description: "Comprehensive features for established businesses",
+    tagline: "Built for the business that has an accountant.",
+    description: "Bank reconciliation, project time-tracking, custom roles, and integrations — for teams that need more than invoicing.",
     button: "Start 14 Days Trial",
     featuresTitle: "Includes everything in Standard, plus:",
     features: [
-      { text: "Advanced workflow automation" },
-      { text: "Multi-currency support" },
-      { text: "Custom roles & permissions" }
+      { text: "Split a single payment across Cash, UPI, Bank, and Petty Cash — simultaneously" },
+      { text: "Installment scheduler — auto-generates the full payment plan from one entry" },
+      { text: "Due installment alerts with WhatsApp and email quick-actions" },
+      { text: "Full financial reports — P&L, Balance Sheet, Cash Flow, Trial Balance" },
+      { text: "Projected Income widget — see next month's expected receipts, today" },
+      { text: "Bank reconciliation and currency adjustments" },
+      { text: "Customer and vendor aging reports" },
+      { text: "Projects and timesheets for time-based work" },
+      { text: "Custom roles and permissions, plus a dedicated Accountant role" },
+      { text: "API access & webhooks for custom integrations" },
+      { text: "Advanced RBAC with full audit logs, custom fields & workflows" },
+      { text: "Transaction locking & bulk updates" },
+      { text: "Customer statements (per-customer account ledger)" },
+      { text: "24/7 priority email and chat support" }
     ],
     support: "24/7 Priority Support",
-    users: "Unlimited Users"
-  },
-  {
-    id: "enterprise",
-    name: "ENTERPRISE",
-    price: "1999",
-    isPaid: true,
-    description: "Ultimate power and control for large organizations",
-    button: "Start 14 Days Trial",
-    featuresTitle: "Includes everything in Professional, plus:",
-    features: [
-      { text: "Dedicated account manager" },
-      { text: "Custom integrations & API" },
-      { text: "Advanced analytics & reporting" }
-    ],
-    support: "Dedicated Support",
     users: "Unlimited Users"
   }
 ];
@@ -201,7 +214,15 @@ const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [pricingTab, setPricingTab] = useState('started');
   const [isAnnual, setIsAnnual] = useState(true);
+  const [expandedPlans, setExpandedPlans] = useState({});
   const navigate = useNavigate();
+
+  const toggleExpand = (planId) => {
+    setExpandedPlans(prev => ({
+      ...prev,
+      [planId]: !prev[planId]
+    }));
+  };
 
   useEffect(() => {
     // Trigger entrance animations after mount
@@ -325,11 +346,28 @@ const LandingPage = () => {
             <span className="benefit-item"><span className="check-icon-white">✓</span> Reliable online support</span>
           </div>
 
-          <div className="advanced-cards-container" style={{ justifyContent: 'center', marginTop: '40px' }}>
-            {pricingPlans.map((plan, index) => (
-              <div className="advanced-card" key={index} style={{ maxWidth: '400px' }}>
+          <div className="advanced-cards-container" style={{ justifyContent: 'center', marginTop: '40px', gap: '24px' }}>
+            {pricingPlans.map((plan, index) => {
+              const isPopular = plan.id === "premium";
+              return (
+              <div className="advanced-card" key={index} style={{ maxWidth: '400px', position: 'relative', border: isPopular ? '2px solid #3b82f6' : undefined, transform: isPopular ? 'scale(1.02)' : 'none', zIndex: isPopular ? 10 : 1 }}>
+                {isPopular && (
+                  <div style={{
+                    position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)',
+                    background: 'linear-gradient(90deg, #2563eb, #3b82f6)', color: 'white',
+                    padding: '4px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
+                    boxShadow: '0 4px 12px rgba(37,99,235,0.4)'
+                  }}>
+                    ⭐ Most Popular
+                  </div>
+                )}
                 <div className="ac-header">
                   <h4>{plan.name}</h4>
+                  {plan.tagline && (
+                    <div style={{ fontSize: '12.5px', fontStyle: 'italic', color: '#2563eb', marginBottom: '8px', fontWeight: '600' }}>
+                      {plan.tagline}
+                    </div>
+                  )}
                   <p className="ac-desc">{plan.description}</p>
                   <div className="ac-price-box">
                     <div className="ac-price">
@@ -358,21 +396,74 @@ const LandingPage = () => {
                 </div>
                 <div className="ac-features">
                   <div className="ac-f-title">{plan.featuresTitle}</div>
-                  <ul>
-                    {plan.features.map((f, i) => (
-                      <li key={i}>
-                        <span className="check-icon-black">✓</span>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px", textAlign: "left" }}>
+                    {plan.features.slice(0, 5).map((f, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <span className="check-icon-black" style={{ marginTop: '2px' }}>✓</span>
                         <span className="f-text">{f.text}</span>
                       </li>
                     ))}
                   </ul>
+
+                  {plan.features.length > 5 && (
+                    <div
+                      style={{
+                        maxHeight: expandedPlans[plan.id] ? "1000px" : "0px",
+                        overflow: "hidden",
+                        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                        opacity: expandedPlans[plan.id] ? 1 : 0,
+                        marginTop: expandedPlans[plan.id] ? "8px" : "0px",
+                      }}
+                    >
+                      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px", textAlign: "left" }}>
+                        {plan.features.slice(5).map((f, i) => (
+                          <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <span className="check-icon-black" style={{ marginTop: '2px' }}>✓</span>
+                            <span className="f-text">{f.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {plan.features.length > 5 && (
+                    <button
+                      onClick={() => toggleExpand(plan.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#2563eb",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        marginTop: "16px",
+                        padding: "4px 0",
+                        width: "100%",
+                        justifyContent: "center",
+                        transition: "color 0.2s ease",
+                      }}
+                    >
+                      {expandedPlans[plan.id] ? "Show less" : "Show more features"}
+                      <span style={{
+                        display: "inline-block",
+                        transform: expandedPlans[plan.id] ? "rotate(-180deg)" : "rotate(0deg)",
+                        transition: "transform 0.3s ease",
+                        marginLeft: "4px"
+                      }}>
+                        ↓
+                      </span>
+                    </button>
+                  )}
                 </div>
                 <div className="ac-footer">
                   <div className="ac-users">{plan.users}</div>
                   <div className="ac-support">{plan.support}</div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
 
         </div>

@@ -31,8 +31,8 @@ ensureCOATable();
 const getAccounts = async (req, res) => {
   try {
     let result = await pool.query(
-      "SELECT * FROM chart_of_accounts WHERE user_id = $1 AND is_deleted = false ORDER BY account_type, account_name",
-      [req.user.id]
+      "SELECT * FROM chart_of_accounts WHERE user_id = $1 AND is_deleted = false" + (req.tenantId ? " AND organization_id = $2" : "") + " ORDER BY account_type, account_name",
+      req.tenantId ? [req.user.id, req.tenantId] : [req.user.id]
     );
 
     if (result.rows.length === 0) {
@@ -51,17 +51,17 @@ const getAccounts = async (req, res) => {
 
       const insertPromises = defaultAccounts.map(acc => 
         pool.query(
-          `INSERT INTO chart_of_accounts (user_id, account_name, account_code, account_type, status)
-           VALUES ($1, $2, $3, $4, 'active')`,
-          [req.user.id, acc.name, acc.code, acc.type]
+          `INSERT INTO chart_of_accounts (user_id, account_name, account_code, account_type, status, organization_id)
+           VALUES ($1, $2, $3, $4, 'active', $5)`,
+          [req.user.id, acc.name, acc.code, acc.type, req.tenantId || null]
         )
       );
       await Promise.all(insertPromises);
 
       // Re-fetch
       result = await pool.query(
-        "SELECT * FROM chart_of_accounts WHERE user_id = $1 AND is_deleted = false ORDER BY account_type, account_name",
-        [req.user.id]
+        "SELECT * FROM chart_of_accounts WHERE user_id = $1 AND is_deleted = false" + (req.tenantId ? " AND organization_id = $2" : "") + " ORDER BY account_type, account_name",
+        req.tenantId ? [req.user.id, req.tenantId] : [req.user.id]
       );
     }
 
@@ -77,8 +77,8 @@ const getAccountById = async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      "SELECT * FROM chart_of_accounts WHERE id = $1 AND user_id = $2 AND is_deleted = false",
-      [id, req.user.id]
+      "SELECT * FROM chart_of_accounts WHERE id = $1 AND user_id = $2 AND is_deleted = false" + (req.tenantId ? " AND organization_id = $3" : ""),
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Account not found" });
@@ -95,9 +95,9 @@ const createAccount = async (req, res) => {
   const { account_name, account_code, account_type, parent_account_id, opening_balance, description, status } = req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO chart_of_accounts (user_id, account_name, account_code, account_type, parent_account_id, opening_balance, current_balance, description, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8) RETURNING *`,
-      [req.user.id, account_name, account_code, account_type, parent_account_id || null, opening_balance || 0, description, status || 'active']
+      `INSERT INTO chart_of_accounts (user_id, account_name, account_code, account_type, parent_account_id, opening_balance, current_balance, description, status, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9) RETURNING *`,
+      [req.user.id, account_name, account_code, account_type, parent_account_id || null, opening_balance || 0, description, status || 'active', req.tenantId || null]
     );
     res.json({ account: result.rows[0] });
   } catch (err) {
@@ -114,9 +114,9 @@ const updateAccount = async (req, res) => {
     const result = await pool.query(
       `UPDATE chart_of_accounts
        SET account_name = $1, account_code = $2, account_type = $3, parent_account_id = $4, description = $5, status = $6, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7 AND user_id = $8 AND is_deleted = false
+       WHERE id = $7 AND user_id = $8 AND is_deleted = false` + (req.tenantId ? " AND organization_id = $9" : "") + `
        RETURNING *`,
-      [account_name, account_code, account_type, parent_account_id || null, description, status || 'active', id, req.user.id]
+      req.tenantId ? [account_name, account_code, account_type, parent_account_id || null, description, status || 'active', id, req.user.id, req.tenantId] : [account_name, account_code, account_type, parent_account_id || null, description, status || 'active', id, req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Account not found" });
@@ -129,12 +129,12 @@ const updateAccount = async (req, res) => {
 };
 
 // DELETE account (soft)
-const deleteAccount = async (req, res) => {
+const deleteAccount = async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
-      `UPDATE chart_of_accounts SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, req.user.id]
+      `UPDATE chart_of_accounts SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2` + (req.tenantId ? " AND organization_id = $3" : "") + ` RETURNING *`,
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Account not found" });
@@ -142,7 +142,7 @@ const deleteAccount = async (req, res) => {
     res.json({ message: "Account deleted" });
   } catch (err) {
     console.error("DELETE ACCOUNT ERROR:", err);
-    res.status(500).json({ message: "Failed to delete account" });
+    next(err);
   }
 };
 
@@ -187,8 +187,8 @@ ensureJournalTables();
 const getJournals = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM journal_entries WHERE user_id = $1 AND is_deleted = false ORDER BY journal_date DESC, created_at DESC",
-      [req.user.id]
+      "SELECT * FROM journal_entries WHERE user_id = $1 AND is_deleted = false" + (req.tenantId ? " AND organization_id = $2" : "") + " ORDER BY journal_date DESC, created_at DESC",
+      req.tenantId ? [req.user.id, req.tenantId] : [req.user.id]
     );
     res.json({ journals: result.rows });
   } catch (err) {
@@ -202,8 +202,8 @@ const getJournalById = async (req, res) => {
   const { id } = req.params;
   try {
     const journalResult = await pool.query(
-      "SELECT * FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false",
-      [id, req.user.id]
+      "SELECT * FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false" + (req.tenantId ? " AND organization_id = $3" : ""),
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
     if (journalResult.rows.length === 0) {
       return res.status(404).json({ message: "Journal not found" });
@@ -252,9 +252,9 @@ const createJournal = async (req, res) => {
 
     // Insert journal
     const journalRes = await client.query(
-      `INSERT INTO journal_entries (user_id, journal_number, journal_date, reference_number, notes, total_debit, total_credit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [req.user.id, journal_number, journal_date, reference_number, notes, totalDebit, totalCredit]
+      `INSERT INTO journal_entries (user_id, journal_number, journal_date, reference_number, notes, total_debit, total_credit, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [req.user.id, journal_number, journal_date, reference_number, notes, totalDebit, totalCredit, req.tenantId || null]
     );
     const journalId = journalRes.rows[0].id;
 
@@ -287,7 +287,13 @@ const updateJournal = async (req, res) => {
     await client.query("BEGIN");
 
     // Check ownership and load old journal date
-    const checkRes = await client.query("SELECT id, journal_date FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false", [id, req.user.id]);
+    let checkQuery = "SELECT id, journal_date FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false";
+    let checkVals = [id, req.user.id];
+    if (req.tenantId) {
+      checkQuery += " AND organization_id = $3";
+      checkVals.push(req.tenantId);
+    }
+    const checkRes = await client.query(checkQuery, checkVals);
     if (checkRes.rows.length === 0) throw new Error("Journal not found.");
 
     const oldDate = checkRes.rows[0].journal_date;
@@ -317,8 +323,8 @@ const updateJournal = async (req, res) => {
     const journalRes = await client.query(
       `UPDATE journal_entries
        SET journal_number = $1, journal_date = $2, reference_number = $3, notes = $4, total_debit = $5, total_credit = $6, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7 AND user_id = $8 RETURNING *`,
-      [journal_number, journal_date, reference_number, notes, totalDebit, totalCredit, id, req.user.id]
+       WHERE id = $7 AND user_id = $8` + (req.tenantId ? " AND organization_id = $9" : "") + ` RETURNING *`,
+      req.tenantId ? [journal_number, journal_date, reference_number, notes, totalDebit, totalCredit, id, req.user.id, req.tenantId] : [journal_number, journal_date, reference_number, notes, totalDebit, totalCredit, id, req.user.id]
     );
 
     // Delete old lines and re-insert
@@ -343,28 +349,31 @@ const updateJournal = async (req, res) => {
 };
 
 // DELETE manual journal (soft)
-const deleteJournal = async (req, res) => {
+const deleteJournal = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const checkRes = await pool.query(
-      "SELECT journal_date FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false",
-      [id, req.user.id]
-    );
+    let checkQuery = "SELECT journal_date FROM journal_entries WHERE id = $1 AND user_id = $2 AND is_deleted = false";
+    let checkVals = [id, req.user.id];
+    if (req.tenantId) {
+      checkQuery += " AND organization_id = $3";
+      checkVals.push(req.tenantId);
+    }
+    const checkRes = await pool.query(checkQuery, checkVals);
     if (checkRes.rows.length > 0) {
       await checkTransactionLock(req.user.id, "Manual Journals", checkRes.rows[0].journal_date);
     }
 
     const result = await pool.query(
-      `UPDATE journal_entries SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, req.user.id]
+      `UPDATE journal_entries SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2` + (req.tenantId ? " AND organization_id = $3" : "") + ` RETURNING *`,
+      req.tenantId ? [id, req.user.id, req.tenantId] : [id, req.user.id]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Journal not found" });
+      return next(err);
     }
     res.json({ message: "Journal deleted" });
   } catch (err) {
     console.error("DELETE JOURNAL ERROR:", err);
-    res.status(500).json({ message: "Failed to delete journal" });
+    next(err);
   }
 };
 
@@ -393,6 +402,16 @@ const getProjectedPayments = async (req, res) => {
     }
 
     const projEndDate = new Date(projYear, projMonth, 0); // Last day of the projected month
+    
+    let orgFilter1 = "";
+    let orgFilter2 = "";
+    const values = [req.user.id, projEndDate];
+    if (req.tenantId) {
+      orgFilter1 = " AND b.organization_id = $3 ";
+      orgFilter2 = " AND s.organization_id = $3 ";
+      values.push(req.tenantId);
+    }
+
     const result = await pool.query(`
       SELECT 
         b.id as bill_id, 
@@ -414,6 +433,7 @@ const getProjectedPayments = async (req, res) => {
         AND LOWER(b.status) NOT IN ('paid', 'cancelled', 'void', 'written off', 'write off', 'written_off')
         AND b.due_date <= $2
         AND NOT EXISTS (SELECT 1 FROM invoice_payment_schedules WHERE invoice_id = b.id)
+        ${orgFilter1}
       
       UNION ALL
       
@@ -438,9 +458,10 @@ const getProjectedPayments = async (req, res) => {
         AND s.status != 'paid'
         AND LOWER(b.status) NOT IN ('cancelled', 'void', 'written off', 'write off', 'written_off')
         AND s.due_date <= $2
+        ${orgFilter2}
         
       ORDER BY due_date ASC
-    `, [req.user.id, projEndDate]);
+    `, values);
 
     let total_projected_payment = 0;
     const bills = result.rows.map(bill => {
@@ -492,6 +513,12 @@ const getProjectedExpenses = async (req, res) => {
     }
 
     const projEndDate = new Date(projYear, projMonth, 0); // Last day of the projected month
+    const bValues = [req.user.id, projEndDate];
+    let bOrgFilter = "";
+    if (req.tenantId) {
+      bOrgFilter = " AND b.organization_id = $3 ";
+      bValues.push(req.tenantId);
+    }
     // 1. Fetch pending bills
     const billsResult = await pool.query(`
       SELECT b.id as expense_id, b.bill_number as reference_number, v.display_name as vendor_name, 
@@ -505,9 +532,16 @@ const getProjectedExpenses = async (req, res) => {
         AND b.is_deleted = false
         AND LOWER(b.status) NOT IN ('paid', 'cancelled', 'void')
         AND b.due_date <= $2
+        ${bOrgFilter}
       ORDER BY b.due_date ASC
-    `, [req.user.id, projEndDate]);
+    `, bValues);
 
+    const rValues = [req.user.id, new Date(projYear, projMonth, 0), new Date(projYear, projMonth - 1, 1)];
+    let rOrgFilter = "";
+    if (req.tenantId) {
+      rOrgFilter = " AND organization_id = $4 ";
+      rValues.push(req.tenantId);
+    }
     // 2. Fetch recurring expenses hitting next month
     const recurringResult = await pool.query(`
       SELECT id as expense_id, expense_name as reference_number, category as vendor_name, 
@@ -518,7 +552,8 @@ const getProjectedExpenses = async (req, res) => {
       WHERE created_by = $1 AND status = 'Active' 
         AND start_date <= $2 
         AND (end_date IS NULL OR end_date >= $3)
-    `, [req.user.id, new Date(projYear, projMonth, 0), new Date(projYear, projMonth - 1, 1)]);
+        ${rOrgFilter}
+    `, rValues);
 
     let total_projected_expense = 0;
     

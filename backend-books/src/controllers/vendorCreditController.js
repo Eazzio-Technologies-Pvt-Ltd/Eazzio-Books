@@ -335,7 +335,7 @@ const updateVendorCredit = async (req, res) => {
 };
 
 // ================= DELETE VENDOR CREDIT =================
-const deleteVendorCredit = async (req, res) => {
+const deleteVendorCredit = async (req, res, next) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -364,7 +364,7 @@ const deleteVendorCredit = async (req, res) => {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("DELETE VENDOR CREDIT ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   } finally {
     client.release();
   }

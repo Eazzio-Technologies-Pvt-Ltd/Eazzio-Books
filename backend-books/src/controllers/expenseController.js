@@ -224,7 +224,7 @@ const updateExpense = async (req, res) => {
 };
 
 // DELETE expense
-const deleteExpense = async (req, res) => {
+const deleteExpense = async (req, res, next) => {
   const { id } = req.params;
   try {
     let checkQuery = `SELECT expense_date FROM expenses WHERE id = $1`;
@@ -260,7 +260,7 @@ const deleteExpense = async (req, res) => {
     res.json({ message: "Expense deleted" });
   } catch (err) {
     console.error("DELETE EXPENSE ERROR:", err);
-    res.status(err.message.includes("locked") ? 403 : 500).json({ message: err.message || "Server error" });
+    next(err);
   }
 };
 

@@ -158,7 +158,7 @@ const updateProject = async (req, res) => {
 };
 
 // ================= CANCEL/DELETE PROJECT =================
-const deleteProject = async (req, res) => {
+const deleteProject = async (req, res, next) => {
   const { id } = req.params;
   try {
     // Check if invoices or expenses are linked
@@ -183,7 +183,7 @@ const deleteProject = async (req, res) => {
     res.json({ message: "Project deleted successfully" });
   } catch (err) {
     console.error("DELETE PROJECT ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

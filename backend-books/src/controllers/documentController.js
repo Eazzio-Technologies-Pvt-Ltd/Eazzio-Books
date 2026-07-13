@@ -101,14 +101,14 @@ const downloadDocument = async (req, res) => {
   }
 };
 
-const deleteDocument = async (req, res) => {
+const deleteDocument = async (req, res, next) => {
   const { id } = req.params;
   try {
     await pool.query("UPDATE documents SET is_deleted = true WHERE id = $1 AND user_id = $2", [id, req.user.id]);
     res.json({ message: "Document deleted" });
   } catch (err) {
     console.error("DELETE DOCUMENT ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 

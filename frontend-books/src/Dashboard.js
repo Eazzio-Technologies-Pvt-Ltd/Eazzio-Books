@@ -3,17 +3,31 @@ import { useAuth } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "./api";
 import { CardSkeleton } from "./components/skeletons";
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar, Legend, PieChart, Pie, Cell
-} from 'recharts';
-import { IndianRupee, CreditCard, TrendingUp, TrendingDown, Wallet, Banknote, Briefcase } from 'lucide-react';
+import toast from "react-hot-toast";
+
+import { IndianRupee, CreditCard, TrendingUp, TrendingDown, Wallet, Banknote, Briefcase, Zap, CheckCircle, Clock } from 'lucide-react';
 import "./Dashboard.css";
+
+/* ─── Razorpay helper ─────────────────────────────────────────── */
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (window.Razorpay) { resolve(true); return; }
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+
+const UPGRADE_PLANS = [
+  { id: "premium",      name: "Standard Premium",  price: 749,  color: "#2563eb", glow: "rgba(37,99,235,0.12)",  badge: "⭐ Popular" },
+  { id: "professional", name: "Professional",       price: 1499, color: "#7c3aed", glow: "rgba(124,58,237,0.12)", badge: null },
+];
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 function Dashboard() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -26,6 +40,8 @@ function Dashboard() {
   const [projectedExpensesData, setProjectedExpensesData] = useState(null);
   const [depositBalances, setDepositBalances] = useState({ petty_cash: 0, undeposited_funds: 0 });
   const [loading, setLoading] = useState(true);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState("professional");
+  const [payingPlanId, setPayingPlanId] = useState(null);
 
   const handleApply = () => {
     setIsApplying(true);
@@ -102,6 +118,83 @@ function Dashboard() {
     fetchProjectedExpenses();
     fetchDepositBalances();
   }, [selectedMonth, selectedYear]);
+
+  /* ── Subscription upgrade handler (Razorpay) ── */
+  const handleUpgrade = async (planId) => {
+    setPayingPlanId(planId);
+    try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast.error("Razorpay SDK failed to load. Check your internet connection.");
+        setPayingPlanId(null);
+        return;
+      }
+
+      const data = await apiRequest("/subscription/create-order", {
+        method: "POST",
+        body: JSON.stringify({ plan_id: planId }),
+      });
+
+      if (!data || !data.success || !data.order) {
+        toast.error(data?.message || "Failed to create checkout order.");
+        setPayingPlanId(null);
+        return;
+      }
+
+      const { order, keyId } = data;
+      const plan = UPGRADE_PLANS.find((p) => p.id === planId);
+
+      const options = {
+        key: keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Eazzio Books",
+        description: `Subscribe to ${plan?.name}`,
+        order_id: order.id,
+        prefill: { name: user?.full_name || "", email: user?.email || "" },
+        theme: { color: plan?.color || "#2563eb" },
+        handler: async (response) => {
+          setPayingPlanId(planId);
+          try {
+            const verifyRes = await apiRequest("/subscription/renew", {
+              method: "POST",
+              body: JSON.stringify({
+                plan_id: planId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            if (verifyRes && verifyRes.success) {
+              toast.success(`🎉 Upgraded to ${plan?.name}! Subscription is now active.`);
+              setUser((prev) => ({
+                ...prev,
+                plan_id: verifyRes.plan_id,
+                subscription_expires_at: verifyRes.subscription_expires_at,
+              }));
+            } else {
+              toast.error(verifyRes?.message || "Payment verification failed.");
+            }
+          } catch (err) {
+            toast.error(err.message || "Failed to verify payment.");
+          } finally {
+            setPayingPlanId(null);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast("Payment cancelled.", { icon: "❌" });
+            setPayingPlanId(null);
+          },
+        },
+      };
+
+      new window.Razorpay(options).open();
+    } catch (err) {
+      toast.error(err.message || "An error occurred during payment setup.");
+      setPayingPlanId(null);
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: user?.default_currency || 'INR' }).format(amount || 0);
@@ -348,57 +441,78 @@ function Dashboard() {
 
           </section>
 
-          {/* CHARTS SECTION */}
-          {financeData.chartData && (
-            <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "32px", marginTop: "24px" }}>
-              
-              <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Cash Flow (Last 12 Months)</h3>
-                <div style={{ height: "500px", width: "100%" }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={financeData.chartData.cashFlowYearly} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} tickFormatter={(value) => `₹${value >= 1000 ? (value/1000).toFixed(0) + 'k' : value}`} />
-                      <RechartsTooltip content={<CustomTooltip />} />
-                      <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '13px', color: '#374151' }}/>
-                      <Area type="monotone" dataKey="income" name="Income" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
-                      <Area type="monotone" dataKey="expense" name="Expense" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
+
+
+          {/* ADMIN-ONLY: UPGRADE / SUBSCRIPTION SECTION */}
+          {user?.role === 'Admin' && (
+            <section className="dash-upgrade-section">
+              {/* Header row */}
+              <div className="dash-upgrade-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius: '10px', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Zap size={18} color="#fff" />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)' }}>Subscription &amp; Upgrade</h3>
+                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>Manage your current plan</p>
+                  </div>
+                </div>
+                {/* Current plan badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>Current:</span>
+                  <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', textTransform: 'capitalize' }}>
+                    {user?.plan_id || 'Free'}
+                  </span>
+                  {user?.subscription_expires_at && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: new Date(user.subscription_expires_at) < new Date() ? '#dc2626' : '#16a34a', fontWeight: '600' }}>
+                      {new Date(user.subscription_expires_at) < new Date() ? <CheckCircle size={13} /> : <Clock size={13} />}
+                      {new Date(user.subscription_expires_at) < new Date() ? 'Expired' : `Expires ${new Date(user.subscription_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                <h3 style={{ margin: "0 0 20px 0", fontSize: "16px", color: "#111827", fontWeight: "600" }}>Income vs Expense (Last 6 Months)</h3>
-                <div style={{ height: "500px", width: "100%" }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={financeData.chartData.incomeExpense6Months} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} tickFormatter={(value) => `₹${value >= 1000 ? (value/1000).toFixed(0) + 'k' : value}`} />
-                      <RechartsTooltip content={<CustomTooltip />} />
-                      <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '13px', color: '#374151' }}/>
-                      <Bar dataKey="income" name="Income" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                      <Bar dataKey="expense" name="Expense" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* Plan cards */}
+              <div className="dash-upgrade-plans-grid">
+                {UPGRADE_PLANS.map((plan) => {
+                  const isSelected = selectedUpgradePlan === plan.id;
+                  const isPaying = payingPlanId === plan.id;
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`dash-upgrade-plan-card ${isSelected ? 'selected' : ''}`}
+                      style={{
+                        borderColor: isSelected ? plan.color : undefined,
+                        background: isSelected ? plan.glow : undefined,
+                        boxShadow: isSelected ? `0 8px 24px -8px ${plan.color}66` : undefined,
+                      }}
+                      onClick={() => setSelectedUpgradePlan(plan.id)}
+                    >
+                      {plan.badge && (
+                        <div className="dash-upgrade-badge" style={{ background: plan.color }}>{plan.badge}</div>
+                      )}
+                      <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', color: plan.color, marginBottom: '4px' }}>{plan.name}</div>
+                      <div style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+                        ₹{plan.price}<span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>/mo</span>
+                      </div>
+                      {isSelected && (
+                        <div style={{ marginTop: '10px' }}>
+                          <button
+                            className="dash-upgrade-pay-btn"
+                            style={{ background: plan.color, opacity: isPaying ? 0.7 : 1, cursor: isPaying ? 'not-allowed' : 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleUpgrade(plan.id); }}
+                            disabled={isPaying}
+                          >
+                            {isPaying ? 'Processing...' : '🔒 Pay & Upgrade Now'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-
             </section>
           )}
-
 
 
         </>

@@ -34,6 +34,9 @@ export async function apiRequest(path, options = {}) {
         window.dispatchEvent(new CustomEvent("subscription-expired"));
         throw new Error(data.message || 'Subscription expired');
       }
+      if (res.status === 403 && data.upgradeNudge) {
+        throw new Error(`${data.message}: ${data.upgradeNudge}`);
+      }
       throw new Error(data.message || 'API error');
     }
 

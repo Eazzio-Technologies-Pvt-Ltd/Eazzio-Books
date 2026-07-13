@@ -168,4 +168,118 @@ const createStaffAccount = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, getOrganizationSettings, updateOrganizationSettings, updateUserRole, createStaffAccount };
+const getAllOrganizationSettings = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, name AS organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url FROM organizations WHERE owner_id = $1 OR id = $2 ORDER BY created_at ASC",
+      [req.user.id, req.user.organization_id]
+    );
+    res.json({ organizations: result.rows });
+  } catch (err) {
+    console.error("GET ALL ORG SETTINGS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const updateSpecificOrganizationSettings = async (req, res) => {
+  const { id } = req.params;
+  const { organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url } = req.body;
+  try {
+    // Ensure the user actually has permission to update this organization (they must be the owner)
+    // For staff/accountants, maybe they can only update if id == req.user.organization_id. 
+    // We will allow update if owner_id = req.user.id OR (id = req.user.organization_id AND role = 'Admin')
+    
+    const orgCheck = await pool.query(
+      "SELECT id FROM organizations WHERE id = $1 AND (owner_id = $2 OR (id = $3 AND $4 = 'Admin'))",
+      [id, req.user.id, req.user.organization_id, req.user.role]
+    );
+    
+    if (orgCheck.rows.length === 0) {
+       return res.status(403).json({ message: "Access denied. You can only edit organizations you own or administer." });
+    }
+
+    const result = await pool.query(
+      `UPDATE organizations SET 
+        name = $1, business_type = $2, gstin = $3, pan = $4, address = $5, city = $6, 
+        state = $7, country = $8, phone = $9, organization_email = $10, financial_year_start = $11, default_currency = $12, logo_url = $13
+       WHERE id = $14 RETURNING id, name AS organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url`,
+      [organization_name, business_type, gstin, pan, address, city, state, country, phone, organization_email, financial_year_start, default_currency, logo_url, id]
+    );
+    res.json({ message: "Settings updated", settings: result.rows[0] });
+  } catch (err) {
+    console.error("UPDATE SPECIFIC ORG SETTINGS ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const deleteSpecificOrganization = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // 1. Verify that the user is an Admin and owns the organization (or has Admin role in it)
+    const orgCheck = await pool.query(
+      "SELECT id FROM organizations WHERE id = $1 AND (owner_id = $2 OR (id = $3 AND $4 = 'Admin'))",
+      [id, req.user.id, req.user.organization_id, req.user.role]
+    );
+    
+    if (orgCheck.rows.length === 0) {
+       return res.status(403).json({ message: "Access denied. You can only delete organizations you own or administer." });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 2. Bottom-up cascading deletes to safely bypass RESTRICT constraints
+
+      // Phase 1: Deepest child records (Line items, schedules)
+      const phase1Tables = [
+        'invoice_payment_schedules', 'journal_entry_lines', 'invoice_items', 'bill_items', 
+        'quote_items', 'sales_order_items', 'purchase_order_items', 'credit_note_items', 
+        'recurring_invoice_items', 'delivery_challan_items'
+      ];
+      for (const table of phase1Tables) {
+        // use try-catch inside just in case a table doesn't exist or misses organization_id
+        try { await client.query(`DELETE FROM ${table} WHERE organization_id = $1`, [id]); } catch (e) {}
+      }
+
+      // Phase 2: Transaction headers and related records
+      const phase2Tables = [
+        'payments', 'invoices', 'bills', 'quotes', 'sales_orders', 'purchase_orders', 
+        'credit_notes', 'recurring_invoices', 'delivery_challans', 'journal_entries', 
+        'chart_of_accounts', 'inventory_movements', 'items', 'customer_addresses', 
+        'vendor_addresses', 'customer_contacts', 'vendor_contacts'
+      ];
+      for (const table of phase2Tables) {
+        try { await client.query(`DELETE FROM ${table} WHERE organization_id = $1`, [id]); } catch (e) {}
+      }
+
+      // Phase 3: Core entities (Customers, Vendors)
+      try { await client.query(`DELETE FROM customers WHERE organization_id = $1`, [id]); } catch (e) {}
+      try { await client.query(`DELETE FROM vendors WHERE organization_id = $1`, [id]); } catch (e) {}
+
+      // Phase 4: Handle Users
+      // Delete all users belonging to this organization who are NOT Admins.
+      // (This prevents accidentally deleting the main account owner who might just have their org_id set to this)
+      await client.query("DELETE FROM users WHERE organization_id = $1 AND role != 'Admin'", [id]);
+      
+      // For any remaining users (like the Admin), set their organization_id to NULL
+      await client.query("UPDATE users SET organization_id = NULL WHERE organization_id = $1", [id]);
+
+      // Phase 5: Finally, delete the organization itself
+      await client.query("DELETE FROM organizations WHERE id = $1", [id]);
+
+      await client.query("COMMIT");
+      res.json({ message: "Organization and all associated data permanently deleted." });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("DELETE ORGANIZATION ERROR:", err);
+    res.status(500).json({ message: "Server error while deleting organization." });
+  }
+};
+
+module.exports = { getUsers, getOrganizationSettings, updateOrganizationSettings, updateUserRole, createStaffAccount, getAllOrganizationSettings, updateSpecificOrganizationSettings, deleteSpecificOrganization };

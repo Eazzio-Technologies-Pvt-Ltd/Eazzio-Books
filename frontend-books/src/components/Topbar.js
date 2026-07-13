@@ -222,55 +222,57 @@ function Topbar() {
 
         {/* Right-side actions */}
         <div className="topbar-actions">
-          <button
-            id="topbar-professional-edition-btn"
-            className="topbar-trial-text"
-            onClick={() => navigate("/pricing")}
-            title="View Pricing Plans"
-            style={{
-              background: "#2563eb", // Eazzio Blue
-              border: "1px solid #2563eb",
-              padding: "6px 14px",
-              cursor: "pointer",
-              color: "#fff",
-              fontWeight: "700",
-              letterSpacing: "0.5px",
-              fontSize: "13px",
-              borderRadius: "999px", // Pill shape
-              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#1d4ed8";
-              e.currentTarget.style.borderColor = "#1d4ed8";
-              e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.35)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#2563eb";
-              e.currentTarget.style.borderColor = "#2563eb";
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 2px 8px rgba(37, 99, 235, 0.25)";
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {user?.role === 'Admin' && (
+            <button
+              id="topbar-professional-edition-btn"
+              className="topbar-trial-text"
+              onClick={() => navigate("/pricing")}
+              title="View Pricing Plans"
+              style={{
+                background: "#2563eb", // Eazzio Blue
+                border: "1px solid #2563eb",
+                padding: "6px 14px",
+                cursor: "pointer",
+                color: "#fff",
+                fontWeight: "700",
+                letterSpacing: "0.5px",
+                fontSize: "13px",
+                borderRadius: "999px", // Pill shape
+                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#1d4ed8";
+                e.currentTarget.style.borderColor = "#1d4ed8";
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(37, 99, 235, 0.35)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#2563eb";
+                e.currentTarget.style.borderColor = "#2563eb";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(37, 99, 235, 0.25)";
+              }}
             >
-              <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-            </svg>
-            Upgrade
-          </button>
-          <span className="topbar-separator">|</span>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+              </svg>
+              Upgrade
+            </button>
+          )}
+          {user?.role === 'Admin' && <span className="topbar-separator">|</span>}
 
           {/* Organization Dropdown */}
           <div className="topbar-dropdown-container" ref={orgMenuRef}>
@@ -311,12 +313,14 @@ function Topbar() {
                 )}
                 
                 <div className="dropdown-divider"></div>
-                <div 
-                  className="dropdown-item"
-                  onClick={() => { setShowOrgMenu(false); navigate("/organization-settings"); }}
-                >
-                  ⚙ Manage Organization
-                </div>
+                {user?.role === "Admin" && (
+                  <div 
+                    className="dropdown-item"
+                    onClick={() => { setShowOrgMenu(false); navigate("/organization-settings"); }}
+                  >
+                    ⚙ Manage Organization
+                  </div>
+                )}
                 {user?.role === "Admin" && (
                   <div 
                     className="dropdown-item"
@@ -404,17 +408,23 @@ function Topbar() {
                   <strong>{user?.email}</strong>
                   <br/>
                   <span className="profile-role">Role: {user?.role || "Admin"}</span>
+                  <br/>
+                  <span style={{ fontSize: "12px", color: "#64748b", marginTop: "4px", display: "inline-block" }}>Account ID: {user?.id}</span>
                 </div>
                 <div className="dropdown-divider"></div>
-                <div className="dropdown-item" onClick={() => { setShowProfileMenu(false); navigate("/organization-settings"); }}>
-                  Organization Settings
-                </div>
-                <div className="dropdown-item" onClick={() => { setShowProfileMenu(false); navigate("/users-roles"); }}>
-                  Users & Roles
-                </div>
-                <div className="dropdown-item" onClick={() => { setShowProfileMenu(false); navigate("/taxes"); }}>
-                  Taxes
-                </div>
+                {user?.role === "Admin" && (
+                  <>
+                    <div className="dropdown-item" onClick={() => { setShowProfileMenu(false); navigate("/organization-settings"); }}>
+                      Organization Settings
+                    </div>
+                    <div className="dropdown-item" onClick={() => { setShowProfileMenu(false); navigate("/users-roles"); }}>
+                      Users & Roles
+                    </div>
+                    <div className="dropdown-item" onClick={() => { setShowProfileMenu(false); navigate("/taxes"); }}>
+                      Taxes
+                    </div>
+                  </>
+                )}
                 {user?.role === "Super Admin" && (
                   <>
                     <div className="dropdown-divider"></div>
@@ -423,10 +433,6 @@ function Topbar() {
                     </div>
                   </>
                 )}
-                <div className="dropdown-divider"></div>
-                <div className="dropdown-item" onClick={toggleTheme}>
-                  {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
-                </div>
                 <div className="dropdown-divider"></div>
                 <div className="dropdown-item text-danger" onClick={handleLogout}>
                   Logout

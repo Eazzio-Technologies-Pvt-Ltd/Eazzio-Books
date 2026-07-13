@@ -16,10 +16,11 @@ const {
   updateInvoice,
   deleteInvoice,
 } = require("../controllers/invoiceController");
+const checkSubscription = require('../middleware/checkSubscription');
 
 router.get("/invoices", authMiddleware, tenantMiddleware, requirePermission(MODULES.INVOICES, ACTIONS.VIEW), getInvoices);
 router.get("/invoices/:id", authMiddleware, tenantMiddleware, requirePermission(MODULES.INVOICES, ACTIONS.VIEW), getInvoiceById);
-router.post("/invoices", authMiddleware, tenantMiddleware, requirePermission(MODULES.INVOICES, ACTIONS.CREATE), createInvoice);
+router.post("/invoices", authMiddleware, tenantMiddleware, requirePermission(MODULES.INVOICES, ACTIONS.CREATE), checkSubscription('invoice'), createInvoice);
 router.put("/invoices/:id", authMiddleware, tenantMiddleware, requirePermission(MODULES.INVOICES, ACTIONS.EDIT), updateInvoice);
 router.delete("/invoices/:id", authMiddleware, tenantMiddleware, requirePermission(MODULES.INVOICES, ACTIONS.DELETE), deleteInvoice);
 

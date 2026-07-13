@@ -1756,8 +1756,9 @@ body {
 
 /* Advanced Cards Container */
 .advanced-cards-container {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 20px;
   background: transparent;
   border: none;
@@ -1766,6 +1767,8 @@ body {
 }
 
 .advanced-card {
+  width: 360px;
+  max-width: 100%;
   padding: 30px 20px;
   text-align: center;
   border: 1px solid #e2e8f0;

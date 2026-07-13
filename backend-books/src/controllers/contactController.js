@@ -39,7 +39,7 @@ const addContact = async (req, res) => {
 };
 
 // ================= DELETE CONTACT =================
-const deleteContact = async (req, res) => {
+const deleteContact = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -49,7 +49,7 @@ const deleteContact = async (req, res) => {
 
   } catch (err) {
     console.error("DELETE CONTACT ERROR:", err);
-    res.status(500).json({ message: "Server error" });
+    next(err);
   }
 };
 
