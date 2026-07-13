@@ -63,6 +63,7 @@ const globalSearchRoutes = require("./routes/globalSearchRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const leadRoutes = require("./routes/leadRoutes");
 const { initCronJobs } = require("./utils/cronJobs");
 
 // ✅ INIT APP
@@ -138,6 +139,7 @@ app.use("/api", vendorCreditRoutes);
 app.use("/api/search", globalSearchRoutes);
 app.use("/api", organizationRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api", leadRoutes);
 
 // ✅ INIT CRON JOBS
 initCronJobs();

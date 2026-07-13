@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import RuppLogo from "./RuppLogo";
+import ChatbotWidget from "./ChatbotWidget";
 import "./LandingPage.css";
 
 const pricingPlans = [
@@ -737,6 +738,8 @@ const LandingPage = () => {
           <p className="copyright">&copy; {new Date().getFullYear()}, Eazzio Corporation Pvt. Ltd. All Rights Reserved.</p>
         </div>
       </footer>
+      
+      <ChatbotWidget />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { useTheme } from "./ThemeContext";
 import { useAuth } from "./AuthContext";
 import { apiRequest } from "./api";
 import toast from "react-hot-toast";
+import ChatbotWidget from "./components/ChatbotWidget";
 
 /* ─── Razorpay helpers ───────────────────────────────────────────── */
 const loadRazorpayScript = () =>
@@ -790,6 +791,8 @@ function Pricing() {
           </a>
         </span>
       </div>
+      
+      <ChatbotWidget />
     </div>
   );
 }
