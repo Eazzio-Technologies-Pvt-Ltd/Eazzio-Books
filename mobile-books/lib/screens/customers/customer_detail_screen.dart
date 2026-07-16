@@ -6,6 +6,7 @@ import '../../core/utils/formatters.dart';
 import '../../data/models/customer_model.dart';
 import '../../providers/customer_provider.dart';
 import '../../widgets/common/app_button.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class CustomerDetailScreen extends ConsumerStatefulWidget {
   final int customerId;
@@ -90,11 +91,11 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
+            icon: const Icon(AppIcons.edit, color: Colors.white),
             onPressed: () => context.push('/customers/${customer.id}/edit'),
           ),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.white),
+            icon: const Icon(AppIcons.delete, color: Colors.white),
             onPressed: _isDeleting ? null : _handleDelete,
           ),
         ],

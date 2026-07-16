@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/router.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class FeatureShowcaseScreen extends ConsumerStatefulWidget {
   const FeatureShowcaseScreen({super.key});
@@ -113,7 +114,7 @@ class _FeatureShowcaseScreenState extends ConsumerState<FeatureShowcaseScreen> {
                         decoration: BoxDecoration(
                           color: isActive
                               ? AppColors.primaryBlueDark
-                              : AppColors.textSecondaryDark.withOpacity(0.3),
+                              : AppColors.textSecondaryDark.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(4.0),
                         ),
                       );
@@ -326,7 +327,7 @@ class _FeatureShowcaseScreenState extends ConsumerState<FeatureShowcaseScreen> {
                   color: AppColors.surfaceDark,
                   borderRadius: BorderRadius.circular(16.0),
                   border: Border.all(
-                    color: AppColors.borderDark.withOpacity(0.3),
+                    color: AppColors.borderDark.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -396,14 +397,14 @@ class _FeatureShowcaseScreenState extends ConsumerState<FeatureShowcaseScreen> {
   IconData _getHighlightIcon(int index) {
     switch (index) {
       case 0:
-        return Icons.gavel;
+        return AppIcons.gavel;
       case 1:
-        return Icons.sync;
+        return AppIcons.sync;
       case 2:
-        return Icons.bar_chart;
+        return AppIcons.bar_chart;
       case 3:
       default:
-        return Icons.dashboard;
+        return AppIcons.dashboard;
     }
   }
 }

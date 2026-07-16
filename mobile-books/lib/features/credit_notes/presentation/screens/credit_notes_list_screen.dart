@@ -7,12 +7,13 @@ import 'package:mobile_books/features/credit_notes/data/models/credit_note.dart'
 import 'package:mobile_books/features/credit_notes/presentation/providers/credit_note_provider.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
-  'draft':     _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT', Icons.edit_note),
-  'open':      _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'OPEN', Icons.lock_open),
-  'applied':   _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'APPLIED', Icons.check_circle_outline),
-  'cancelled': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'CANCELLED', Icons.cancel_outlined),
+  'draft':     _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT', AppIcons.edit_note),
+  'open':      _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'OPEN', AppIcons.lock_open),
+  'applied':   _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'APPLIED', AppIcons.check_circle_outline),
+  'cancelled': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'CANCELLED', AppIcons.cancel_outlined),
 };
 
 class _StatusStyle {
@@ -25,7 +26,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class CreditNotesListScreen extends ConsumerStatefulWidget {
@@ -196,7 +197,7 @@ class _CreditNotesListScreenState extends ConsumerState<CreditNotesListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/credit-notes/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -214,10 +215,10 @@ class _CreditNotesListScreenState extends ConsumerState<CreditNotesListScreen> {
                     onChanged: (val) => setState(() => _searchQuery = val),
                     decoration: InputDecoration(
                       hintText: 'Search credit notes...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
@@ -229,7 +230,7 @@ class _CreditNotesListScreenState extends ConsumerState<CreditNotesListScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 IconButton(
-                  icon: const Icon(Icons.sort),
+                  icon: const Icon(AppIcons.sort),
                   onPressed: () => _showSortBottomSheet(context),
                 ),
               ],
@@ -281,7 +282,7 @@ class _CreditNotesListScreenState extends ConsumerState<CreditNotesListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.money_off, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.money_off, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No Credit Notes found',

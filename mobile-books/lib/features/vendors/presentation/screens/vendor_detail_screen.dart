@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class VendorDetailScreen extends ConsumerWidget {
   final int vendorId;
@@ -19,7 +20,7 @@ class VendorDetailScreen extends ConsumerWidget {
         actions: [
           detailState.when(
             data: (vendor) => IconButton(
-              icon: const Icon(Icons.edit),
+              icon: const Icon(AppIcons.edit),
               onPressed: () => context.push('/vendors/$vendorId/edit'),
             ),
             loading: () => const SizedBox.shrink(),
@@ -27,7 +28,7 @@ class VendorDetailScreen extends ConsumerWidget {
           ),
           detailState.when(
             data: (vendor) => IconButton(
-              icon: const Icon(Icons.delete, color: AppColors.danger),
+              icon: const Icon(AppIcons.delete, color: AppColors.danger),
               onPressed: () => _confirmDelete(context, ref, vendor.displayName),
             ),
             loading: () => const SizedBox.shrink(),

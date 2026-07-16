@@ -5,6 +5,7 @@ import 'package:mobile_books/core/network/network_client.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice_item.dart';
 import 'package:mobile_books/features/invoices/data/models/payment.dart';
+import 'package:mobile_books/features/invoices/data/models/payment_schedule.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice_preferences.dart';
 
 class InvoiceException implements Exception {
@@ -237,6 +238,42 @@ class InvoiceService {
       await _networkClient.post('/invoice-preferences', data: preferences.toJson());
     } on DioException catch (e) {
       final message = e.response?.data?['message'] as String? ?? 'Failed to save invoice preferences.';
+      throw InvoiceException(message);
+    } catch (e) {
+      throw InvoiceException(e.toString());
+    }
+  }
+
+  /// Fetches the instalment/payment schedule for a single invoice.
+  Future<List<PaymentSchedule>> getPaymentSchedules(int invoiceId) async {
+    try {
+      final response = await _networkClient.get('/invoices/$invoiceId/schedules');
+      final data = response.data as Map<String, dynamic>;
+      final list = (data['schedules'] as List?) ?? [];
+      return list
+          .map((e) => PaymentSchedule.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to fetch payment schedules.';
+      throw InvoiceException(message);
+    } catch (e) {
+      throw InvoiceException(e.toString());
+    }
+  }
+
+  /// Replaces the payment schedule for an invoice (delete-then-insert via PUT).
+  Future<void> setPaymentSchedules(
+    int invoiceId,
+    List<PaymentSchedule> schedules,
+  ) async {
+    try {
+      final body = {
+        'payment_schedules':
+            schedules.map((s) => s.toCreateJson()).toList(),
+      };
+      await _networkClient.put('/invoices/$invoiceId', data: body);
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] as String? ?? 'Failed to save payment schedules.';
       throw InvoiceException(message);
     } catch (e) {
       throw InvoiceException(e.toString());

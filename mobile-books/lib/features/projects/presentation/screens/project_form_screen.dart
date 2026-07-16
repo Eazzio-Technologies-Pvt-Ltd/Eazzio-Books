@@ -8,6 +8,7 @@ import 'package:mobile_books/features/projects/data/services/project_service.dar
 import 'package:mobile_books/features/projects/presentation/providers/project_provider.dart';
 import 'package:mobile_books/features/customers/data/models/customer.dart';
 import 'package:mobile_books/features/customers/data/services/customer_service.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ProjectFormScreen extends ConsumerStatefulWidget {
   final int? projectId;
@@ -187,7 +188,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
         title: Text(_isEdit ? 'Edit Project' : 'New Project'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             onPressed: _isLoading ? null : _save,
           ),
         ],
@@ -215,7 +216,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                         child: LinearProgressIndicator(),
                       )
                     : DropdownButtonFormField<int?>(
-                        value: _customerId,
+                        initialValue: _customerId,
                         decoration: const InputDecoration(labelText: 'Customer *'),
                         validator: (value) => value == null ? 'Customer is required' : null,
                         items: _customers.map((customer) {
@@ -239,7 +240,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
 
                 // Status Dropdown
                 DropdownButtonFormField<String>(
-                  value: _status,
+                  initialValue: _status,
                   decoration: const InputDecoration(labelText: 'Status'),
                   items: const [
                     DropdownMenuItem(value: 'Active', child: Text('Active')),
@@ -261,7 +262,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                   title: Text(
                     'Start Date: ${_startDate != null ? DateFormat('dd MMM yyyy').format(_startDate!) : 'Not Set'}',
                   ),
-                  trailing: const Icon(Icons.calendar_today),
+                  trailing: const Icon(AppIcons.calendar_today),
                   onTap: () => _pickDate(isStart: true),
                 ),
                 const SizedBox(height: AppSpacing.s),
@@ -272,14 +273,14 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                   title: Text(
                     'End Date: ${_endDate != null ? DateFormat('dd MMM yyyy').format(_endDate!) : 'Not Set'}',
                   ),
-                  trailing: const Icon(Icons.calendar_today),
+                  trailing: const Icon(AppIcons.calendar_today),
                   onTap: () => _pickDate(isStart: false),
                 ),
                 const SizedBox(height: AppSpacing.m),
 
                 // Billing Type Dropdown
                 DropdownButtonFormField<String>(
-                  value: _billingType,
+                  initialValue: _billingType,
                   decoration: const InputDecoration(labelText: 'Billing Type'),
                   items: const [
                     DropdownMenuItem(value: 'Fixed Cost', child: Text('Fixed Cost')),

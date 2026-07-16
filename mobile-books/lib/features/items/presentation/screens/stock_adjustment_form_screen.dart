@@ -5,17 +5,20 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class StockAdjustmentFormScreen extends ConsumerStatefulWidget {
   const StockAdjustmentFormScreen({super.key});
 
   @override
-  ConsumerState<StockAdjustmentFormScreen> createState() => _StockAdjustmentFormScreenState();
+  ConsumerState<StockAdjustmentFormScreen> createState() =>
+      _StockAdjustmentFormScreenState();
 }
 
-class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormScreen> {
+class _StockAdjustmentFormScreenState
+    extends ConsumerState<StockAdjustmentFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   bool _isLoading = false;
   int? _selectedItemId;
   String _movementType = 'stock_in'; // 'stock_in', 'stock_out', 'adjustment'
@@ -36,9 +39,9 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
   Future<void> _submitForm(List<Item> items) async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedItemId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an item')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select an item')));
       return;
     }
 
@@ -56,7 +59,11 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
       final currentStock = selectedItem.stockQuantity;
       if (qty > currentStock) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cannot dispatch $qty. Current stock is only $currentStock.')),
+          SnackBar(
+            content: Text(
+              'Cannot dispatch $qty. Current stock is only $currentStock.',
+            ),
+          ),
         );
         return;
       }
@@ -68,9 +75,15 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
         'item_id': _selectedItemId,
         'movement_type': _movementType,
         'quantity': qty,
-        'reason': _reasonController.text.isNotEmpty ? _reasonController.text : null,
-        'reference_number': _referenceController.text.isNotEmpty ? _referenceController.text : null,
-        'notes': _notesController.text.isNotEmpty ? _notesController.text : null,
+        'reason': _reasonController.text.isNotEmpty
+            ? _reasonController.text
+            : null,
+        'reference_number': _referenceController.text.isNotEmpty
+            ? _referenceController.text
+            : null,
+        'notes': _notesController.text.isNotEmpty
+            ? _notesController.text
+            : null,
       };
 
       await ref.read(itemsProvider.notifier).createInventoryMovement(body);
@@ -84,9 +97,9 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -102,15 +115,20 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
       appBar: AppBar(
         title: const Text('New Inventory Adjustment'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(AppIcons.arrow_back),
           onPressed: () => context.pop(),
         ),
       ),
       body: itemsAsync.when(
         data: (items) {
-          final physicalItems = items.where((i) => i.itemType.toLowerCase() != 'service').toList();
+          final physicalItems = items
+              .where((i) => i.itemType.toLowerCase() != 'service')
+              .toList();
           final selectedItem = _selectedItemId != null
-              ? physicalItems.firstWhere((i) => i.id == _selectedItemId, orElse: () => physicalItems.first)
+              ? physicalItems.firstWhere(
+                  (i) => i.id == _selectedItemId,
+                  orElse: () => physicalItems.first,
+                )
               : null;
 
           return SingleChildScrollView(
@@ -134,7 +152,11 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.inventory_2_outlined, color: AppColors.primaryBlue, size: 24),
+                              Icon(
+                                AppIcons.inventory_2_outlined,
+                                color: AppColors.primaryBlue,
+                                size: 24,
+                              ),
                               SizedBox(width: 8),
                               Expanded(
                                 child: Column(
@@ -162,7 +184,7 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             ],
                           ),
                           const SizedBox(height: AppSpacing.l),
-                          
+
                           // Item dropdown
                           DropdownButtonFormField<int>(
                             initialValue: _selectedItemId,
@@ -173,7 +195,9 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             items: physicalItems.map((item) {
                               return DropdownMenuItem<int>(
                                 value: item.id,
-                                child: Text('${item.name} (SKU: ${item.sku ?? 'N/A'})'),
+                                child: Text(
+                                  '${item.name} (SKU: ${item.sku ?? 'N/A'})',
+                                ),
                               );
                             }).toList(),
                             onChanged: (val) {
@@ -181,7 +205,8 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                                 _selectedItemId = val;
                               });
                             },
-                            validator: (val) => val == null ? 'Item is required' : null,
+                            validator: (val) =>
+                                val == null ? 'Item is required' : null,
                           ),
                           const SizedBox(height: AppSpacing.m),
 
@@ -195,13 +220,17 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                                 border: Border.all(color: Colors.blue.shade100),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 children: [
                                   Column(
                                     children: [
                                       const Text(
                                         'Current Stock',
-                                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.black54,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
@@ -218,7 +247,10 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                                     children: [
                                       const Text(
                                         'Reorder Level',
-                                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.black54,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
@@ -246,64 +278,42 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             ),
                           ),
                           const SizedBox(height: 8),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return ToggleButtons(
-                                isSelected: [
-                                  _movementType == 'stock_in',
-                                  _movementType == 'stock_out',
-                                  _movementType == 'adjustment',
-                                ],
-                                onPressed: (index) {
-                                  setState(() {
-                                    if (index == 0) _movementType = 'stock_in';
-                                    if (index == 1) _movementType = 'stock_out';
-                                    if (index == 2) _movementType = 'adjustment';
-                                  });
-                                },
-                                borderRadius: BorderRadius.circular(8),
-                                selectedColor: Colors.white,
-                                fillColor: AppColors.primaryBlue,
-                                color: AppColors.textSecondaryLight,
-                                constraints: BoxConstraints.expand(
-                                  width: (constraints.maxWidth - 4) / 3,
-                                  height: 46,
+                          Wrap(
+                            spacing: AppSpacing.s,
+                            runSpacing: AppSpacing.s,
+                            children: [
+                              _buildMovementTypeButton(
+                                label: 'Stock In',
+                                icon: AppIcons.arrow_downward,
+                                isSelected: _movementType == 'stock_in',
+                                onTap: () =>
+                                    setState(() => _movementType = 'stock_in'),
+                              ),
+                              _buildMovementTypeButton(
+                                label: 'Stock Out',
+                                icon: AppIcons.arrow_upward,
+                                isSelected: _movementType == 'stock_out',
+                                onTap: () =>
+                                    setState(() => _movementType = 'stock_out'),
+                              ),
+                              _buildMovementTypeButton(
+                                label: 'Adjustment',
+                                icon: AppIcons.sync_alt,
+                                isSelected: _movementType == 'adjustment',
+                                onTap: () => setState(
+                                  () => _movementType = 'adjustment',
                                 ),
-                                children: const [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.arrow_downward, size: 16),
-                                      SizedBox(width: 4),
-                                      Text('Stock In', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.arrow_upward, size: 16),
-                                      SizedBox(width: 4),
-                                      Text('Stock Out', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.sync_alt, size: 16),
-                                      SizedBox(width: 4),
-                                      Text('Adjustment', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                    ],
-                                  ),
-                                ],
-                              );
-                            },
+                              ),
+                            ],
                           ),
                           const SizedBox(height: AppSpacing.m),
 
                           // Quantity input
                           TextFormField(
                             controller: _quantityController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Quantity *',
                               hintText: 'e.g. 10',
@@ -336,7 +346,8 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             controller: _reasonController,
                             decoration: const InputDecoration(
                               labelText: 'Reason for Adjustment',
-                              hintText: 'e.g. Received from Supplier, Damaged Stock, Inventory Audit, Sample Given',
+                              hintText:
+                                  'e.g. Received from Supplier, Damaged Stock, Inventory Audit, Sample Given',
                             ),
                           ),
                           const SizedBox(height: AppSpacing.m),
@@ -347,23 +358,29 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                             maxLines: 3,
                             decoration: const InputDecoration(
                               labelText: 'Notes / Description',
-                              hintText: 'Provide additional details about this inventory movement...',
+                              hintText:
+                                  'Provide additional details about this inventory movement...',
                               alignLabelWithHint: true,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.l),
 
                           // Action Buttons
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                          OverflowBar(
+                            alignment: MainAxisAlignment.end,
+                            spacing: AppSpacing.s,
+                            overflowSpacing: AppSpacing.s,
                             children: [
                               OutlinedButton(
-                                onPressed: _isLoading ? null : () => context.pop(),
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => context.pop(),
                                 child: const Text('Cancel'),
                               ),
-                              const SizedBox(width: AppSpacing.s),
                               ElevatedButton(
-                                onPressed: _isLoading ? null : () => _submitForm(physicalItems),
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => _submitForm(physicalItems),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primaryBlue,
                                   foregroundColor: Colors.white,
@@ -378,7 +395,9 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
                                         width: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                                          valueColor: AlwaysStoppedAnimation(
+                                            Colors.white,
+                                          ),
                                         ),
                                       )
                                     : const Text('Save Adjustment'),
@@ -396,6 +415,46 @@ class _StockAdjustmentFormScreenState extends ConsumerState<StockAdjustmentFormS
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
+    );
+  }
+
+  Widget _buildMovementTypeButton({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 46, minWidth: 108),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : AppColors.textSecondaryLight,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

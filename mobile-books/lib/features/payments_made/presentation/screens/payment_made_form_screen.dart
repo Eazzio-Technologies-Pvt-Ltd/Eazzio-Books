@@ -4,13 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/bills/presentation/providers/bill_provider.dart';
-import 'package:mobile_books/features/bills/data/models/bill.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
-import 'package:mobile_books/features/vendors/data/models/vendor.dart';
 import 'package:mobile_books/features/payments_made/data/models/payment_made.dart';
 import 'package:mobile_books/features/payments_made/presentation/providers/payment_made_provider.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PaymentMadeFormScreen extends ConsumerStatefulWidget {
   final int billId;
@@ -189,7 +188,7 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
                   ),
                   if (widget.billId == 0) ...[
                     DropdownButtonFormField<int>(
-                      value: _selectedBillId,
+                      initialValue: _selectedBillId,
                       decoration: const InputDecoration(
                         labelText: 'Select Bill to Pay *',
                         border: OutlineInputBorder(),
@@ -250,7 +249,7 @@ class _PaymentMadeFormScreenState extends ConsumerState<PaymentMadeFormScreen> {
                     child: InputDecorator(
                       decoration: const InputDecoration(
                         labelText: 'Payment Date',
-                        suffixIcon: Icon(Icons.calendar_today),
+                        suffixIcon: Icon(AppIcons.calendar_today),
                       ),
                       child: Text(DateFormat('dd MMM yyyy').format(_paymentDate)),
                     ),

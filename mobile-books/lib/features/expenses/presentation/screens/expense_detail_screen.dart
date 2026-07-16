@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ExpenseDetailScreen extends ConsumerWidget {
   final int expenseId;
@@ -23,7 +24,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
         actions: [
           detailState.when(
             data: (expense) => IconButton(
-              icon: const Icon(Icons.edit),
+              icon: const Icon(AppIcons.edit),
               onPressed: () => context.push('/expenses/$expenseId/edit'),
             ),
             loading: () => const SizedBox.shrink(),
@@ -31,7 +32,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
           ),
           detailState.when(
             data: (expense) => IconButton(
-              icon: const Icon(Icons.delete, color: AppColors.danger),
+              icon: const Icon(AppIcons.delete, color: AppColors.danger),
               onPressed: () => _confirmDelete(context, ref, expense.category),
             ),
             loading: () => const SizedBox.shrink(),

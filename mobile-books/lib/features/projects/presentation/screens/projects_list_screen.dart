@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/projects/presentation/providers/project_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ProjectsListScreen extends ConsumerStatefulWidget {
   const ProjectsListScreen({super.key});
@@ -54,7 +55,7 @@ class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/projects/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -69,10 +70,10 @@ class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
               onChanged: (val) => ref.read(projectSearchQueryProvider.notifier).state = val,
               decoration: InputDecoration(
                 hintText: 'Search projects...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(AppIcons.clear),
                         onPressed: () {
                           searchController.clear();
                           ref.read(projectSearchQueryProvider.notifier).state = '';
@@ -97,7 +98,7 @@ class _ProjectsListScreenState extends ConsumerState<ProjectsListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.folder_outlined, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.folder_outlined, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No projects found.',

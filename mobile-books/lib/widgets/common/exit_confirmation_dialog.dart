@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
 import 'app_button.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ExitConfirmationDialog extends StatelessWidget {
   const ExitConfirmationDialog({super.key});
@@ -24,7 +25,7 @@ class ExitConfirmationDialog extends StatelessWidget {
       title: Row(
         children: [
           const Icon(
-            Icons.exit_to_app_rounded,
+            AppIcons.exit_to_app_rounded,
             color: AppColors.danger,
             size: 28,
           ),

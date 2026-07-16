@@ -1,3 +1,5 @@
+import 'package:mobile_books/features/invoices/data/models/payment_schedule.dart';
+
 int? _parseInt(dynamic value) {
   if (value == null) return null;
   if (value is int) return value;
@@ -40,6 +42,8 @@ class Invoice {
   final String? gstType; // 'intra_state' or 'inter_state'
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  /// Instalment / payment schedule entries for this invoice (from backend).
+  final List<PaymentSchedule> paymentSchedules;
 
   Invoice({
     required this.id,
@@ -63,9 +67,18 @@ class Invoice {
     this.gstType,
     this.createdAt,
     this.updatedAt,
+    this.paymentSchedules = const [],
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
+    // Parse nested payment_schedules array when the API embeds them.
+    final rawSchedules = json['payment_schedules'];
+    final schedules = (rawSchedules is List)
+        ? rawSchedules
+            .map((e) => PaymentSchedule.fromJson(e as Map<String, dynamic>))
+            .toList()
+        : <PaymentSchedule>[];
+
     return Invoice(
       id: _parseInt(json['id']) ?? 0,
       customerId: _parseInt(json['customer_id']) ?? _parseInt(json['customerId']) ?? 0,
@@ -90,6 +103,7 @@ class Invoice {
       gstType: json['gst_type'] as String? ?? json['gstType'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
+      paymentSchedules: schedules,
     );
   }
 
@@ -141,6 +155,7 @@ class Invoice {
     String? gstType,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<PaymentSchedule>? paymentSchedules,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -164,6 +179,10 @@ class Invoice {
       gstType: gstType ?? this.gstType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      paymentSchedules: paymentSchedules ?? this.paymentSchedules,
     );
   }
+
+  /// Convenience: whether this invoice uses instalment scheduling.
+  bool get hasSchedule => paymentSchedules.isNotEmpty;
 }

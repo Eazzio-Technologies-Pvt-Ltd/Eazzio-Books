@@ -8,6 +8,7 @@ import 'package:mobile_books/features/payments_made/data/models/payment_made.dar
 import 'package:mobile_books/features/payments_made/presentation/providers/payment_made_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PaymentsMadeListScreen extends ConsumerStatefulWidget {
   const PaymentsMadeListScreen({super.key});
@@ -149,7 +150,7 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/bills/0/record-payment?balanceDue=0.0'),
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       appBar: AppBar(
         title: const Text('Payments Made'),
@@ -170,10 +171,10 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
                     onChanged: (val) => ref.read(paymentMadeSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search payments...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(paymentMadeSearchQueryProvider.notifier).state = '';
@@ -185,7 +186,7 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     if (val == 'sort') {
                       _showSortBottomSheet(context);
@@ -218,7 +219,7 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
                       value: 'sort',
                       child: Row(
                         children: [
-                          Icon(Icons.sort, size: 18),
+                          Icon(AppIcons.sort, size: 18),
                           SizedBox(width: 8),
                           Text('Sort Payments'),
                         ],
@@ -228,7 +229,7 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
                       value: 'refresh',
                       child: Row(
                         children: [
-                          Icon(Icons.refresh, size: 18),
+                          Icon(AppIcons.refresh, size: 18),
                           SizedBox(width: 8),
                           Text('Refresh List'),
                         ],
@@ -238,7 +239,7 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
                       value: 'import',
                       child: Row(
                         children: [
-                          Icon(Icons.file_download_outlined, size: 18),
+                          Icon(AppIcons.file_download_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Import Payments'),
                         ],
@@ -248,7 +249,7 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
                       value: 'export',
                       child: Row(
                         children: [
-                          Icon(Icons.file_upload_outlined, size: 18),
+                          Icon(AppIcons.file_upload_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Export Payments'),
                         ],
@@ -276,7 +277,7 @@ class _PaymentsMadeListScreenState extends ConsumerState<PaymentsMadeListScreen>
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.payment, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.payment, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No payments recorded.',

@@ -6,8 +6,8 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/invoices/data/models/payment.dart';
-import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PaymentsReceivedListScreen extends ConsumerStatefulWidget {
   const PaymentsReceivedListScreen({super.key});
@@ -150,7 +150,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/invoices/0/record-payment?balanceDue=0.0'),
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -172,10 +172,10 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                     onChanged: (val) => setState(() => _searchQuery = val),
                     decoration: InputDecoration(
                       hintText: 'Search payments received...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
@@ -187,7 +187,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     if (val == 'sort') {
                       _showSortBottomSheet(context);
@@ -220,7 +220,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                       value: 'sort',
                       child: Row(
                         children: [
-                          Icon(Icons.sort, size: 18),
+                          Icon(AppIcons.sort, size: 18),
                           SizedBox(width: 8),
                           Text('Sort Payments'),
                         ],
@@ -230,7 +230,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                       value: 'refresh',
                       child: Row(
                         children: [
-                          Icon(Icons.refresh, size: 18),
+                          Icon(AppIcons.refresh, size: 18),
                           SizedBox(width: 8),
                           Text('Refresh List'),
                         ],
@@ -240,7 +240,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                       value: 'import',
                       child: Row(
                         children: [
-                          Icon(Icons.file_download_outlined, size: 18),
+                          Icon(AppIcons.file_download_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Import Payments'),
                         ],
@@ -250,7 +250,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                       value: 'export',
                       child: Row(
                         children: [
-                          Icon(Icons.file_upload_outlined, size: 18),
+                          Icon(AppIcons.file_upload_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Export Payments'),
                         ],
@@ -307,7 +307,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                   const SizedBox(width: AppSpacing.s),
                   IconButton(
                     icon: Icon(
-                      _sortOrder == 'asc' ? Icons.arrow_upward : Icons.arrow_downward,
+                      _sortOrder == 'asc' ? AppIcons.arrow_upward : AppIcons.arrow_downward,
                       size: 18,
                       color: AppColors.primaryBlue,
                     ),
@@ -351,7 +351,7 @@ class _PaymentsReceivedListScreenState extends ConsumerState<PaymentsReceivedLis
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.payment, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.payment, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No Payments found',

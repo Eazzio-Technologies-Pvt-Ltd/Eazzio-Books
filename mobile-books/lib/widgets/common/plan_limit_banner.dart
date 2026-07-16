@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PlanLimitBanner extends ConsumerWidget {
   final String resourceType;
@@ -47,17 +48,17 @@ class PlanLimitBanner extends ConsumerWidget {
     if (used >= limit) {
       bgColor = const Color(0xFFFEE2E2); // Red background
       textColor = const Color(0xFF991B1B); // Dark red text
-      icon = Icons.block_flipped;
+      icon = AppIcons.block_flipped;
       message = 'All $limit ${resourceName}s used. Upgrade to add more.';
     } else if (remaining <= (limit * 0.2).ceil()) {
       bgColor = const Color(0xFFFEF3C7); // Amber background
       textColor = const Color(0xFF92400E); // Dark amber text
-      icon = Icons.warning_amber_rounded;
+      icon = AppIcons.warning_amber_rounded;
       message = '$remaining ${resourceName}s left on your $planName plan — Upgrade';
     } else {
       bgColor = const Color(0xFFF1F5F9); // Light slate background
       textColor = const Color(0xFF334155); // Dark slate text
-      icon = Icons.info_outline;
+      icon = AppIcons.info_outline;
       message = '$used / $limit ${resourceName}s used on $planName plan.';
       showAction = false;
     }

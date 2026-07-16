@@ -9,6 +9,7 @@ import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
 import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
 import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({super.key});
@@ -62,78 +63,6 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     return sorted;
   }
 
-  void _showSortBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Sort By', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: AppSpacing.s),
-                  Wrap(
-                    spacing: AppSpacing.s,
-                    children: [
-                      _sortOptionChip(setModalState, 'date', 'Date'),
-                      _sortOptionChip(setModalState, 'amount', 'Amount'),
-                      _sortOptionChip(setModalState, 'status', 'Status'),
-                      _sortOptionChip(setModalState, 'name', 'Customer Name'),
-                    ],
-                  ),
-                  const Divider(),
-                  const Text('Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: AppSpacing.s),
-                  Row(
-                    children: [
-                      ChoiceChip(
-                        label: const Text('Ascending'),
-                        selected: _sortOrder == 'asc',
-                        onSelected: (val) {
-                          if (val) {
-                            setModalState(() => _sortOrder = 'asc');
-                            setState(() {});
-                          }
-                        },
-                      ),
-                      const SizedBox(width: AppSpacing.s),
-                      ChoiceChip(
-                        label: const Text('Descending'),
-                        selected: _sortOrder == 'desc',
-                        onSelected: (val) {
-                          if (val) {
-                            setModalState(() => _sortOrder = 'desc');
-                            setState(() {});
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _sortOptionChip(StateSetter setModalState, String val, String label) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: _sortBy == val,
-      onSelected: (selected) {
-        if (selected) {
-          setModalState(() => _sortBy = val);
-          setState(() {});
-        }
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +91,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             context.push('/customers/new');
           }
         },
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -184,10 +113,10 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                     onChanged: (val) => ref.read(customerSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search customers...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(customerSearchQueryProvider.notifier).state = '';
@@ -199,7 +128,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     if (val == 'sort_date') {
                       setState(() => _sortBy = 'date');
@@ -232,7 +161,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Date'),
                           if (_sortBy == 'date') const Spacer(),
-                          if (_sortBy == 'date') const Icon(Icons.check, size: 16),
+                          if (_sortBy == 'date') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -242,7 +171,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Amount'),
                           if (_sortBy == 'amount') const Spacer(),
-                          if (_sortBy == 'amount') const Icon(Icons.check, size: 16),
+                          if (_sortBy == 'amount') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -252,7 +181,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Status'),
                           if (_sortBy == 'status') const Spacer(),
-                          if (_sortBy == 'status') const Icon(Icons.check, size: 16),
+                          if (_sortBy == 'status') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -262,7 +191,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Name'),
                           if (_sortBy == 'name') const Spacer(),
-                          if (_sortBy == 'name') const Icon(Icons.check, size: 16),
+                          if (_sortBy == 'name') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -277,7 +206,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Ascending'),
                           if (_sortOrder == 'asc') const Spacer(),
-                          if (_sortOrder == 'asc') const Icon(Icons.check, size: 16),
+                          if (_sortOrder == 'asc') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -287,7 +216,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Descending'),
                           if (_sortOrder == 'desc') const Spacer(),
-                          if (_sortOrder == 'desc') const Icon(Icons.check, size: 16),
+                          if (_sortOrder == 'desc') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -302,7 +231,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('All'),
                           if (filter == null) const Spacer(),
-                          if (filter == null) const Icon(Icons.check, size: 16),
+                          if (filter == null) const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -312,7 +241,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Active'),
                           if (filter == 'active') const Spacer(),
-                          if (filter == 'active') const Icon(Icons.check, size: 16),
+                          if (filter == 'active') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -322,7 +251,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         children: [
                           const Text('Inactive'),
                           if (filter == 'inactive') const Spacer(),
-                          if (filter == 'inactive') const Icon(Icons.check, size: 16),
+                          if (filter == 'inactive') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -376,8 +305,8 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: customer.isActive
-                                ? AppColors.success.withOpacity(0.1)
-                                : AppColors.textSecondaryLight.withOpacity(0.1),
+                                ? AppColors.success.withValues(alpha: 0.1)
+                                : AppColors.textSecondaryLight.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4.0),
                           ),
                           child: Text(

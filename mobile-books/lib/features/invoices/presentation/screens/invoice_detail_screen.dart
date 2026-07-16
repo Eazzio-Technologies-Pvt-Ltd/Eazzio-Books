@@ -6,21 +6,23 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice_item.dart';
 import 'package:mobile_books/features/invoices/data/models/payment.dart';
+import 'package:mobile_books/features/invoices/data/models/payment_schedule.dart';
 import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/features/quotes/presentation/providers/quote_provider.dart'; // For salespersons & projects
 
 import 'package:mobile_books/core/utils/sharing_helper.dart';
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
-  'draft':          _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',          Icons.edit_note),
-  'sent':           _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',           Icons.send),
-  'unpaid':         _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'UNPAID',         Icons.money_off),
-  'partially_paid': _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'PARTIALLY PAID', Icons.hourglass_bottom),
-  'paid':           _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'PAID',           Icons.check_circle_outline),
-  'overdue':        _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'OVERDUE',        Icons.warning_amber),
-  'cancelled':      _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'CANCELLED',      Icons.cancel_outlined),
+  'draft':          _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',          AppIcons.edit_note),
+  'sent':           _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',           AppIcons.send),
+  'unpaid':         _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'UNPAID',         AppIcons.money_off),
+  'partially_paid': _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'PARTIALLY PAID', AppIcons.hourglass_bottom),
+  'paid':           _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'PAID',           AppIcons.check_circle_outline),
+  'overdue':        _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'OVERDUE',        AppIcons.warning_amber),
+  'cancelled':      _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'CANCELLED',      AppIcons.cancel_outlined),
 };
 
 class _StatusStyle {
@@ -33,7 +35,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class InvoiceDetailScreen extends ConsumerWidget {
@@ -84,177 +86,6 @@ class InvoiceDetailScreen extends ConsumerWidget {
         }
       }
     }
-  }
-
-  void _showRecordPaymentSheet(BuildContext context, WidgetRef ref, Invoice invoice) {
-    final amountController = TextEditingController(text: invoice.balanceDue.toStringAsFixed(2));
-    final referenceController = TextEditingController();
-    final notesController = TextEditingController();
-    final dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(DateTime.now()));
-    String paymentMode = 'cash';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: AppSpacing.m,
-            right: AppSpacing.m,
-            top: AppSpacing.m,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Record Payment',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: AppSpacing.m),
-                    TextField(
-                      controller: amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
-                        labelText: 'Payment Amount (₹) *',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.m),
-                    TextField(
-                      controller: dateController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Payment Date',
-                        border: OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.calendar_today),
-                      ),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          setModalState(() {
-                            dateController.text = DateFormat('yyyy-MM-dd').format(picked);
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.m),
-                    DropdownButtonFormField<String>(
-                      value: paymentMode,
-                      decoration: const InputDecoration(
-                        labelText: 'Payment Mode',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                        DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                        DropdownMenuItem(value: 'cheque', child: Text('Cheque')),
-                        DropdownMenuItem(value: 'upi', child: Text('UPI / Online')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() {
-                            paymentMode = val;
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.m),
-                    TextField(
-                      controller: referenceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Reference Number',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.m),
-                    TextField(
-                      controller: notesController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Payment Notes',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.l),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: AppSpacing.s),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final amt = double.tryParse(amountController.text) ?? 0.0;
-                            if (amt <= 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Please enter a valid payment amount.'),
-                                    backgroundColor: AppColors.danger),
-                              );
-                              return;
-                            }
-                            if (amt > invoice.balanceDue) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('Amount cannot exceed remaining balance (₹${invoice.balanceDue.toStringAsFixed(2)}).'),
-                                    backgroundColor: AppColors.danger),
-                              );
-                              return;
-                            }
-
-                            try {
-                              await ref.read(invoicesProvider.notifier).recordPayment(
-                                invoice.id,
-                                {
-                                  'amount': amt,
-                                  'payment_date': dateController.text,
-                                  'payment_mode': paymentMode,
-                                  'reference': referenceController.text,
-                                  'notes': notesController.text,
-                                  'customer_id': invoice.customerId,
-                                },
-                              );
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Payment recorded successfully.')),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(e.toString()),
-                                      backgroundColor: AppColors.danger),
-                                );
-                              }
-                            }
-                          },
-                          child: const Text('Save Payment'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.l),
-                  ],
-                ),
-              );
-            }
-          ),
-        );
-      },
-    );
   }
 
   void _showSendEmailSheet(BuildContext context, WidgetRef ref, Invoice invoice) {
@@ -420,7 +251,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 children: [
                   if (invoice.status.toLowerCase() == 'draft')
                     IconButton(
-                      icon: const Icon(Icons.mark_email_read_outlined),
+                      icon: const Icon(AppIcons.mark_email_read_outlined),
                       tooltip: 'Mark as Sent',
                       onPressed: () async {
                         try {
@@ -440,12 +271,12 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       },
                     ),
                   IconButton(
-                    icon: const Icon(Icons.email_outlined),
+                    icon: const Icon(AppIcons.email_outlined),
                     tooltip: 'Email Statement',
                     onPressed: () => _showSendEmailSheet(context, ref, invoice),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.chat_outlined),
+                    icon: const Icon(AppIcons.chat_outlined),
                     tooltip: 'WhatsApp Reminder',
                     onPressed: () async {
                       final customers = ref.read(customersProvider).value ?? [];
@@ -465,7 +296,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.sms_outlined),
+                    icon: const Icon(AppIcons.sms_outlined),
                     tooltip: 'SMS Reminder',
                     onPressed: () async {
                       final customers = ref.read(customersProvider).value ?? [];
@@ -485,7 +316,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    icon: const Icon(AppIcons.picture_as_pdf_outlined),
                     tooltip: 'Preview Document',
                     onPressed: () => context.push('/invoices/$invoiceId/document'),
                   ),
@@ -497,7 +328,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                           backgroundColor: AppColors.primaryBlue,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                         ),
-                        icon: const Icon(Icons.payment, color: Colors.white, size: 18),
+                        icon: const Icon(AppIcons.payment, color: Colors.white, size: 18),
                         label: const Text('PAY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                         onPressed: () => context.push('/invoices/${invoice.id}/record-payment?balanceDue=${invoice.balanceDue}'),
                       ),
@@ -515,7 +346,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, size: 18),
+                            Icon(AppIcons.edit, size: 18),
                             SizedBox(width: 8),
                             Text('Edit Invoice'),
                           ],
@@ -525,7 +356,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, color: AppColors.danger, size: 18),
+                            Icon(AppIcons.delete, color: AppColors.danger, size: 18),
                             SizedBox(width: 8),
                             Text('Delete Invoice', style: TextStyle(color: AppColors.danger)),
                           ],
@@ -552,14 +383,17 @@ class InvoiceDetailScreen extends ConsumerWidget {
           final items = details.items;
 
           return DefaultTabController(
-            length: 3,
+            length: 4,
             child: Column(
               children: [
                 const TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
                   tabs: [
                     Tab(text: 'Overview'),
                     Tab(text: 'Items'),
                     Tab(text: 'Payments'),
+                    Tab(text: 'Instalments'),
                   ],
                 ),
                 Expanded(
@@ -568,6 +402,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       _OverviewTab(invoice: invoice),
                       _ItemsTab(items: items),
                       _PaymentsTab(paymentsState: paymentsState),
+                      _SchedulesTab(schedules: invoice.paymentSchedules),
                     ],
                   ),
                 ),
@@ -861,7 +696,7 @@ class _PaymentsTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.payment, size: 48, color: AppColors.textSecondaryLight),
+                Icon(AppIcons.payment, size: 48, color: AppColors.textSecondaryLight),
                 SizedBox(height: AppSpacing.s),
                 Text('No payments recorded yet for this invoice.'),
               ],
@@ -916,6 +751,226 @@ class _PaymentsTab extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _SchedulesTab — displays instalment / payment-schedule entries
+// ─────────────────────────────────────────────────────────────────────────────
+class _SchedulesTab extends StatelessWidget {
+  final List<PaymentSchedule> schedules;
+
+  const _SchedulesTab({required this.schedules});
+
+  Color _statusColor(PaymentSchedule s) {
+    if (s.isPaid) return AppColors.success;
+    if (s.isOverdue) return AppColors.danger;
+    return AppColors.warning;
+  }
+
+  IconData _statusIcon(PaymentSchedule s) {
+    if (s.isPaid) return AppIcons.check_circle_outline;
+    if (s.isOverdue) return AppIcons.warning_amber_rounded;
+    return AppIcons.schedule;
+  }
+
+  String _statusLabel(PaymentSchedule s) {
+    if (s.isPaid) return 'PAID';
+    if (s.isOverdue) return 'OVERDUE';
+    if (s.status == 'partial') return 'PARTIAL';
+    return 'PENDING';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (schedules.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(AppIcons.calendar_today, size: 48, color: AppColors.textSecondaryLight),
+            SizedBox(height: AppSpacing.s),
+            Text(
+              'No instalment schedule for this invoice.',
+              style: TextStyle(color: AppColors.textSecondaryLight),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Add a schedule when creating or editing the invoice.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final totalDue = schedules.fold(0.0, (sum, s) => sum + s.dueAmount);
+    final totalPaid = schedules.fold(0.0, (sum, s) => sum + s.paidAmount);
+    final progress = totalDue > 0 ? (totalPaid / totalDue).clamp(0.0, 1.0) : 0.0;
+    final paidCount = schedules.where((s) => s.isPaid).length;
+
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      children: [
+        // ── Summary card ──
+        Card(
+          color: AppColors.primaryBlue.withValues(alpha: 0.07),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Instalment Progress',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    Text(
+                      '$paidCount / ${schedules.length} paid',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: AppColors.textSecondaryLight.withValues(alpha: 0.2),
+                    color: AppColors.success,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total: ₹${totalDue.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12)),
+                    Text(
+                      'Collected: ₹${totalPaid.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.m),
+
+        // ── Instalment rows ──
+        ...schedules.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final s = entry.value;
+          final dueDateStr = s.dueDate != null
+              ? DateFormat('dd MMM yyyy').format(s.dueDate!)
+              : '—';
+          final statusColor = _statusColor(s);
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: AppSpacing.s),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Instalment ${idx + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(_statusIcon(s), size: 12, color: statusColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              _statusLabel(s),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: statusColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: AppSpacing.m),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Due Date', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
+                          Text(dueDateStr, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text('Due Amount', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
+                          Text(
+                            '₹${s.dueAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Paid', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
+                          Text(
+                            '₹${s.paidAmount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: s.paidAmount > 0 ? AppColors.success : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text('Balance', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
+                          Text(
+                            '₹${s.balanceAmount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: s.balanceAmount > 0 ? AppColors.danger : AppColors.success,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

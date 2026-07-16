@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class LowStockAlertsScreen extends ConsumerStatefulWidget {
   const LowStockAlertsScreen({super.key});
@@ -32,7 +33,7 @@ class _LowStockAlertsScreenState extends ConsumerState<LowStockAlertsScreen> {
         title: const Text('Low Stock Alerts'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(AppIcons.refresh),
             onPressed: () => ref.read(itemsProvider.notifier).refresh(),
           ),
         ],
@@ -45,10 +46,10 @@ class _LowStockAlertsScreenState extends ConsumerState<LowStockAlertsScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search items...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(AppIcons.clear),
                         onPressed: () {
                           setState(() {
                             _searchController.clear();
@@ -94,7 +95,7 @@ class _LowStockAlertsScreenState extends ConsumerState<LowStockAlertsScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(
-                          Icons.check_circle_outline_rounded,
+                          AppIcons.check_circle_outline_rounded,
                           size: 64,
                           color: Colors.green,
                         ),
@@ -127,7 +128,7 @@ class _LowStockAlertsScreenState extends ConsumerState<LowStockAlertsScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.warning_amber_rounded,
+                            AppIcons.warning_amber_rounded,
                             color: AppColors.danger,
                           ),
                         ),

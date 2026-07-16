@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
 import 'package:mobile_books/core/theme/app_theme.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PlanDetail {
   final String id;
@@ -379,7 +379,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               hintStyle: const TextStyle(color: Colors.grey),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  _obscurePassword ? AppIcons.visibility : AppIcons.visibility_off,
                   color: Colors.grey,
                 ),
                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -408,7 +408,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               hintStyle: const TextStyle(color: Colors.grey),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                  _obscureConfirmPassword ? AppIcons.visibility : AppIcons.visibility_off,
                   color: Colors.grey,
                 ),
                 onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
@@ -503,7 +503,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary.withOpacity(0.08) : Colors.white,
+                  color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected ? AppColors.primary : Colors.grey.shade300,

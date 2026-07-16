@@ -7,6 +7,7 @@ import '../../core/utils/validators.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -99,7 +100,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.12),
+                              color: AppColors.primary.withValues(alpha: 0.12),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             )
@@ -151,7 +152,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           placeholder: 'Eazzio Technologies Pvt Ltd',
                           controller: _organizationController,
                           autofocus: true,
-                          prefixIcon: Icons.business_outlined,
+                          prefixIcon: AppIcons.business_outlined,
                           validator: (val) => AppValidators.validateRequired(val, 'Organization name'),
                         ),
                         const SizedBox(height: 18),
@@ -160,7 +161,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           label: 'Administrator Full Name',
                           placeholder: 'Rahul Kumar',
                           controller: _fullNameController,
-                          prefixIcon: Icons.person_outline,
+                          prefixIcon: AppIcons.person_outline,
                           validator: (val) => AppValidators.validateRequired(val, 'Full name'),
                         ),
                         const SizedBox(height: 18),
@@ -170,7 +171,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           placeholder: 'admin@eazzio.com',
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          prefixIcon: Icons.email_outlined,
+                          prefixIcon: AppIcons.email_outlined,
                           validator: AppValidators.validateEmail,
                         ),
                         const SizedBox(height: 18),
@@ -180,7 +181,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           placeholder: '•••••••• (min 6 characters)',
                           controller: _passwordController,
                           isPassword: true,
-                          prefixIcon: Icons.lock_outline,
+                          prefixIcon: AppIcons.lock_outline,
                           validator: AppValidators.validatePassword,
                         ),
                         const SizedBox(height: 18),

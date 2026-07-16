@@ -4,6 +4,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/settings/presentation/providers/users_provider.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class UsersRolesScreen extends ConsumerStatefulWidget {
   const UsersRolesScreen({super.key});
@@ -67,7 +68,7 @@ class _UsersRolesScreenState extends ConsumerState<UsersRolesScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _selectedRole,
+                    initialValue: _selectedRole,
                     decoration: const InputDecoration(labelText: 'Access Role'),
                     items: const [
                       DropdownMenuItem(value: 'Admin', child: Text('Admin')),
@@ -197,7 +198,7 @@ class _UsersRolesScreenState extends ConsumerState<UsersRolesScreen> {
       floatingActionButton: canManage
           ? FloatingActionButton(
               onPressed: _showAddUserDialog,
-              child: const Icon(Icons.add),
+              child: const Icon(AppIcons.add),
             )
           : null,
       body: teamAsync.when(
@@ -220,7 +221,7 @@ class _UsersRolesScreenState extends ConsumerState<UsersRolesScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             PopupMenuButton<String>(
-                              icon: const Icon(Icons.edit_outlined),
+                              icon: const Icon(AppIcons.edit_outlined),
                               tooltip: 'Change Access Role',
                               onSelected: (newRole) => _changeUserRole(member.id, newRole),
                               itemBuilder: (context) => const [
@@ -231,7 +232,7 @@ class _UsersRolesScreenState extends ConsumerState<UsersRolesScreen> {
                               ],
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                              icon: const Icon(AppIcons.delete_outline, color: AppColors.danger),
                               onPressed: () => _deleteUser(member.id),
                             ),
                           ],

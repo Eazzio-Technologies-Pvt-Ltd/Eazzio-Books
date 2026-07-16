@@ -7,6 +7,7 @@ import 'package:mobile_books/features/accounting/data/models/chart_of_account.da
 import 'package:mobile_books/features/accounting/presentation/providers/accounting_provider.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ChartOfAccountsScreen extends ConsumerWidget {
   const ChartOfAccountsScreen({super.key});
@@ -24,7 +25,9 @@ class ChartOfAccountsScreen extends ConsumerWidget {
           title: const Text('Chart of Accounts'),
           actions: [
             IconButton(
-              icon: Icon(privacyMode ? Icons.visibility_off : Icons.visibility),
+              icon: Icon(
+                privacyMode ? AppIcons.visibility_off : AppIcons.visibility,
+              ),
               onPressed: () => ref.read(privacyModeProvider.notifier).toggle(),
             ),
           ],
@@ -41,15 +44,25 @@ class ChartOfAccountsScreen extends ConsumerWidget {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => context.push('/accounting/coa/new'),
-          child: const Icon(Icons.add),
+          child: const Icon(AppIcons.add),
         ),
         body: accountsState.when(
           data: (accounts) {
-            final assets = accounts.where((a) => a.accountType.toLowerCase() == 'asset').toList();
-            final liabilities = accounts.where((a) => a.accountType.toLowerCase() == 'liability').toList();
-            final equity = accounts.where((a) => a.accountType.toLowerCase() == 'equity').toList();
-            final income = accounts.where((a) => a.accountType.toLowerCase() == 'income').toList();
-            final expenses = accounts.where((a) => a.accountType.toLowerCase() == 'expense').toList();
+            final assets = accounts
+                .where((a) => a.accountType.toLowerCase() == 'asset')
+                .toList();
+            final liabilities = accounts
+                .where((a) => a.accountType.toLowerCase() == 'liability')
+                .toList();
+            final equity = accounts
+                .where((a) => a.accountType.toLowerCase() == 'equity')
+                .toList();
+            final income = accounts
+                .where((a) => a.accountType.toLowerCase() == 'income')
+                .toList();
+            final expenses = accounts
+                .where((a) => a.accountType.toLowerCase() == 'expense')
+                .toList();
 
             return TabBarView(
               children: [
@@ -92,17 +105,28 @@ class ChartOfAccountsScreen extends ConsumerWidget {
           final isSystemAccount = _isSystemAccount(account.accountCode);
 
           return ListTile(
-            contentPadding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            contentPadding: const EdgeInsets.fromLTRB(
+              0,
+              AppSpacing.xs,
+              4,
+              AppSpacing.xs,
+            ),
             title: Text(
               account.accountName,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (account.accountCode != null)
-                  Text('Code: ${account.accountCode}', style: const TextStyle(fontSize: 12)),
-                if (account.description != null && account.description!.isNotEmpty)
+                  Text(
+                    'Code: ${account.accountCode}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                if (account.description != null &&
+                    account.description!.isNotEmpty)
                   Text(
                     account.description!,
                     style: const TextStyle(fontSize: 12),
@@ -111,33 +135,63 @@ class ChartOfAccountsScreen extends ConsumerWidget {
                   ),
               ],
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text('Balance', style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
-                    Text(
-                      privacyMode ? '••••' : '₹${account.currentBalance.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
+            trailing: Transform.translate(
+              offset: const Offset(-8, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'Balance',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondaryLight,
+                        ),
+                      ),
+                      Text(
+                        privacyMode
+                            ? '••••'
+                            : '₹${account.currentBalance.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  IconButton(
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 36,
                     ),
-                  ],
-                ),
-                const SizedBox(width: AppSpacing.s),
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18),
-                  onPressed: () => context.push('/accounting/coa/${account.id}/edit'),
-                ),
-                // Only allow deleting custom accounts (not system/default accounts)
-                IconButton(
-                  icon: Icon(Icons.delete, size: 18, color: isSystemAccount ? Colors.grey : AppColors.danger),
-                  onPressed: isSystemAccount
-                      ? null
-                      : () => _handleDeleteAccount(context, ref, account),
-                ),
-              ],
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(AppIcons.edit, size: 18),
+                    onPressed: () =>
+                        context.push('/accounting/coa/${account.id}/edit'),
+                  ),
+                  // Only allow deleting custom accounts (not system/default accounts)
+                  IconButton(
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 36,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      AppIcons.delete,
+                      size: 18,
+                      color: isSystemAccount ? Colors.grey : AppColors.danger,
+                    ),
+                    onPressed: isSystemAccount
+                        ? null
+                        : () => _handleDeleteAccount(context, ref, account),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -147,31 +201,53 @@ class ChartOfAccountsScreen extends ConsumerWidget {
 
   bool _isSystemAccount(String? code) {
     // Basic codes pre-created by default schema setup
-    final systemCodes = {'1001', '1002', '1200', '1300', '2000', '2200', '3000', '4000', '5000'};
+    final systemCodes = {
+      '1001',
+      '1002',
+      '1200',
+      '1300',
+      '2000',
+      '2200',
+      '3000',
+      '4000',
+      '5000',
+    };
     return code != null && systemCodes.contains(code);
   }
 
-  void _handleDeleteAccount(BuildContext context, WidgetRef ref, ChartOfAccount account) {
+  void _handleDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+    ChartOfAccount account,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete Account'),
-          content: Text('Are you sure you want to delete "${account.accountName}"?'),
+          content: Text(
+            'Are you sure you want to delete "${account.accountName}"?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+              ),
               onPressed: () async {
                 Navigator.pop(context);
                 try {
-                  await ref.read(coaAccountsProvider.notifier).deleteAccount(account.id);
+                  await ref
+                      .read(coaAccountsProvider.notifier)
+                      .deleteAccount(account.id);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Account deleted successfully.')),
+                      const SnackBar(
+                        content: Text('Account deleted successfully.'),
+                      ),
                     );
                   }
                 } catch (e) {
@@ -182,7 +258,10 @@ class ChartOfAccountsScreen extends ConsumerWidget {
                   }
                 }
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );

@@ -5,6 +5,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/taxes/data/models/tax_rate.dart';
 import 'package:mobile_books/features/taxes/presentation/providers/tax_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class TaxesListScreen extends ConsumerStatefulWidget {
   const TaxesListScreen({super.key});
@@ -41,7 +42,7 @@ class _TaxesListScreenState extends ConsumerState<TaxesListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/taxes/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -55,10 +56,10 @@ class _TaxesListScreenState extends ConsumerState<TaxesListScreen> {
                   onChanged: (val) => ref.read(taxSearchQueryProvider.notifier).state = val,
                   decoration: InputDecoration(
                     hintText: 'Search tax name...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(AppIcons.search),
                     suffixIcon: searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: const Icon(AppIcons.clear),
                             onPressed: () {
                               searchController.clear();
                               ref.read(taxSearchQueryProvider.notifier).state = '';
@@ -134,7 +135,7 @@ class _TaxesListScreenState extends ConsumerState<TaxesListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.percent, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.percent, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No taxes found.',
@@ -194,11 +195,11 @@ class _TaxesListScreenState extends ConsumerState<TaxesListScreen> {
                               ),
                               const SizedBox(width: 8),
                               IconButton(
-                                icon: const Icon(Icons.edit, size: 20),
+                                icon: const Icon(AppIcons.edit, size: 20),
                                 onPressed: () => context.push('/taxes/${tax.id}/edit'),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, size: 20, color: AppColors.danger),
+                                icon: const Icon(AppIcons.delete, size: 20, color: AppColors.danger),
                                 onPressed: () => _confirmDelete(context, ref, tax),
                               ),
                             ],

@@ -7,6 +7,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/banking/data/models/bank_account.dart';
 import 'package:mobile_books/features/banking/data/models/bank_reconciliation.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BankReconciliationScreen extends ConsumerStatefulWidget {
   final int bankAccountId;
@@ -137,7 +138,7 @@ class _BankReconciliationScreenState extends ConsumerState<BankReconciliationScr
                               children: [
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.date_range, size: 16),
+                                    icon: const Icon(AppIcons.date_range, size: 16),
                                     label: Text('From: ${DateFormat('yyyy-MM-dd').format(_startDate)}'),
                                     onPressed: () => _selectDate(context, true),
                                   ),
@@ -145,7 +146,7 @@ class _BankReconciliationScreenState extends ConsumerState<BankReconciliationScr
                                 const SizedBox(width: AppSpacing.s),
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.date_range, size: 16),
+                                    icon: const Icon(AppIcons.date_range, size: 16),
                                     label: Text('To: ${DateFormat('yyyy-MM-dd').format(_endDate)}'),
                                     onPressed: () => _selectDate(context, false),
                                   ),
@@ -228,7 +229,7 @@ class _BankReconciliationScreenState extends ConsumerState<BankReconciliationScr
                                 padding: EdgeInsets.only(top: AppSpacing.s),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.warning, color: Colors.amber, size: 16),
+                                    Icon(AppIcons.warning, color: Colors.amber, size: 16),
                                     SizedBox(width: AppSpacing.xs),
                                     Expanded(
                                       child: Text(

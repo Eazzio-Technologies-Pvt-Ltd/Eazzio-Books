@@ -8,9 +8,9 @@ import 'package:mobile_books/features/invoices/presentation/providers/invoice_pr
 import 'package:mobile_books/features/invoices/data/models/invoice.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/features/customers/data/models/customer.dart';
-import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PaymentReceivedFormScreen extends ConsumerStatefulWidget {
   final int invoiceId;
@@ -23,16 +23,20 @@ class PaymentReceivedFormScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<PaymentReceivedFormScreen> createState() => _PaymentReceivedFormScreenState();
+  ConsumerState<PaymentReceivedFormScreen> createState() =>
+      _PaymentReceivedFormScreenState();
 }
 
-class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormScreen> {
+class _PaymentReceivedFormScreenState
+    extends ConsumerState<PaymentReceivedFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountReceivedController = TextEditingController();
   final _bankChargesController = TextEditingController(text: '0');
   final _refController = TextEditingController();
   final _notesController = TextEditingController();
-  final _paymentNumberController = TextEditingController(text: 'Auto-generated');
+  final _paymentNumberController = TextEditingController(
+    text: 'Auto-generated',
+  );
   final _depositToController = TextEditingController(text: 'Petty Cash');
 
   int? _selectedCustomerId;
@@ -76,7 +80,10 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     }
   }
 
-  Future<void> _selectInvoicePaymentDate(BuildContext context, int invId) async {
+  Future<void> _selectInvoicePaymentDate(
+    BuildContext context,
+    int invId,
+  ) async {
     final initialDate = paymentDatesMap[invId] != null
         ? DateFormat('yyyy-MM-dd').parse(paymentDatesMap[invId]!)
         : _paymentDate;
@@ -93,7 +100,10 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     }
   }
 
-  void _handleAmountReceivedChanged(String val, List<dynamic> customerInvoices) {
+  void _handleAmountReceivedChanged(
+    String val,
+    List<dynamic> customerInvoices,
+  ) {
     final double totalAmt = double.tryParse(val) ?? 0.0;
     double remaining = totalAmt;
     final newMap = <int, double>{};
@@ -122,7 +132,9 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
         paymentsMap[invId] = amt;
       }
       final double total = paymentsMap.values.fold(0.0, (sum, v) => sum + v);
-      _amountReceivedController.text = total > 0 ? total.toStringAsFixed(2) : '';
+      _amountReceivedController.text = total > 0
+          ? total.toStringAsFixed(2)
+          : '';
     });
   }
 
@@ -130,7 +142,9 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     setState(() {
       paymentsMap[inv.id] = inv.balanceDue;
       final double total = paymentsMap.values.fold(0.0, (sum, v) => sum + v);
-      _amountReceivedController.text = total > 0 ? total.toStringAsFixed(2) : '';
+      _amountReceivedController.text = total > 0
+          ? total.toStringAsFixed(2)
+          : '';
     });
   }
 
@@ -143,9 +157,9 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
 
   Future<void> _save(String status) async {
     if (_selectedCustomerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a customer')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a customer')));
       return;
     }
 
@@ -163,13 +177,16 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     // Only require allocation if the customer actually has open invoices.
     if (hasOpenInvoices && amountUsed <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please apply an amount to at least one invoice')),
+        const SnackBar(
+          content: Text('Please apply an amount to at least one invoice'),
+        ),
       );
       return;
     }
     // Additionally, require an amount received when no invoices to allocate against.
     if (!hasOpenInvoices) {
-      final double totalReceived = double.tryParse(_amountReceivedController.text) ?? 0.0;
+      final double totalReceived =
+          double.tryParse(_amountReceivedController.text) ?? 0.0;
       if (totalReceived <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please enter an Amount Received')),
@@ -178,7 +195,8 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
       }
     }
 
-    final double totalReceived = double.tryParse(_amountReceivedController.text) ?? 0.0;
+    final double totalReceived =
+        double.tryParse(_amountReceivedController.text) ?? 0.0;
     if (amountUsed > totalReceived + 0.01) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Amount applied exceeds Amount Received')),
@@ -196,25 +214,33 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
         final amt = entry.value;
         if (amt > 0) {
           final invId = entry.key;
-          final date = paymentDatesMap[invId] ?? DateFormat('yyyy-MM-dd').format(_paymentDate);
-          
+          final date =
+              paymentDatesMap[invId] ??
+              DateFormat('yyyy-MM-dd').format(_paymentDate);
+
           await ref.read(invoicesProvider.notifier).recordPayment(invId, {
             'customer_id': _selectedCustomerId,
             'amount': amt,
             'payment_date': date,
             'payment_mode': _paymentMode,
             'deposit_to': _depositToController.text,
-            'reference': _refController.text.trim().isEmpty ? null : _refController.text.trim(),
-            'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+            'reference': _refController.text.trim().isEmpty
+                ? null
+                : _refController.text.trim(),
+            'notes': _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
             'status': status,
             'splits': [
               {
                 'amount': amt,
                 'payment_mode': _paymentMode,
                 'deposit_to': _depositToController.text,
-                'reference': _refController.text.trim().isEmpty ? null : _refController.text.trim(),
-              }
-            ]
+                'reference': _refController.text.trim().isEmpty
+                    ? null
+                    : _refController.text.trim(),
+              },
+            ],
           });
         }
       }
@@ -223,17 +249,17 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
         final message = amountUsed > 0
             ? 'Payment(s) recorded successfully as ${status.toUpperCase()}.'
             : 'Advance payment of ₹${totalReceived.toStringAsFixed(2)} recorded successfully.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
         ref.invalidate(paymentsProvider);
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) {
@@ -246,7 +272,9 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
 
   @override
   Widget build(BuildContext context) {
-    final isLocked = ref.watch(transactionLockValidatorProvider).isLocked(
+    final isLocked = ref
+        .watch(transactionLockValidatorProvider)
+        .isLocked(
           module: TransactionLockModule.paymentsReceived,
           date: _paymentDate,
         );
@@ -264,7 +292,10 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
         }).toList();
         customerInvoices.sort((a, b) => a.invoiceDate.compareTo(b.invoiceDate));
         if (_amountReceivedController.text.isNotEmpty && paymentsMap.isEmpty) {
-          _handleAmountReceivedChanged(_amountReceivedController.text, customerInvoices);
+          _handleAmountReceivedChanged(
+            _amountReceivedController.text,
+            customerInvoices,
+          );
         }
       }
     });
@@ -273,7 +304,9 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     final allInvoices = invoicesState.value ?? [];
 
     if (!_initialized && widget.invoiceId != 0 && allInvoices.isNotEmpty) {
-      final invoice = allInvoices.where((i) => i.id == widget.invoiceId).firstOrNull;
+      final invoice = allInvoices
+          .where((i) => i.id == widget.invoiceId)
+          .firstOrNull;
       if (invoice != null) {
         _selectedCustomerId = invoice.customerId;
         paymentsMap[widget.invoiceId] = widget.balanceDue;
@@ -305,7 +338,8 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     }
 
     final double amountUsed = paymentsMap.values.fold(0.0, (sum, v) => sum + v);
-    final double amountReceivedVal = double.tryParse(_amountReceivedController.text) ?? 0.0;
+    final double amountReceivedVal =
+        double.tryParse(_amountReceivedController.text) ?? 0.0;
     final double amountExcess = amountReceivedVal - amountUsed;
 
     return Scaffold(
@@ -327,10 +361,13 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                   const SizedBox(height: AppSpacing.s),
 
                   SearchableAutocompleteField<Customer>(
-                    initialValue: customers.where((c) => c.id == _selectedCustomerId).firstOrNull,
+                    initialValue: customers
+                        .where((c) => c.id == _selectedCustomerId)
+                        .firstOrNull,
                     labelText: 'Customer Name *',
                     items: customers,
-                    itemLabelBuilder: (c) => c.displayName ?? c.email ?? 'Customer #${c.id}',
+                    itemLabelBuilder: (c) =>
+                        c.displayName ?? c.email ?? 'Customer #${c.id}',
                     searchMatcher: (c, query) {
                       final name = (c.displayName ?? '').toLowerCase();
                       final email = (c.email ?? '').toLowerCase();
@@ -345,22 +382,28 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                         _amountReceivedController.clear();
                       });
                     },
-                    validator: (val) => val == null ? 'Customer is required' : null,
+                    validator: (val) =>
+                        val == null ? 'Customer is required' : null,
                   ),
                   const SizedBox(height: AppSpacing.m),
 
                   // ─── Amount Received ───
                   TextFormField(
                     controller: _amountReceivedController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Amount Received *',
                       prefixText: '₹ ',
                     ),
-                    onChanged: (val) => _handleAmountReceivedChanged(val, customerInvoices),
+                    onChanged: (val) =>
+                        _handleAmountReceivedChanged(val, customerInvoices),
                     validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'Amount is required';
-                      if (double.tryParse(val) == null) return 'Enter a valid number';
+                      if (val == null || val.trim().isEmpty)
+                        return 'Amount is required';
+                      if (double.tryParse(val) == null)
+                        return 'Enter a valid number';
                       return null;
                     },
                   ),
@@ -369,7 +412,9 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                   // ─── Bank Charges ───
                   TextFormField(
                     controller: _bankChargesController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Bank Charges (if any)',
                       prefixText: '₹ ',
@@ -383,9 +428,11 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                     child: InputDecorator(
                       decoration: const InputDecoration(
                         labelText: 'Payment Date *',
-                        suffixIcon: Icon(Icons.calendar_today),
+                        suffixIcon: Icon(AppIcons.calendar_today),
                       ),
-                      child: Text(DateFormat('dd MMM yyyy').format(_paymentDate)),
+                      child: Text(
+                        DateFormat('dd MMM yyyy').format(_paymentDate),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.m),
@@ -393,22 +440,23 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                   // ─── Payment Number (Auto-generated) ───
                   TextFormField(
                     controller: _paymentNumberController,
-                    decoration: const InputDecoration(
-                      labelText: 'Payment #',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Payment #'),
                   ),
                   const SizedBox(height: AppSpacing.m),
 
                   // ─── Payment Mode ───
                   DropdownButtonFormField<String>(
-                    value: _paymentMode,
+                    initialValue: _paymentMode,
                     decoration: const InputDecoration(
                       labelText: 'Payment Mode',
                     ),
                     items: const [
                       DropdownMenuItem(value: 'Cash', child: Text('Cash')),
                       DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
-                      DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                      DropdownMenuItem(
+                        value: 'Bank Transfer',
+                        child: Text('Bank Transfer'),
+                      ),
                       DropdownMenuItem(value: 'UPI', child: Text('UPI')),
                       DropdownMenuItem(value: 'Card', child: Text('Card')),
                       DropdownMenuItem(value: 'Other', child: Text('Other')),
@@ -426,13 +474,23 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                   // ─── Deposit To / Account ───
                   if (_paymentMode == 'Cash')
                     DropdownButtonFormField<String>(
-                      value: _depositToController.text == 'Petty Cash' || _depositToController.text == 'Undeposited Funds' ? _depositToController.text : 'Petty Cash',
+                      initialValue:
+                          _depositToController.text == 'Petty Cash' ||
+                              _depositToController.text == 'Undeposited Funds'
+                          ? _depositToController.text
+                          : 'Petty Cash',
                       decoration: const InputDecoration(
                         labelText: 'Deposit To *',
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Petty Cash', child: Text('Petty Cash')),
-                        DropdownMenuItem(value: 'Undeposited Funds', child: Text('Undeposited Funds')),
+                        DropdownMenuItem(
+                          value: 'Petty Cash',
+                          child: Text('Petty Cash'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Undeposited Funds',
+                          child: Text('Undeposited Funds'),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -444,12 +502,15 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                     )
                   else
                     DropdownButtonFormField<String>(
-                      value: 'Undeposited Funds',
+                      initialValue: 'Undeposited Funds',
                       decoration: const InputDecoration(
                         labelText: 'Deposit To *',
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Undeposited Funds', child: Text('Undeposited Funds')),
+                        DropdownMenuItem(
+                          value: 'Undeposited Funds',
+                          child: Text('Undeposited Funds'),
+                        ),
                       ],
                       onChanged: null,
                     ),
@@ -458,16 +519,19 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                   // ─── Reference ───
                   TextFormField(
                     controller: _refController,
-                    decoration: const InputDecoration(
-                      labelText: 'Reference',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Reference'),
                   ),
                   const SizedBox(height: AppSpacing.m),
 
                   // ─── Tax Deducted ChoiceChips ───
-                  const Text('Tax Deducted', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const Text(
+                    'Tax Deducted',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                   const SizedBox(height: AppSpacing.s),
-                  Row(
+                  Wrap(
+                    spacing: AppSpacing.s,
+                    runSpacing: AppSpacing.s,
                     children: [
                       ChoiceChip(
                         label: const Text('No Tax'),
@@ -476,7 +540,6 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                           if (selected) setState(() => _taxDeducted = 'No Tax');
                         },
                       ),
-                      const SizedBox(width: AppSpacing.s),
                       ChoiceChip(
                         label: const Text('TDS'),
                         selected: _taxDeducted == 'TDS',
@@ -484,7 +547,6 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                           if (selected) setState(() => _taxDeducted = 'TDS');
                         },
                       ),
-                      const SizedBox(width: AppSpacing.s),
                       ChoiceChip(
                         label: const Text('TCS'),
                         selected: _taxDeducted == 'TCS',
@@ -502,7 +564,10 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                     children: [
                       const Text(
                         'Unpaid Invoices',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                       if (amountUsed > 0)
                         TextButton(
@@ -519,7 +584,10 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                         padding: EdgeInsets.symmetric(vertical: 24.0),
                         child: Text(
                           'Please select a customer to view unpaid invoices',
-                          style: TextStyle(color: AppColors.textSecondaryLight, fontStyle: FontStyle.italic),
+                          style: TextStyle(
+                            color: AppColors.textSecondaryLight,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     )
@@ -529,37 +597,58 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                         padding: EdgeInsets.symmetric(vertical: 24.0),
                         child: Text(
                           'No unpaid invoices found for this customer',
-                          style: TextStyle(color: AppColors.textSecondaryLight, fontStyle: FontStyle.italic),
+                          style: TextStyle(
+                            color: AppColors.textSecondaryLight,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     )
                   else
                     Column(
                       children: [
-                        for (int idx = 0; idx < customerInvoices.length; idx++) ...[
+                        for (
+                          int idx = 0;
+                          idx < customerInvoices.length;
+                          idx++
+                        ) ...[
                           Builder(
                             builder: (context) {
                               final inv = customerInvoices[idx];
-                              final invDateStr = DateFormat('dd/MM/yyyy').format(inv.invoiceDate);
-                              final dueDateStr = DateFormat('dd/MM/yyyy').format(inv.dueDate ?? inv.invoiceDate);
-                              final currentAllocated = paymentsMap[inv.id] ?? 0.0;
+                              final invDateStr = DateFormat(
+                                'dd/MM/yyyy',
+                              ).format(inv.invoiceDate);
+                              final dueDateStr = DateFormat(
+                                'dd/MM/yyyy',
+                              ).format(inv.dueDate ?? inv.invoiceDate);
+                              final currentAllocated =
+                                  paymentsMap[inv.id] ?? 0.0;
                               final controller = TextEditingController(
-                                text: currentAllocated > 0 ? currentAllocated.toStringAsFixed(2) : '',
+                                text: currentAllocated > 0
+                                    ? currentAllocated.toStringAsFixed(2)
+                                    : '',
                               );
 
                               return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 6.0),
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 6.0,
+                                ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(AppSpacing.s),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             inv.invoiceNumber,
-                                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primaryBlue,
+                                            ),
                                           ),
                                           TextButton(
                                             onPressed: () => _payInFull(inv),
@@ -567,51 +656,178 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                                           ),
                                         ],
                                       ),
-                                      Text('Date: $invDateStr | Due: $dueDateStr', style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
+                                      Text(
+                                        'Date: $invDateStr | Due: $dueDateStr',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textSecondaryLight,
+                                        ),
+                                      ),
                                       const SizedBox(height: AppSpacing.xs),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text('Due Amount: ₹${inv.balanceDue.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                          const SizedBox(width: AppSpacing.m),
-                                          Expanded(
-                                            child: InkWell(
-                                              onTap: () => _selectInvoicePaymentDate(context, inv.id),
-                                              child: InputDecorator(
-                                                decoration: const InputDecoration(
-                                                  labelText: 'Payment Date',
-                                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final compact =
+                                              constraints.maxWidth < 430;
+                                          if (compact) {
+                                            return Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                Text(
+                                                  'Due Amount: ₹${inv.balanceDue.toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
+                                                const SizedBox(
+                                                  height: AppSpacing.s,
+                                                ),
+                                                InkWell(
+                                                  onTap: () =>
+                                                      _selectInvoicePaymentDate(
+                                                        context,
+                                                        inv.id,
+                                                      ),
+                                                  child: InputDecorator(
+                                                    decoration:
+                                                        const InputDecoration(
+                                                          labelText:
+                                                              'Payment Date',
+                                                          contentPadding:
+                                                              EdgeInsets.symmetric(
+                                                                horizontal: 8,
+                                                                vertical: 4,
+                                                              ),
+                                                        ),
+                                                    child: Text(
+                                                      paymentDatesMap[inv.id] ??
+                                                          DateFormat(
+                                                            'yyyy-MM-dd',
+                                                          ).format(
+                                                            _paymentDate,
+                                                          ),
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(
+                                                  height: AppSpacing.s,
+                                                ),
+                                                TextFormField(
+                                                  controller: controller,
+                                                  keyboardType:
+                                                      const TextInputType.numberWithOptions(
+                                                        decimal: true,
+                                                      ),
+                                                  textAlign: TextAlign.right,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText:
+                                                            'Applied Amount',
+                                                        hintText: '0.00',
+                                                        contentPadding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
+                                                      ),
+                                                  onChanged: (val) =>
+                                                      _onPaymentMapChanged(
+                                                        inv.id,
+                                                        val,
+                                                      ),
+                                                ),
+                                              ],
+                                            );
+                                          }
+                                          return Row(
+                                            children: [
+                                              Expanded(
                                                 child: Text(
-                                                  paymentDatesMap[inv.id] ?? DateFormat('yyyy-MM-dd').format(_paymentDate),
-                                                  style: const TextStyle(fontSize: 12),
+                                                  'Due Amount: ₹${inv.balanceDue.toStringAsFixed(2)}',
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: AppSpacing.s),
-                                          SizedBox(
-                                            width: 100,
-                                            child: TextFormField(
-                                              controller: controller,
-                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                              textAlign: TextAlign.right,
-                                              decoration: const InputDecoration(
-                                                hintText: '0.00',
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              const SizedBox(
+                                                width: AppSpacing.m,
                                               ),
-                                              onChanged: (val) => _onPaymentMapChanged(inv.id, val),
-                                            ),
-                                          ),
-                                        ],
+                                              Expanded(
+                                                child: InkWell(
+                                                  onTap: () =>
+                                                      _selectInvoicePaymentDate(
+                                                        context,
+                                                        inv.id,
+                                                      ),
+                                                  child: InputDecorator(
+                                                    decoration:
+                                                        const InputDecoration(
+                                                          labelText:
+                                                              'Payment Date',
+                                                          contentPadding:
+                                                              EdgeInsets.symmetric(
+                                                                horizontal: 8,
+                                                                vertical: 4,
+                                                              ),
+                                                        ),
+                                                    child: Text(
+                                                      paymentDatesMap[inv.id] ??
+                                                          DateFormat(
+                                                            'yyyy-MM-dd',
+                                                          ).format(
+                                                            _paymentDate,
+                                                          ),
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: AppSpacing.s,
+                                              ),
+                                              SizedBox(
+                                                width: 100,
+                                                child: TextFormField(
+                                                  controller: controller,
+                                                  keyboardType:
+                                                      const TextInputType.numberWithOptions(
+                                                        decimal: true,
+                                                      ),
+                                                  textAlign: TextAlign.right,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        hintText: '0.00',
+                                                        contentPadding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
+                                                      ),
+                                                  onChanged: (val) =>
+                                                      _onPaymentMapChanged(
+                                                        inv.id,
+                                                        val,
+                                                      ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
                                 ),
                               );
-                            }
+                            },
                           ),
-                        ]
+                        ],
                       ],
                     ),
 
@@ -619,7 +835,7 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
 
                   // ─── Totals summary card ───
                   Card(
-                    color: AppColors.textSecondaryLight.withOpacity(0.05),
+                    color: AppColors.textSecondaryLight.withValues(alpha: 0.05),
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.m),
                       child: Column(
@@ -627,15 +843,26 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Amount Received:', style: TextStyle(fontWeight: FontWeight.bold)),
+                              const Text(
+                                'Amount Received:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               Text('₹ ${amountReceivedVal.toStringAsFixed(2)}'),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Amount allocated for Payments:', style: TextStyle(color: AppColors.textSecondaryLight)),
+                              const Expanded(
+                                child: Text(
+                                  'Amount allocated for Payments:',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondaryLight,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.s),
                               Text('₹ ${amountUsed.toStringAsFixed(2)}'),
                             ],
                           ),
@@ -643,7 +870,12 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Amount Refunded:', style: TextStyle(color: AppColors.textSecondaryLight)),
+                              const Text(
+                                'Amount Refunded:',
+                                style: TextStyle(
+                                  color: AppColors.textSecondaryLight,
+                                ),
+                              ),
                               const Text('₹ 0.00'),
                             ],
                           ),
@@ -653,12 +885,27 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.danger),
+                                  Icon(
+                                    AppIcons.warning_amber_rounded,
+                                    size: 16,
+                                    color: AppColors.danger,
+                                  ),
                                   SizedBox(width: 4),
-                                  Text('Amount in Excess:', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    'Amount in Excess:',
+                                    style: TextStyle(
+                                      color: AppColors.danger,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              Text('₹ ${amountExcess > 0 ? amountExcess.toStringAsFixed(2) : '0.00'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text(
+                                '₹ ${amountExcess > 0 ? amountExcess.toStringAsFixed(2) : '0.00'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -673,33 +920,38 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
                     controller: _notesController,
                     maxLines: 3,
                     decoration: const InputDecoration(
-                      labelText: 'Notes (Internal use. Not visible to customer)',
+                      labelText:
+                          'Notes (Internal use. Not visible to customer)',
                       hintText: 'Internal details...',
                     ),
                   ),
                   const SizedBox(height: AppSpacing.l),
 
                   // ─── Two Action Buttons ───
-                  Row(
+                  OverflowBar(
+                    alignment: MainAxisAlignment.end,
+                    spacing: AppSpacing.m,
+                    overflowSpacing: AppSpacing.s,
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isLocked ? null : () => _save('draft'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                      OutlinedButton(
+                        onPressed: isLocked ? null : () => _save('draft'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: AppSpacing.m,
                           ),
-                          child: const Text('Save as Draft'),
                         ),
+                        child: const Text('Save as Draft'),
                       ),
-                      const SizedBox(width: AppSpacing.m),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: isLocked ? null : () => _save('paid'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                      ElevatedButton(
+                        onPressed: isLocked ? null : () => _save('paid'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: AppSpacing.m,
                           ),
-                          child: const Text('Save as Paid'),
                         ),
+                        child: const Text('Save as Paid'),
                       ),
                     ],
                   ),
@@ -710,4 +962,3 @@ class _PaymentReceivedFormScreenState extends ConsumerState<PaymentReceivedFormS
     );
   }
 }
-

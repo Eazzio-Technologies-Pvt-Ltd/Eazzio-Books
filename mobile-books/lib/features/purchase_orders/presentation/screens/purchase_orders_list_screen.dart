@@ -7,6 +7,7 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/purchase_orders/data/models/purchase_order.dart';
 import 'package:mobile_books/features/purchase_orders/presentation/providers/purchase_order_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PurchaseOrdersListScreen extends ConsumerStatefulWidget {
   const PurchaseOrdersListScreen({super.key});
@@ -137,7 +138,7 @@ class _PurchaseOrdersListScreenState extends ConsumerState<PurchaseOrdersListScr
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/purchase-orders/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -155,10 +156,10 @@ class _PurchaseOrdersListScreenState extends ConsumerState<PurchaseOrdersListScr
                     onChanged: (val) => ref.read(purchaseOrderSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search purchase orders...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(purchaseOrderSearchQueryProvider.notifier).state = '';
@@ -170,7 +171,7 @@ class _PurchaseOrdersListScreenState extends ConsumerState<PurchaseOrdersListScr
                 ),
                 const SizedBox(width: AppSpacing.s),
                 IconButton(
-                  icon: const Icon(Icons.sort),
+                  icon: const Icon(AppIcons.sort),
                   onPressed: () => _showSortBottomSheet(context),
                 ),
               ],
@@ -191,7 +192,7 @@ class _PurchaseOrdersListScreenState extends ConsumerState<PurchaseOrdersListScr
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.receipt_long, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.receipt_long, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No purchase orders found.',
@@ -301,7 +302,7 @@ class _PurchaseOrderCard extends ConsumerWidget {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

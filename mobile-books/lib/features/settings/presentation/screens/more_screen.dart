@@ -5,6 +5,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/core/permissions/permission_helper.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -36,35 +37,35 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Items & Inventory'),
             _buildMenuItem(
               context: context,
-              icon: Icons.inventory_2_outlined,
+              icon: AppIcons.inventory_2_outlined,
               label: 'Items List',
               path: '/items',
               show: hasPermission('/items'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.add_box_outlined,
+              icon: AppIcons.add_box_outlined,
               label: 'Stock In / Stock Out',
               path: '/inventory/stock',
               show: hasPermission('/inventory/stock'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.swap_horiz_outlined,
+              icon: AppIcons.swap_horiz_outlined,
               label: 'Inventory Movements',
               path: '/inventory/movements',
               show: hasPermission('/inventory/movements'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.warning_amber_outlined,
+              icon: AppIcons.warning_amber_outlined,
               label: 'Low Stock Alerts',
               path: '/inventory/low-stock',
               show: hasPermission('/inventory/low-stock'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.assessment_outlined,
+              icon: AppIcons.assessment_outlined,
               label: 'Item Valuation Report',
               path: '/reports/item-valuation',
               show: hasPermission('/reports/item-valuation'),
@@ -74,49 +75,49 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Sales'),
             _buildMenuItem(
               context: context,
-              icon: Icons.request_quote_outlined,
+              icon: AppIcons.request_quote_outlined,
               label: 'Quotes',
               path: '/quotes',
               show: hasPermission('/quotes'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.shopping_bag_outlined,
+              icon: AppIcons.shopping_bag_outlined,
               label: 'Sales Orders',
               path: '/sales-orders',
               show: hasPermission('/sales-orders'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.payment_outlined,
+              icon: AppIcons.payment_outlined,
               label: 'Payments Received',
               path: '/payments-received',
               show: hasPermission('/payments-received'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.local_shipping_outlined,
+              icon: AppIcons.local_shipping_outlined,
               label: 'Delivery Challans',
               path: '/delivery-challans',
               show: hasPermission('/delivery-challans'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.assignment_return_outlined,
+              icon: AppIcons.assignment_return_outlined,
               label: 'Credit Notes',
               path: '/credit-notes',
               show: hasPermission('/credit-notes'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.update_outlined,
+              icon: AppIcons.update_outlined,
               label: 'Recurring Invoices',
               path: '/recurring-invoices',
               show: hasPermission('/recurring-invoices'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.person_outline,
+              icon: AppIcons.person_outline,
               label: 'Salespersons',
               path: '/salespersons',
               show: hasPermission('/salespersons'),
@@ -126,49 +127,49 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Purchases'),
             _buildMenuItem(
               context: context,
-              icon: Icons.people_outline,
+              icon: AppIcons.people_outline,
               label: 'Vendors',
               path: '/vendors',
               show: hasPermission('/vendors'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.receipt_long_outlined,
+              icon: AppIcons.receipt_long_outlined,
               label: 'Bills',
               path: '/bills',
               show: hasPermission('/bills'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.money_off_outlined,
+              icon: AppIcons.money_off_outlined,
               label: 'Expenses',
               path: '/expenses',
               show: hasPermission('/expenses'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.timer_outlined,
+              icon: AppIcons.timer_outlined,
               label: 'Recurring Expenses',
               path: '/recurring-expenses',
               show: hasPermission('/recurring-expenses'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.shopping_cart_outlined,
+              icon: AppIcons.shopping_cart_outlined,
               label: 'Purchase Orders',
               path: '/purchase-orders',
               show: hasPermission('/purchase-orders'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.payment_outlined,
+              icon: AppIcons.payment_outlined,
               label: 'Payments Made',
               path: '/payments-made',
               show: hasPermission('/payments-made'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.credit_card_off_outlined,
+              icon: AppIcons.credit_card_off_outlined,
               label: 'Vendor Credits',
               path: '/vendor-credits',
               show: hasPermission('/vendor-credits'),
@@ -178,14 +179,14 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Time Tracking'),
             _buildMenuItem(
               context: context,
-              icon: Icons.work_outline,
+              icon: AppIcons.work_outline,
               label: 'Projects',
               path: '/projects',
               show: hasPermission('/projects'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.pending_actions_outlined,
+              icon: AppIcons.pending_actions_outlined,
               label: 'Timesheets',
               path: '/timesheets',
               show: hasPermission('/timesheets'),
@@ -195,35 +196,35 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Banking'),
             _buildMenuItem(
               context: context,
-              icon: Icons.account_balance_wallet_outlined,
+              icon: AppIcons.account_balance_wallet_outlined,
               label: 'Bank Accounts',
               path: '/banking',
               show: hasPermission('/banking'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.money_outlined,
+              icon: AppIcons.money_outlined,
               label: 'Petty Cash',
               path: '/banking/petty-cash',
               show: hasPermission('/banking'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.all_inbox_outlined,
+              icon: AppIcons.all_inbox_outlined,
               label: 'Undeposited Funds',
               path: '/banking/undeposited-funds',
               show: hasPermission('/banking'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.gavel_outlined,
+              icon: AppIcons.gavel_outlined,
               label: 'Bank Rules',
               path: '/bank-rules',
               show: hasPermission('/bank-rules'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.compare_arrows_outlined,
+              icon: AppIcons.compare_arrows_outlined,
               label: 'Reconciliation',
               path: '/reconciliation',
               show: hasPermission('/reconciliation'),
@@ -233,42 +234,42 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Accountant'),
             _buildMenuItem(
               context: context,
-              icon: Icons.list_alt_outlined,
+              icon: AppIcons.list_alt_outlined,
               label: 'Chart of Accounts',
               path: '/accounting/coa',
               show: hasPermission('/accounting/coa'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.menu_book_outlined,
+              icon: AppIcons.menu_book_outlined,
               label: 'Manual Journals',
               path: '/accounting/journals',
               show: hasPermission('/accounting/journals'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.lock_outline,
+              icon: AppIcons.lock_outline,
               label: 'Transaction Locking',
               path: '/transaction-locking',
               show: hasPermission('/transaction-locking'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.published_with_changes_outlined,
+              icon: AppIcons.published_with_changes_outlined,
               label: 'Bulk Updates',
               path: '/bulk-updates',
               show: hasPermission('/bulk-updates'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.currency_exchange_outlined,
+              icon: AppIcons.currency_exchange_outlined,
               label: 'Currency Adjustments',
               path: '/currency-adjustments',
               show: hasPermission('/currency-adjustments'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.percent_outlined,
+              icon: AppIcons.percent_outlined,
               label: 'Taxes',
               path: '/taxes',
               show: hasPermission('/taxes'),
@@ -278,42 +279,42 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Reports'),
             _buildMenuItem(
               context: context,
-              icon: Icons.trending_up_outlined,
+              icon: AppIcons.trending_up_outlined,
               label: 'Profit & Loss',
               path: '/reports/profit-loss',
               show: hasPermission('/reports/profit-loss'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.account_balance_outlined,
+              icon: AppIcons.account_balance_outlined,
               label: 'Balance Sheet',
               path: '/reports/balance-sheet',
               show: hasPermission('/reports/balance-sheet'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.analytics_outlined,
+              icon: AppIcons.analytics_outlined,
               label: 'Cash Flow',
               path: '/reports/cash-flow',
               show: hasPermission('/reports/cash-flow'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.scale_outlined,
+              icon: AppIcons.scale_outlined,
               label: 'Trial Balance',
               path: '/reports/trial-balance',
               show: hasPermission('/reports/trial-balance'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.payments_outlined,
+              icon: AppIcons.payments_outlined,
               label: 'Projected Payments',
               path: '/projected-payments',
               show: true,
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.money_off_csred_outlined,
+              icon: AppIcons.money_off_csred_outlined,
               label: 'Projected Expenses',
               path: '/projected-expenses',
               show: true,
@@ -323,14 +324,14 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Documents'),
             _buildMenuItem(
               context: context,
-              icon: Icons.folder_open_outlined,
+              icon: AppIcons.folder_open_outlined,
               label: 'All Documents',
               path: '/documents',
               show: hasPermission('/documents'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.upload_file_outlined,
+              icon: AppIcons.upload_file_outlined,
               label: 'Upload Documents',
               path: '/documents/upload',
               show: hasPermission('/documents/upload'),
@@ -340,21 +341,21 @@ class MoreScreen extends ConsumerWidget {
             _buildSectionHeader(context, 'Settings'),
             _buildMenuItem(
               context: context,
-              icon: Icons.business_outlined,
+              icon: AppIcons.business_outlined,
               label: 'Organization Settings',
               path: '/settings/organization',
               show: hasPermission('/settings/organization'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.people_alt_outlined,
+              icon: AppIcons.people_alt_outlined,
               label: 'Users & Roles',
               path: '/settings/users',
               show: hasPermission('/settings/users'),
             ),
             _buildMenuItem(
               context: context,
-              icon: Icons.workspace_premium_outlined,
+              icon: AppIcons.workspace_premium_outlined,
               label: 'Pricing Plans',
               path: '/pricing',
               show: true,
@@ -410,7 +411,7 @@ class MoreScreen extends ConsumerWidget {
         ),
       ),
       trailing: const Icon(
-        Icons.chevron_right,
+        AppIcons.chevron_right,
         size: 18,
         color: Colors.grey,
       ),
@@ -437,7 +438,7 @@ class MoreScreen extends ConsumerWidget {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -498,7 +499,7 @@ class MoreScreen extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.15),
+                            color: Colors.amber.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -520,34 +521,11 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.m),
           const Divider(height: 1),
           const SizedBox(height: AppSpacing.s),
-          
-          // Theme Switcher Tile
-          Consumer(
-            builder: (context, ref, child) {
-              final themeMode = ref.watch(themeModeProvider);
-              final isThemeDark = themeMode == ThemeMode.dark || 
-                  (themeMode == ThemeMode.system && MediaQuery.of(context).platformBrightness == Brightness.dark);
-              
-              return SwitchListTile(
-                secondary: Icon(
-                  isThemeDark ? Icons.dark_mode : Icons.light_mode,
-                  color: isDark ? Colors.white70 : AppColors.primaryBlue,
-                ),
-                title: const Text('Dark Mode', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                value: isThemeDark,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                onChanged: (bool value) {
-                  ref.read(themeModeProvider.notifier).setThemeMode(
-                      value ? ThemeMode.dark : ThemeMode.light);
-                },
-              );
-            },
-          ),
+
           
           // Logout Tile
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            leading: const Icon(AppIcons.logout, color: Colors.redAccent),
             title: const Text(
               'Logout',
               style: TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.w500),

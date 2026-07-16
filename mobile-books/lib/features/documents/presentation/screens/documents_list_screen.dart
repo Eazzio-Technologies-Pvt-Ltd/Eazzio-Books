@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/documents/data/models/document_model.dart';
 import 'package:mobile_books/features/documents/presentation/providers/document_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class DocumentsListScreen extends ConsumerStatefulWidget {
   const DocumentsListScreen({super.key});
@@ -49,7 +50,7 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/documents/upload'),
-        child: const Icon(Icons.upload_file),
+        child: const Icon(AppIcons.upload_file),
       ),
       body: Column(
         children: [
@@ -63,10 +64,10 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
                   onChanged: (val) => ref.read(documentSearchQueryProvider.notifier).state = val,
                   decoration: InputDecoration(
                     hintText: 'Search documents...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(AppIcons.search),
                     suffixIcon: searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: const Icon(AppIcons.clear),
                             onPressed: () {
                               searchController.clear();
                               ref.read(documentSearchQueryProvider.notifier).state = '';
@@ -148,7 +149,7 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.folder_open, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.folder_open, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No documents found.',
@@ -170,7 +171,7 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: AppSpacing.m),
                         child: ListTile(
-                          leading: const Icon(Icons.insert_drive_file, size: 36, color: AppColors.primaryBlue),
+                          leading: const Icon(AppIcons.insert_drive_file, size: 36, color: AppColors.primaryBlue),
                           title: Text(doc.documentName, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,11 +190,11 @@ class _DocumentsListScreenState extends ConsumerState<DocumentsListScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.download, size: 20),
+                                icon: const Icon(AppIcons.download, size: 20),
                                 onPressed: () => _viewDownloadInfo(context, doc),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, size: 20, color: AppColors.danger),
+                                icon: const Icon(AppIcons.delete, size: 20, color: AppColors.danger),
                                 onPressed: () => _confirmDelete(context, ref, doc),
                               ),
                             ],

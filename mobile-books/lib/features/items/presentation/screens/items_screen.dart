@@ -5,6 +5,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
 
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ItemsScreen extends ConsumerStatefulWidget {
   const ItemsScreen({super.key});
@@ -43,7 +44,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/items/new'),
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: Column(
         children: [
@@ -61,10 +62,10 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                     onChanged: (val) => ref.read(itemSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search items by name, SKU...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(itemSearchQueryProvider.notifier).state = '';
@@ -76,7 +77,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     ref.read(itemsListFilterProvider.notifier).state = val;
                   },
@@ -87,7 +88,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         children: [
                           const Text('All Items'),
                           if (filter == 'all') const Spacer(),
-                          if (filter == 'all') const Icon(Icons.check, size: 16),
+                          if (filter == 'all') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -97,7 +98,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         children: [
                           const Text('Active Items'),
                           if (filter == 'active') const Spacer(),
-                          if (filter == 'active') const Icon(Icons.check, size: 16),
+                          if (filter == 'active') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -107,7 +108,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         children: [
                           const Text('Inactive Items'),
                           if (filter == 'inactive') const Spacer(),
-                          if (filter == 'inactive') const Icon(Icons.check, size: 16),
+                          if (filter == 'inactive') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -117,7 +118,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         children: [
                           const Text('Low Stock'),
                           if (filter == 'low_stock') const Spacer(),
-                          if (filter == 'low_stock') const Icon(Icons.check, size: 16),
+                          if (filter == 'low_stock') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -127,7 +128,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         children: [
                           const Text('Goods'),
                           if (filter == 'goods') const Spacer(),
-                          if (filter == 'goods') const Icon(Icons.check, size: 16),
+                          if (filter == 'goods') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -137,7 +138,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         children: [
                           const Text('Services'),
                           if (filter == 'services') const Spacer(),
-                          if (filter == 'services') const Icon(Icons.check, size: 16),
+                          if (filter == 'services') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -205,8 +206,8 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isGoods
-                                          ? AppColors.primaryBlue.withOpacity(0.1)
-                                          : AppColors.warning.withOpacity(0.1),
+                                          ? AppColors.primaryBlue.withValues(alpha: 0.1)
+                                          : AppColors.warning.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(4.0),
                                     ),
                                     child: Text(
@@ -228,8 +229,8 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: item.stockQuantity <= item.reorderLevel
-                                            ? AppColors.danger.withOpacity(0.1)
-                                            : AppColors.success.withOpacity(0.1),
+                                            ? AppColors.danger.withValues(alpha: 0.1)
+                                            : AppColors.success.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(4.0),
                                       ),
                                       child: Text(

@@ -14,6 +14,7 @@ import 'package:mobile_books/features/items/presentation/providers/item_provider
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class VendorCreditFormScreen extends ConsumerStatefulWidget {
   final int? vendorCreditId;
@@ -276,7 +277,7 @@ class _VendorCreditFormScreenState extends ConsumerState<VendorCreditFormScreen>
         title: Text(_isEdit ? 'Edit Vendor Credit' : 'New Vendor Credit'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             onPressed: (_isLoading || isLocked) ? null : _save,
           ),
         ],
@@ -326,7 +327,7 @@ class _VendorCreditFormScreenState extends ConsumerState<VendorCreditFormScreen>
                       const SizedBox(width: AppSpacing.s),
                       IconButton(
                         onPressed: _showAddVendorDialog,
-                        icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                        icon: const Icon(AppIcons.person_add, color: AppColors.primaryBlue),
                         tooltip: 'Add Vendor',
                       ),
                     ],
@@ -399,7 +400,7 @@ class _VendorCreditFormScreenState extends ConsumerState<VendorCreditFormScreen>
                   children: [
                     const Text('Line Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     IconButton(
-                      icon: const Icon(Icons.add_circle, color: AppColors.primaryBlue),
+                      icon: const Icon(AppIcons.add_circle, color: AppColors.primaryBlue),
                       onPressed: () {
                         setState(() {
                           _lineItems.add(_LineItem());
@@ -507,7 +508,7 @@ class _VendorCreditFormScreenState extends ConsumerState<VendorCreditFormScreen>
                           Align(
                             alignment: Alignment.centerRight,
                             child: IconButton(
-                              icon: const Icon(Icons.delete, color: AppColors.danger),
+                              icon: const Icon(AppIcons.delete, color: AppColors.danger),
                               onPressed: () {
                                 setState(() {
                                   _lineItems.removeAt(idx);

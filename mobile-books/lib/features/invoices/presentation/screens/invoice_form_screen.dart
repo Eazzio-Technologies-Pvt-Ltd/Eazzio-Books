@@ -10,6 +10,7 @@ import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice.dart';
 import 'package:mobile_books/features/invoices/data/models/invoice_item.dart';
+import 'package:mobile_books/features/invoices/data/models/payment_schedule.dart';
 import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
 import 'package:mobile_books/features/quotes/data/services/quote_service.dart';
 import 'package:mobile_books/features/quotes/presentation/providers/quote_provider.dart'; // Reusing salesperson and project providers
@@ -20,6 +21,7 @@ import 'package:mobile_books/features/quotes/data/models/project.dart';
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class _LineItem {
   int? itemId;
@@ -86,11 +88,7 @@ class InvoiceFormScreen extends ConsumerStatefulWidget {
   final int? invoiceId;
   final int? convertFromQuoteId;
 
-  const InvoiceFormScreen({
-    super.key,
-    this.invoiceId,
-    this.convertFromQuoteId,
-  });
+  const InvoiceFormScreen({super.key, this.invoiceId, this.convertFromQuoteId});
 
   @override
   ConsumerState<InvoiceFormScreen> createState() => _InvoiceFormScreenState();
@@ -121,6 +119,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   // ─── Line Items ────────────────────────────────────────────
   List<_LineItem> _lineItems = [_LineItem()];
 
+  // ─── Instalment / Payment Schedule ─────────────────────────
+  bool _enableInstalments = false;
+  int _instalmentMonths = 2;
+  /// Manually configured instalment rows (date + amount pairs).
+  List<_InstalmentRow> _instalmentSchedule = [];
+
   bool get _isEditMode => widget.invoiceId != null;
   bool get _isConversion => widget.convertFromQuoteId != null;
 
@@ -130,6 +134,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     _termsController.dispose();
     for (final li in _lineItems) {
       li.dispose();
+    }
+    for (final row in _instalmentSchedule) {
+      row.dispose();
     }
     super.dispose();
   }
@@ -149,8 +156,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   Future<void> _loadInvoiceData() async {
     setState(() => _isLoading = true);
     try {
-      final details =
-          await ref.read(invoiceServiceProvider).getInvoiceById(widget.invoiceId!);
+      final details = await ref
+          .read(invoiceServiceProvider)
+          .getInvoiceById(widget.invoiceId!);
       final inv = details.invoice;
       _customerId = inv.customerId;
       _invoiceNumber = inv.invoiceNumber;
@@ -167,18 +175,20 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
-            .map((i) => _LineItem(
-                  itemId: i.itemId,
-                  itemName: i.itemName ?? '',
-                  description: i.description ?? '',
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discount: i.discount,
-                  discountType: i.discountType,
-                  hsnCode: i.hsnCode ?? '',
-                  unit: i.unit ?? '',
-                ))
+            .map(
+              (i) => _LineItem(
+                itemId: i.itemId,
+                itemName: i.itemName ?? '',
+                description: i.description ?? '',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                taxRate: i.taxRate,
+                discount: i.discount,
+                discountType: i.discountType,
+                hsnCode: i.hsnCode ?? '',
+                unit: i.unit ?? '',
+              ),
+            )
             .toList();
       }
       // Sync controllers with loaded values
@@ -192,8 +202,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to load invoice: $e'),
-              backgroundColor: AppColors.danger),
+            content: Text('Failed to load invoice: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -204,8 +215,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   Future<void> _loadQuoteForConversion() async {
     setState(() => _isLoading = true);
     try {
-      final details =
-          await ref.read(quoteServiceProvider).getQuoteById(widget.convertFromQuoteId!);
+      final details = await ref
+          .read(quoteServiceProvider)
+          .getQuoteById(widget.convertFromQuoteId!);
       final q = details.quote;
       _customerId = q.customerId;
       _salespersonId = q.salespersonId;
@@ -215,18 +227,20 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
-            .map((i) => _LineItem(
-                  itemId: i.itemId,
-                  itemName: i.itemName ?? '',
-                  description: i.description ?? '',
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discount: i.discount,
-                  discountType: i.discountType,
-                  hsnCode: i.hsnCode ?? '',
-                  unit: i.unit ?? '',
-                ))
+            .map(
+              (i) => _LineItem(
+                itemId: i.itemId,
+                itemName: i.itemName ?? '',
+                description: i.description ?? '',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                taxRate: i.taxRate,
+                discount: i.discount,
+                discountType: i.discountType,
+                hsnCode: i.hsnCode ?? '',
+                unit: i.unit ?? '',
+              ),
+            )
             .toList();
       }
       _isInit = true;
@@ -234,8 +248,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to pre-fill from quote: $e'),
-              backgroundColor: AppColors.danger),
+            content: Text('Failed to pre-fill from quote: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -269,7 +284,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
 
   void _updateGstType() {
     setState(() {
-      if (_supplierState.trim().toLowerCase() == _placeOfSupply.trim().toLowerCase()) {
+      if (_supplierState.trim().toLowerCase() ==
+          _placeOfSupply.trim().toLowerCase()) {
         _gstType = 'intra_state';
       } else {
         _gstType = 'inter_state';
@@ -277,7 +293,41 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     });
   }
 
-  // ─── Inline Add Customer Dialog ────────────────────────────
+  // ─── Instalment Helpers ─────────────────────────────────────
+  void _regenerateInstalmentRows() {
+    for (final r in _instalmentSchedule) r.dispose();
+    _instalmentSchedule = [];
+    if (_instalmentMonths < 2) return;
+    final total = _grandTotal;
+    final perMonth = total / _instalmentMonths;
+    for (int i = 0; i < _instalmentMonths; i++) {
+      final due = _invoiceDate.copyWith(month: _invoiceDate.month + i + 1);
+      final row = _InstalmentRow(dueDate: due);
+      // Round last instalment to absorb rounding diff
+      final amount = (i == _instalmentMonths - 1)
+          ? total - (perMonth * (_instalmentMonths - 1))
+          : perMonth;
+      row.amountController.text = amount.toStringAsFixed(2);
+      _instalmentSchedule.add(row);
+    }
+  }
+
+  List<PaymentSchedule> _buildPaymentSchedules() {
+    return _instalmentSchedule.map((row) {
+      final amount = double.tryParse(row.amountController.text) ?? 0.0;
+      return PaymentSchedule(
+        id: 0,
+        invoiceId: 0,
+        dueDate: row.dueDate,
+        dueAmount: amount,
+        paidAmount: 0,
+        balanceAmount: amount,
+        status: 'pending',
+      );
+    }).toList();
+  }
+
+
   Future<void> _showAddCustomerDialog() async {
     final nameCtrl = TextEditingController();
     final companyCtrl = TextEditingController();
@@ -337,9 +387,15 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                   id: 0,
                   customerType: 'Business',
                   displayName: nameCtrl.text.trim(),
-                  companyName: companyCtrl.text.trim().isEmpty ? null : companyCtrl.text.trim(),
-                  email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
+                  companyName: companyCtrl.text.trim().isEmpty
+                      ? null
+                      : companyCtrl.text.trim(),
+                  email: emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim().isEmpty
+                      ? null
+                      : phoneCtrl.text.trim(),
                   currency: 'INR',
                   openingBalance: 0.0,
                   enablePortal: false,
@@ -434,9 +490,15 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                     .read(quoteServiceProvider)
                     .createSalesperson(
                       nameCtrl.text.trim(),
-                      email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                      phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
-                      employeeId: empIdCtrl.text.trim().isEmpty ? null : empIdCtrl.text.trim(),
+                      email: emailCtrl.text.trim().isEmpty
+                          ? null
+                          : emailCtrl.text.trim(),
+                      phone: phoneCtrl.text.trim().isEmpty
+                          ? null
+                          : phoneCtrl.text.trim(),
+                      employeeId: empIdCtrl.text.trim().isEmpty
+                          ? null
+                          : empIdCtrl.text.trim(),
                     );
                 if (ctx.mounted) Navigator.pop(ctx, sp);
               } catch (e) {
@@ -505,7 +567,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                 return;
               }
               try {
-                final proj = await ref.read(quoteServiceProvider).createProject(
+                final proj = await ref
+                    .read(quoteServiceProvider)
+                    .createProject(
                       Project(
                         id: 0,
                         userId: 0,
@@ -515,7 +579,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                         billingType: 'Fixed Cost',
                         hourlyRate: 0,
                         status: 'Active',
-                        description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                        description: descCtrl.text.trim().isEmpty
+                            ? null
+                            : descCtrl.text.trim(),
                       ),
                     );
                 if (ctx.mounted) Navigator.pop(ctx, proj);
@@ -543,21 +609,26 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   }
 
   // ─── Save ──────────────────────────────────────────────────
-  Future<void> _saveInvoice(String status, {bool sendImmediately = false}) async {
+  Future<void> _saveInvoice(
+    String status, {
+    bool sendImmediately = false,
+  }) async {
     if (!_formKey.currentState!.validate()) return;
     if (_customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please select a customer'),
-            backgroundColor: AppColors.warning),
+          content: Text('Please select a customer'),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
     if (_lineItems.isEmpty || _lineItems.any((i) => i.itemId == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please select a valid item for all line items.'),
-            backgroundColor: AppColors.warning),
+          content: Text('Please select a valid item for all line items.'),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
@@ -623,6 +694,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       placeOfSupply: _placeOfSupply,
       customerGstin: _customerGstin,
       gstType: _gstType,
+      paymentSchedules: _enableInstalments ? _buildPaymentSchedules() : [],
     );
 
     try {
@@ -635,8 +707,16 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           m.remove('invoice_id');
           return m;
         }).toList();
+        // Include schedule on edit if enabled
+        if (_enableInstalments) {
+          updates['payment_schedules'] = _buildPaymentSchedules()
+              .map((s) => s.toCreateJson())
+              .toList();
+        }
 
-        await ref.read(invoicesProvider.notifier).updateInvoice(widget.invoiceId!, updates);
+        await ref
+            .read(invoicesProvider.notifier)
+            .updateInvoice(widget.invoiceId!, updates);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Invoice updated successfully')),
@@ -644,23 +724,45 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           context.pop();
         }
       } else {
-        final created = await ref.read(invoicesProvider.notifier).createInvoice(invoice, items);
+        final created = await ref
+            .read(invoicesProvider.notifier)
+            .createInvoice(invoice, items);
+
+        // Submit payment schedules if enabled (backend accepts them in createInvoice body)
+        // They are already embedded in invoice.paymentSchedules → toJson includes them via the
+        // createInvoice call using payment_schedules key.
+        if (_enableInstalments && _instalmentSchedule.isNotEmpty) {
+          await ref
+              .read(invoiceServiceProvider)
+              .setPaymentSchedules(created.id, _buildPaymentSchedules());
+        }
 
         if (sendImmediately) {
           final customersState = ref.read(customersProvider);
-          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final customer = customersState.value
+              ?.where((c) => c.id == _customerId)
+              .firstOrNull;
           final toEmail = customer?.email ?? '';
-          await ref.read(invoicesProvider.notifier).sendEmail(
-            created.id,
-            to: toEmail.isEmpty ? 'customer@example.com' : toEmail,
-            subject: 'Tax Invoice ${created.invoiceNumber}',
-            body: 'Dear Customer,\n\nPlease find your tax invoice attached.\n\nInvoice Number: ${created.invoiceNumber}\nTotal: ₹${created.totalAmount.toStringAsFixed(2)}\nBalance Due: ₹${created.balanceDue.toStringAsFixed(2)}\n\nThank you for your business.',
-          );
+          await ref
+              .read(invoicesProvider.notifier)
+              .sendEmail(
+                created.id,
+                to: toEmail.isEmpty ? 'customer@example.com' : toEmail,
+                subject: 'Tax Invoice ${created.invoiceNumber}',
+                body:
+                    'Dear Customer,\n\nPlease find your tax invoice attached.\n\nInvoice Number: ${created.invoiceNumber}\nTotal: ₹${created.totalAmount.toStringAsFixed(2)}\nBalance Due: ₹${created.balanceDue.toStringAsFixed(2)}\n\nThank you for your business.',
+              );
         }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(sendImmediately ? 'Invoice saved & sent successfully' : 'Invoice created successfully')),
+            SnackBar(
+              content: Text(
+                sendImmediately
+                    ? 'Invoice saved & sent successfully'
+                    : 'Invoice created successfully',
+              ),
+            ),
           );
           context.pop();
         }
@@ -669,8 +771,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to save invoice: $e'),
-              backgroundColor: AppColors.danger),
+            content: Text('Failed to save invoice: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -687,10 +790,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       _isInit = true;
     }
 
-    final isLocked = ref.watch(transactionLockValidatorProvider).isLocked(
-          module: TransactionLockModule.invoices,
-          date: _invoiceDate,
-        );
+    final isLocked = ref
+        .watch(transactionLockValidatorProvider)
+        .isLocked(module: TransactionLockModule.invoices, date: _invoiceDate);
 
     final customersState = ref.watch(customersProvider);
     final itemsState = ref.watch(itemsProvider);
@@ -705,16 +807,23 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           if (!_isLoading) ...[
             if (!_isEditMode)
               TextButton.icon(
-                onPressed: isLocked ? null : () => _saveInvoice('draft', sendImmediately: true),
-                icon: const Icon(Icons.send_and_archive),
+                onPressed: isLocked
+                    ? null
+                    : () => _saveInvoice('draft', sendImmediately: true),
+                icon: const Icon(AppIcons.send_and_archive),
                 label: const Text('Save & Send'),
               ),
             TextButton.icon(
-              onPressed: isLocked ? null : () => _saveInvoice(_isEditMode ? 'sent' : 'draft', sendImmediately: false),
-              icon: const Icon(Icons.check),
+              onPressed: isLocked
+                  ? null
+                  : () => _saveInvoice(
+                      _isEditMode ? 'sent' : 'draft',
+                      sendImmediately: false,
+                    ),
+              icon: const Icon(AppIcons.check),
               label: const Text('Save'),
             ),
-          ]
+          ],
         ],
       ),
       body: _isLoading
@@ -735,7 +844,10 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Customer Info', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Customer Info',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const Divider(height: AppSpacing.m),
                           customersState.when(
                             loading: () => const Text('Loading customers...'),
@@ -746,24 +858,38 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                                   Expanded(
                                     child: SearchableAutocompleteField<Customer>(
                                       labelText: 'Customer *',
-                                      initialValue: list.where((c) => c.id == _customerId).firstOrNull,
+                                      initialValue: list
+                                          .where((c) => c.id == _customerId)
+                                          .firstOrNull,
                                       items: list,
                                       itemLabelBuilder: (c) {
-                                        final name = c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}'.trim();
-                                        return name.isNotEmpty ? name : (c.email ?? '');
+                                        final name =
+                                            c.displayName ??
+                                            '${c.firstName ?? ""} ${c.lastName ?? ""}'
+                                                .trim();
+                                        return name.isNotEmpty
+                                            ? name
+                                            : (c.email ?? '');
                                       },
                                       searchMatcher: (c, query) {
-                                        final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
-                                        final email = (c.email ?? '').toLowerCase();
+                                        final name =
+                                            (c.displayName ??
+                                                    '${c.firstName ?? ""} ${c.lastName ?? ""}')
+                                                .toLowerCase();
+                                        final email = (c.email ?? '')
+                                            .toLowerCase();
                                         final q = query.toLowerCase();
-                                        return name.contains(q) || email.contains(q);
+                                        return name.contains(q) ||
+                                            email.contains(q);
                                       },
                                       onChanged: (val) {
                                         setState(() {
                                           _customerId = val?.id;
                                         });
                                       },
-                                      validator: (val) => val == null ? 'Customer is required' : null,
+                                      validator: (val) => val == null
+                                          ? 'Customer is required'
+                                          : null,
                                       onAddNew: _showAddCustomerDialog,
                                       addNewLabel: 'Add New Customer',
                                     ),
@@ -771,7 +897,10 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                                   const SizedBox(width: AppSpacing.s),
                                   IconButton(
                                     onPressed: _showAddCustomerDialog,
-                                    icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                                    icon: const Icon(
+                                      AppIcons.person_add,
+                                      color: AppColors.primaryBlue,
+                                    ),
                                     tooltip: 'Add Customer',
                                   ),
                                 ],
@@ -791,13 +920,18 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Invoice Meta Details', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Invoice Meta Details',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const Divider(height: AppSpacing.m),
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: const Text('Invoice Date'),
-                            subtitle: Text(DateFormat('dd MMM yyyy').format(_invoiceDate)),
-                            trailing: const Icon(Icons.calendar_today),
+                            subtitle: Text(
+                              DateFormat('dd MMM yyyy').format(_invoiceDate),
+                            ),
+                            trailing: const Icon(AppIcons.calendar_today),
                             onTap: () async {
                               final picked = await showDatePicker(
                                 context: context,
@@ -813,10 +947,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: const Text('Due Date'),
-                            subtitle: Text(_dueDate == null
-                                ? 'Due on receipt (No specific date)'
-                                : DateFormat('dd MMM yyyy').format(_dueDate!)),
-                            trailing: const Icon(Icons.calendar_today),
+                            subtitle: Text(
+                              _dueDate == null
+                                  ? 'Due on receipt (No specific date)'
+                                  : DateFormat('dd MMM yyyy').format(_dueDate!),
+                            ),
+                            trailing: const Icon(AppIcons.calendar_today),
                             onTap: () async {
                               final picked = await showDatePicker(
                                 context: context,
@@ -831,28 +967,40 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           ),
                           salespersonsState.when(
                             loading: () => const Text('Loading salespeople...'),
-                            error: (err, stack) => const Text('Error loading salespeople'),
+                            error: (err, stack) =>
+                                const Text('Error loading salespeople'),
                             data: (list) {
                               return Row(
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<int>(
-                                      decoration: const InputDecoration(labelText: 'Salesperson'),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Salesperson',
+                                      ),
                                       initialValue: _salespersonId,
                                       items: [
-                                        const DropdownMenuItem<int>(value: null, child: Text('None')),
-                                        ...list.map((sp) => DropdownMenuItem<int>(
-                                              value: sp.id,
-                                              child: Text(sp.name),
-                                            ))
+                                        const DropdownMenuItem<int>(
+                                          value: null,
+                                          child: Text('None'),
+                                        ),
+                                        ...list.map(
+                                          (sp) => DropdownMenuItem<int>(
+                                            value: sp.id,
+                                            child: Text(sp.name),
+                                          ),
+                                        ),
                                       ],
-                                      onChanged: (val) => setState(() => _salespersonId = val),
+                                      onChanged: (val) =>
+                                          setState(() => _salespersonId = val),
                                     ),
                                   ),
                                   const SizedBox(width: AppSpacing.s),
                                   IconButton(
                                     onPressed: _showAddSalespersonDialog,
-                                    icon: const Icon(Icons.person_add_alt_1, color: AppColors.primaryBlue),
+                                    icon: const Icon(
+                                      AppIcons.person_add_alt_1,
+                                      color: AppColors.primaryBlue,
+                                    ),
                                     tooltip: 'Add Salesperson',
                                   ),
                                 ],
@@ -862,28 +1010,40 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           const SizedBox(height: AppSpacing.m),
                           projectsState.when(
                             loading: () => const Text('Loading projects...'),
-                            error: (err, stack) => const Text('Error loading projects'),
+                            error: (err, stack) =>
+                                const Text('Error loading projects'),
                             data: (list) {
                               return Row(
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<int>(
-                                      decoration: const InputDecoration(labelText: 'Project'),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Project',
+                                      ),
                                       initialValue: _projectId,
                                       items: [
-                                        const DropdownMenuItem<int>(value: null, child: Text('None')),
-                                        ...list.map((p) => DropdownMenuItem<int>(
-                                              value: p.id,
-                                              child: Text(p.projectName),
-                                            ))
+                                        const DropdownMenuItem<int>(
+                                          value: null,
+                                          child: Text('None'),
+                                        ),
+                                        ...list.map(
+                                          (p) => DropdownMenuItem<int>(
+                                            value: p.id,
+                                            child: Text(p.projectName),
+                                          ),
+                                        ),
                                       ],
-                                      onChanged: (val) => setState(() => _projectId = val),
+                                      onChanged: (val) =>
+                                          setState(() => _projectId = val),
                                     ),
                                   ),
                                   const SizedBox(width: AppSpacing.s),
                                   IconButton(
                                     onPressed: _showAddProjectDialog,
-                                    icon: const Icon(Icons.add_task, color: AppColors.primaryBlue),
+                                    icon: const Icon(
+                                      AppIcons.add_task,
+                                      color: AppColors.primaryBlue,
+                                    ),
                                     tooltip: 'Add Project',
                                   ),
                                 ],
@@ -903,11 +1063,18 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('GST & Place of Supply', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            'GST & Place of Supply',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const Divider(height: AppSpacing.m),
                           TextField(
-                            decoration: const InputDecoration(labelText: 'Supplier State'),
-                            controller: TextEditingController(text: _supplierState),
+                            decoration: const InputDecoration(
+                              labelText: 'Supplier State',
+                            ),
+                            controller: TextEditingController(
+                              text: _supplierState,
+                            ),
                             onChanged: (val) {
                               _supplierState = val;
                               _updateGstType();
@@ -915,8 +1082,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           ),
                           const SizedBox(height: AppSpacing.m),
                           TextField(
-                            decoration: const InputDecoration(labelText: 'Place of Supply'),
-                            controller: TextEditingController(text: _placeOfSupply),
+                            decoration: const InputDecoration(
+                              labelText: 'Place of Supply',
+                            ),
+                            controller: TextEditingController(
+                              text: _placeOfSupply,
+                            ),
                             onChanged: (val) {
                               _placeOfSupply = val;
                               _updateGstType();
@@ -924,8 +1095,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           ),
                           const SizedBox(height: AppSpacing.m),
                           TextField(
-                            decoration: const InputDecoration(labelText: 'Customer GSTIN'),
-                            controller: TextEditingController(text: _customerGstin),
+                            decoration: const InputDecoration(
+                              labelText: 'Customer GSTIN',
+                            ),
+                            controller: TextEditingController(
+                              text: _customerGstin,
+                            ),
                             onChanged: (val) => _customerGstin = val,
                           ),
                           const SizedBox(height: AppSpacing.m),
@@ -934,8 +1109,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                             children: [
                               const Text('GST Type:'),
                               Text(
-                                _gstType == 'intra_state' ? 'Intra-State (CGST + SGST)' : 'Inter-State (IGST)',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                _gstType == 'intra_state'
+                                    ? 'Intra-State (CGST + SGST)'
+                                    : 'Inter-State (IGST)',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -952,12 +1131,18 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          OverflowBar(
+                            alignment: MainAxisAlignment.spaceBetween,
+                            overflowAlignment: OverflowBarAlignment.end,
+                            spacing: AppSpacing.s,
+                            overflowSpacing: AppSpacing.s,
                             children: [
-                              const Text('Line Items', style: TextStyle(fontWeight: FontWeight.bold)),
+                              const Text(
+                                'Line Items',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
                               TextButton.icon(
-                                icon: const Icon(Icons.add),
+                                icon: const Icon(AppIcons.add),
                                 label: const Text('Add Item'),
                                 onPressed: () {
                                   setState(() {
@@ -969,17 +1154,153 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           ),
                           const Divider(height: AppSpacing.m),
                           itemsState.when(
-                            loading: () => const Center(child: CircularProgressIndicator()),
-                            error: (err, stack) => Text('Error loading items: $err'),
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            error: (err, stack) =>
+                                Text('Error loading items: $err'),
                             data: (itemList) {
                               return Column(
-                                children: List.generate(_lineItems.length, (index) {
+                                children: List.generate(_lineItems.length, (
+                                  index,
+                                ) {
                                   final li = _lineItems[index];
                                   return _buildLineItemRow(index, li, itemList);
                                 }),
                               );
                             },
                           ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+
+                  // ─── Instalment Schedule Card ───────────────────
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.m),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Payment Schedule',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Switch(
+                                value: _enableInstalments,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _enableInstalments = val;
+                                    if (val) _regenerateInstalmentRows();
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          if (_enableInstalments) ...[
+                            const Divider(height: AppSpacing.m),
+                            Row(
+                              children: [
+                                const Text('Number of Instalments:'),
+                                const SizedBox(width: AppSpacing.m),
+                                Expanded(
+                                  child: Slider(
+                                    value: _instalmentMonths.toDouble(),
+                                    min: 2,
+                                    max: 24,
+                                    divisions: 22,
+                                    label: '$_instalmentMonths',
+                                    onChanged: (v) {
+                                      setState(() {
+                                        _instalmentMonths = v.round();
+                                        _regenerateInstalmentRows();
+                                      });
+                                    },
+                                  ),
+                                ),
+                                Text(
+                                  '$_instalmentMonths',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.s),
+                            if (_instalmentSchedule.isEmpty)
+                              const Text(
+                                'Set the grand total first, then enable instalments.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondaryLight,
+                                  fontSize: 12,
+                                ),
+                              )
+                            else
+                              Column(
+                                children: _instalmentSchedule
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final idx = entry.key;
+                                  final row = entry.value;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: AppSpacing.s),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          '${idx + 1}.',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(width: AppSpacing.s),
+                                        Expanded(
+                                          flex: 3,
+                                          child: InkWell(
+                                            onTap: () async {
+                                              final picked = await showDatePicker(
+                                                context: context,
+                                                initialDate: row.dueDate ?? DateTime.now(),
+                                                firstDate: DateTime(2000),
+                                                lastDate: DateTime(2100),
+                                              );
+                                              if (picked != null) {
+                                                setState(() => row.dueDate = picked);
+                                              }
+                                            },
+                                            child: InputDecorator(
+                                              decoration: const InputDecoration(
+                                                labelText: 'Due Date',
+                                                suffixIcon: Icon(AppIcons.calendar_today, size: 16),
+                                              ),
+                                              child: Text(
+                                                row.dueDate != null
+                                                    ? DateFormat('dd MMM yyyy').format(row.dueDate!)
+                                                    : 'Pick date',
+                                                style: const TextStyle(fontSize: 13),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: AppSpacing.s),
+                                        Expanded(
+                                          flex: 2,
+                                          child: TextFormField(
+                                            controller: row.amountController,
+                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                            decoration: const InputDecoration(
+                                              labelText: 'Amount ₹',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                          ],
                         ],
                       ),
                     ),
@@ -993,23 +1314,43 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Summary', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Summary',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const Divider(height: AppSpacing.m),
-                          _summaryRow('Subtotal', '₹${_subtotal.toStringAsFixed(2)}'),
-                          _summaryRow('Discount', '₹${_totalDiscount.toStringAsFixed(2)}'),
-                          _summaryRow('Taxes', '₹${_totalTax.toStringAsFixed(2)}'),
+                          _summaryRow(
+                            'Subtotal',
+                            '₹${_subtotal.toStringAsFixed(2)}',
+                          ),
+                          _summaryRow(
+                            'Discount',
+                            '₹${_totalDiscount.toStringAsFixed(2)}',
+                          ),
+                          _summaryRow(
+                            'Taxes',
+                            '₹${_totalTax.toStringAsFixed(2)}',
+                          ),
                           const Divider(),
-                          _summaryRow('Grand Total', '₹${_grandTotal.toStringAsFixed(2)}', isBold: true),
+                          _summaryRow(
+                            'Grand Total',
+                            '₹${_grandTotal.toStringAsFixed(2)}',
+                            isBold: true,
+                          ),
                           const SizedBox(height: AppSpacing.m),
                           TextField(
                             controller: _notesController,
-                            decoration: const InputDecoration(labelText: 'Customer Notes'),
+                            decoration: const InputDecoration(
+                              labelText: 'Customer Notes',
+                            ),
                             maxLines: 2,
                           ),
                           const SizedBox(height: AppSpacing.m),
                           TextField(
                             controller: _termsController,
-                            decoration: const InputDecoration(labelText: 'Terms & Conditions'),
+                            decoration: const InputDecoration(
+                              labelText: 'Terms & Conditions',
+                            ),
                             maxLines: 2,
                           ),
                         ],
@@ -1029,119 +1370,274 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Item Picker + Qty ──────────────────────────────────
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              flex: 3,
-              child: SearchableAutocompleteField<Item>(
-                key: ValueKey('item_picker_${li.itemId ?? 'new'}_$index'),
-                labelText: 'Item',
-                initialValue:
-                    itemList.where((i) => i.id == li.itemId).firstOrNull,
-                items: itemList,
-                itemLabelBuilder: (i) => i.name,
-                searchMatcher: (i, query) {
-                  return i.name.toLowerCase().contains(query.toLowerCase()) ||
-                      (i.hsnCode ?? '').toLowerCase().contains(query.toLowerCase());
-                },
-                onChanged: (item) {
-                  setState(() {
-                    if (item != null) {
-                      li.itemId = item.id;
-                      li.itemName = item.name;
-                      li.unitPrice = item.sellingPrice;
-                      li.taxRate = item.taxRate;
-                      li.hsnCode = item.hsnCode ?? '';
-                      li.unit = item.unit ?? '';
-                      li.description = item.description ?? '';
-                      // Sync rate/discount controllers with auto-filled values
-                      li.rateController.text =
-                          item.sellingPrice.toStringAsFixed(2);
-                      li.discountController.text =
-                          li.discount.toStringAsFixed(2);
-                    } else {
-                      li.itemId = null;
-                      li.itemName = '';
-                      li.unitPrice = 0.0;
-                      li.taxRate = 0.0;
-                      li.hsnCode = '';
-                      li.unit = '';
-                      li.description = '';
-                      li.rateController.text = '0.0';
-                      li.discountController.text = '0.0';
-                    }
-                  });
-                },
-                validator: (val) =>
-                    val == null ? 'Item is required' : null,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s),
-            Expanded(
-              flex: 1,
-              child: TextFormField(
-                controller: li.qtyController,
-                decoration: const InputDecoration(labelText: 'Qty'),
-                keyboardType: TextInputType.number,
-                onChanged: (val) {
-                  li.quantity = double.tryParse(val) ?? 1.0;
-                  setState(() {});
-                },
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete, color: AppColors.danger),
-              onPressed: () {
-                setState(() {
-                  final removed = _lineItems.removeAt(index);
-                  removed.dispose();
-                });
-              },
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 430;
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SearchableAutocompleteField<Item>(
+                    key: ValueKey('item_picker_${li.itemId ?? 'new'}_$index'),
+                    labelText: 'Item',
+                    initialValue: itemList
+                        .where((i) => i.id == li.itemId)
+                        .firstOrNull,
+                    items: itemList,
+                    itemLabelBuilder: (i) => i.name,
+                    searchMatcher: (i, query) {
+                      return i.name.toLowerCase().contains(
+                            query.toLowerCase(),
+                          ) ||
+                          (i.hsnCode ?? '').toLowerCase().contains(
+                            query.toLowerCase(),
+                          );
+                    },
+                    onChanged: (item) {
+                      setState(() {
+                        if (item != null) {
+                          li.itemId = item.id;
+                          li.itemName = item.name;
+                          li.unitPrice = item.sellingPrice;
+                          li.taxRate = item.taxRate;
+                          li.hsnCode = item.hsnCode ?? '';
+                          li.unit = item.unit ?? '';
+                          li.description = item.description ?? '';
+                          li.rateController.text = item.sellingPrice
+                              .toStringAsFixed(2);
+                          li.discountController.text = li.discount
+                              .toStringAsFixed(2);
+                        } else {
+                          li.itemId = null;
+                          li.itemName = '';
+                          li.unitPrice = 0.0;
+                          li.taxRate = 0.0;
+                          li.hsnCode = '';
+                          li.unit = '';
+                          li.description = '';
+                          li.rateController.text = '0.0';
+                          li.discountController.text = '0.0';
+                        }
+                      });
+                    },
+                    validator: (val) => val == null ? 'Item is required' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: li.qtyController,
+                          decoration: const InputDecoration(labelText: 'Qty'),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) {
+                            li.quantity = double.tryParse(val) ?? 1.0;
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      IconButton(
+                        icon: const Icon(
+                          AppIcons.delete,
+                          color: AppColors.danger,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            final removed = _lineItems.removeAt(index);
+                            removed.dispose();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: SearchableAutocompleteField<Item>(
+                    key: ValueKey('item_picker_${li.itemId ?? 'new'}_$index'),
+                    labelText: 'Item',
+                    initialValue: itemList
+                        .where((i) => i.id == li.itemId)
+                        .firstOrNull,
+                    items: itemList,
+                    itemLabelBuilder: (i) => i.name,
+                    searchMatcher: (i, query) {
+                      return i.name.toLowerCase().contains(
+                            query.toLowerCase(),
+                          ) ||
+                          (i.hsnCode ?? '').toLowerCase().contains(
+                            query.toLowerCase(),
+                          );
+                    },
+                    onChanged: (item) {
+                      setState(() {
+                        if (item != null) {
+                          li.itemId = item.id;
+                          li.itemName = item.name;
+                          li.unitPrice = item.sellingPrice;
+                          li.taxRate = item.taxRate;
+                          li.hsnCode = item.hsnCode ?? '';
+                          li.unit = item.unit ?? '';
+                          li.description = item.description ?? '';
+                          li.rateController.text = item.sellingPrice
+                              .toStringAsFixed(2);
+                          li.discountController.text = li.discount
+                              .toStringAsFixed(2);
+                        } else {
+                          li.itemId = null;
+                          li.itemName = '';
+                          li.unitPrice = 0.0;
+                          li.taxRate = 0.0;
+                          li.hsnCode = '';
+                          li.unit = '';
+                          li.description = '';
+                          li.rateController.text = '0.0';
+                          li.discountController.text = '0.0';
+                        }
+                      });
+                    },
+                    validator: (val) => val == null ? 'Item is required' : null,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    controller: li.qtyController,
+                    decoration: const InputDecoration(labelText: 'Qty'),
+                    keyboardType: TextInputType.number,
+                    onChanged: (val) {
+                      li.quantity = double.tryParse(val) ?? 1.0;
+                      setState(() {});
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(AppIcons.delete, color: AppColors.danger),
+                  onPressed: () {
+                    setState(() {
+                      final removed = _lineItems.removeAt(index);
+                      removed.dispose();
+                    });
+                  },
+                ),
+              ],
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.s),
-        // ── Rate + Discount ────────────────────────────────────
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: li.rateController,
-                decoration: const InputDecoration(labelText: 'Rate (₹)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (val) {
-                  li.unitPrice = double.tryParse(val) ?? 0.0;
-                  setState(() {});
-                },
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s),
-            Expanded(
-              child: TextFormField(
-                controller: li.discountController,
-                decoration: const InputDecoration(labelText: 'Discount'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                onChanged: (val) {
-                  li.discount = double.tryParse(val) ?? 0.0;
-                  setState(() {});
-                },
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s),
-            DropdownButton<String>(
-              value: li.discountType,
-              items: const [
-                DropdownMenuItem(value: 'flat', child: Text('₹')),
-                DropdownMenuItem(value: 'percent', child: Text('%')),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 430;
+            if (compact) {
+              return Column(
+                children: [
+                  TextFormField(
+                    controller: li.rateController,
+                    decoration: const InputDecoration(labelText: 'Rate (₹)'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) {
+                      li.unitPrice = double.tryParse(val) ?? 0.0;
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: li.discountController,
+                          decoration: const InputDecoration(
+                            labelText: 'Discount',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          onChanged: (val) {
+                            li.discount = double.tryParse(val) ?? 0.0;
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      SizedBox(
+                        width: 84,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: li.discountType,
+                          decoration: const InputDecoration(labelText: 'Type'),
+                          items: const [
+                            DropdownMenuItem(value: 'flat', child: Text('₹')),
+                            DropdownMenuItem(
+                              value: 'percent',
+                              child: Text('%'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null)
+                              setState(() => li.discountType = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: li.rateController,
+                    decoration: const InputDecoration(labelText: 'Rate (₹)'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) {
+                      li.unitPrice = double.tryParse(val) ?? 0.0;
+                      setState(() {});
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                Expanded(
+                  child: TextFormField(
+                    controller: li.discountController,
+                    decoration: const InputDecoration(labelText: 'Discount'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) {
+                      li.discount = double.tryParse(val) ?? 0.0;
+                      setState(() {});
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s),
+                SizedBox(
+                  width: 84,
+                  child: DropdownButtonFormField<String>(
+                    initialValue: li.discountType,
+                    decoration: const InputDecoration(labelText: 'Type'),
+                    items: const [
+                      DropdownMenuItem(value: 'flat', child: Text('₹')),
+                      DropdownMenuItem(value: 'percent', child: Text('%')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => li.discountType = val);
+                    },
+                  ),
+                ),
               ],
-              onChanged: (val) {
-                if (val != null) setState(() => li.discountType = val);
-              },
-            ),
-          ],
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.s),
         // ── Tax + Line total ───────────────────────────────────
@@ -1151,14 +1647,17 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             Text(
               'Tax: ${li.taxRate}%',
               style: const TextStyle(
-                  fontSize: 12, color: AppColors.textSecondaryLight),
+                fontSize: 12,
+                color: AppColors.textSecondaryLight,
+              ),
             ),
             Text(
               'Line Total: ₹${li.getLineTotal(_gstType).toStringAsFixed(2)}',
               style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondaryLight),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondaryLight,
+              ),
             ),
           ],
         ),
@@ -1173,10 +1672,30 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text(val, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          Text(
+            val,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+/// Lightweight mutable helper for a single instalment row in the form.
+class _InstalmentRow {
+  DateTime? dueDate;
+  final TextEditingController amountController = TextEditingController();
+
+  _InstalmentRow({this.dueDate});
+
+  void dispose() => amountController.dispose();
 }

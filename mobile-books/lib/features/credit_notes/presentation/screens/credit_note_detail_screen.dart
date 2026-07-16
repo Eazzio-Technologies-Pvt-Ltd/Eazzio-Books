@@ -7,6 +7,7 @@ import 'package:mobile_books/features/credit_notes/presentation/providers/credit
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/features/invoices/presentation/providers/invoice_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class CreditNoteDetailScreen extends ConsumerStatefulWidget {
   final int creditNoteId;
@@ -287,7 +288,7 @@ class _CreditNoteDetailScreenState extends ConsumerState<CreditNoteDetailScreen>
         title: const Text('Credit Note Details'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(AppIcons.picture_as_pdf_outlined),
             tooltip: 'Export PDF',
             onPressed: () {
               final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
@@ -344,20 +345,20 @@ class _CreditNoteDetailScreenState extends ConsumerState<CreditNoteDetailScreen>
                           children: [
                             if (canModify) ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.edit),
+                                icon: const Icon(AppIcons.edit),
                                 label: const Text('Edit'),
                                 onPressed: () => context.push('/credit-notes/${cn.id}/edit'),
                               ),
                               const SizedBox(width: AppSpacing.s),
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.cancel),
+                                icon: const Icon(AppIcons.cancel),
                                 label: const Text('Cancel CN'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.textSecondaryLight),
                                 onPressed: _cancelCreditNote,
                               ),
                               const SizedBox(width: AppSpacing.s),
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.delete),
+                                icon: const Icon(AppIcons.delete),
                                 label: const Text('Delete'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
                                 onPressed: _deleteCreditNote,
@@ -366,7 +367,7 @@ class _CreditNoteDetailScreenState extends ConsumerState<CreditNoteDetailScreen>
                             ],
                             if (cn.status.toLowerCase() == 'draft' || cn.status.toLowerCase() == 'open') ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.mark_email_read_outlined),
+                                icon: const Icon(AppIcons.mark_email_read_outlined),
                                 label: const Text('Mark as Sent'),
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
                                 onPressed: () async {
@@ -399,7 +400,7 @@ class _CreditNoteDetailScreenState extends ConsumerState<CreditNoteDetailScreen>
                             ],
                             if (cn.remainingAmount > 0 && cn.status != 'Cancelled') ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.payment),
+                                icon: const Icon(AppIcons.payment),
                                 label: const Text('Apply to Invoice'),
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2F80ED)),
                                 onPressed: () => _showApplyCreditDialog(cn.customerId!, cn.remainingAmount),
@@ -407,7 +408,7 @@ class _CreditNoteDetailScreenState extends ConsumerState<CreditNoteDetailScreen>
                               const SizedBox(width: AppSpacing.s),
                             ],
                             ElevatedButton.icon(
-                              icon: const Icon(Icons.email),
+                              icon: const Icon(AppIcons.email),
                               label: const Text('Email PDF'),
                               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF475569)),
                               onPressed: () => _showEmailDialog(customerEmail, cn.creditNoteNumber),

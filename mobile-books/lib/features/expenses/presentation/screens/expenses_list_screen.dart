@@ -11,6 +11,7 @@ import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
 import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
 import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ExpensesListScreen extends ConsumerStatefulWidget {
   const ExpensesListScreen({super.key});
@@ -197,7 +198,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
             context.push('/expenses/new');
           }
         },
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -219,10 +220,10 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                     onChanged: (val) => ref.read(expenseSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search expenses...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(expenseSearchQueryProvider.notifier).state = '';
@@ -234,7 +235,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     if (val == 'sort') {
                       _showSortBottomSheet(context);
@@ -249,7 +250,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                       value: 'sort',
                       child: Row(
                         children: [
-                          Icon(Icons.sort, size: 18),
+                          Icon(AppIcons.sort, size: 18),
                           SizedBox(width: 8),
                           Text('Sort Expenses'),
                         ],
@@ -266,7 +267,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                         children: [
                           const Text('All'),
                           if (_statusFilter == 'all') const Spacer(),
-                          if (_statusFilter == 'all') const Icon(Icons.check, size: 16),
+                          if (_statusFilter == 'all') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -276,7 +277,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                         children: [
                           const Text('Billable'),
                           if (_statusFilter == 'billable') const Spacer(),
-                          if (_statusFilter == 'billable') const Icon(Icons.check, size: 16),
+                          if (_statusFilter == 'billable') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -286,7 +287,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                         children: [
                           const Text('Non-Billable'),
                           if (_statusFilter == 'non-billable') const Spacer(),
-                          if (_statusFilter == 'non-billable') const Icon(Icons.check, size: 16),
+                          if (_statusFilter == 'non-billable') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -296,7 +297,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                         children: [
                           const Text('Reimbursed'),
                           if (_statusFilter == 'reimbursed') const Spacer(),
-                          if (_statusFilter == 'reimbursed') const Icon(Icons.check, size: 16),
+                          if (_statusFilter == 'reimbursed') const Icon(AppIcons.check, size: 16),
                         ],
                       ),
                     ),
@@ -322,7 +323,7 @@ class _ExpensesListScreenState extends ConsumerState<ExpensesListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.payment, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.payment, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No expenses found.',
@@ -432,7 +433,7 @@ class _ExpenseCard extends ConsumerWidget {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

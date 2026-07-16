@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class FeatureLockedScreen extends ConsumerWidget {
   final String featureName;
@@ -21,7 +22,7 @@ class FeatureLockedScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Access Denied'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(AppIcons.arrow_back),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -46,21 +47,21 @@ class FeatureLockedScreen extends ConsumerWidget {
                   gradient: LinearGradient(
                     colors: [
                       AppColors.primaryBlue,
-                      AppColors.primaryBlue.withOpacity(0.4),
+                      AppColors.primaryBlue.withValues(alpha: 0.4),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primaryBlue.withOpacity(0.3),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
                 child: const Icon(
-                  Icons.lock_outline_rounded,
+                  AppIcons.lock_outline_rounded,
                   size: 64,
                   color: Colors.white,
                 ),

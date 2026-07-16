@@ -6,12 +6,13 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/sales_orders/data/models/sales_order.dart';
 import 'package:mobile_books/features/sales_orders/data/models/sales_order_item.dart';
 import 'package:mobile_books/features/sales_orders/presentation/providers/sales_order_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
-  'draft':     _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',     Icons.edit_note),
-  'confirmed': _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'CONFIRMED', Icons.check_circle_outline),
-  'invoiced':  _StatusStyle(Color(0xFFECFDF5), Color(0xFF047857), 'INVOICED',  Icons.receipt_long),
-  'cancelled': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'CANCELLED', Icons.cancel_outlined),
+  'draft':     _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',     AppIcons.edit_note),
+  'confirmed': _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'CONFIRMED', AppIcons.check_circle_outline),
+  'invoiced':  _StatusStyle(Color(0xFFECFDF5), Color(0xFF047857), 'INVOICED',  AppIcons.receipt_long),
+  'cancelled': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'CANCELLED', AppIcons.cancel_outlined),
 };
 
 class _StatusStyle {
@@ -24,7 +25,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class SalesOrderDetailScreen extends ConsumerWidget {
@@ -175,7 +176,7 @@ class SalesOrderDetailScreen extends ConsumerWidget {
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(AppIcons.close),
                     onPressed: () => Navigator.pop(sheetContext),
                   ),
                 ],
@@ -186,7 +187,7 @@ class SalesOrderDetailScreen extends ConsumerWidget {
                 decoration: const InputDecoration(
                   labelText: 'To (Email Address)',
                   hintText: 'customer@example.com',
-                  prefixIcon: Icon(Icons.email_outlined),
+                  prefixIcon: Icon(AppIcons.email_outlined),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
@@ -195,7 +196,7 @@ class SalesOrderDetailScreen extends ConsumerWidget {
                 controller: subjectController,
                 decoration: const InputDecoration(
                   labelText: 'Subject',
-                  prefixIcon: Icon(Icons.subject),
+                  prefixIcon: Icon(AppIcons.subject),
                 ),
               ),
               const SizedBox(height: AppSpacing.m),
@@ -216,7 +217,7 @@ class SalesOrderDetailScreen extends ConsumerWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
                   ),
-                  icon: const Icon(Icons.send),
+                  icon: const Icon(AppIcons.send),
                   label: const Text('Send Email'),
                   onPressed: () async {
                     if (toController.text.trim().isEmpty) {
@@ -285,7 +286,7 @@ class SalesOrderDetailScreen extends ConsumerWidget {
               actions: [
                 if (order.status.toLowerCase() == 'draft')
                   IconButton(
-                    icon: const Icon(Icons.mark_email_read_outlined),
+                    icon: const Icon(AppIcons.mark_email_read_outlined),
                     tooltip: 'Mark as Sent',
                     onPressed: () async {
                       try {
@@ -305,22 +306,22 @@ class SalesOrderDetailScreen extends ConsumerWidget {
                     },
                   ),
                 IconButton(
-                  icon: const Icon(Icons.email_outlined),
+                  icon: const Icon(AppIcons.email_outlined),
                   tooltip: 'Send Sales Order via Email',
                   onPressed: () => _showSendEmailSheet(context, ref, order),
                 ),
                 if (canConvert)
                   IconButton(
-                    icon: const Icon(Icons.receipt_long_outlined),
+                    icon: const Icon(AppIcons.receipt_long_outlined),
                     tooltip: 'Convert to Invoice',
                     onPressed: () => _confirmConvertToInvoice(context, ref, order),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.edit),
+                  icon: const Icon(AppIcons.edit),
                   onPressed: () => context.push('/sales-orders/$salesOrderId/edit'),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: AppColors.danger),
+                  icon: const Icon(AppIcons.delete, color: AppColors.danger),
                   onPressed: () => _confirmDelete(context, ref),
                 ),
               ],

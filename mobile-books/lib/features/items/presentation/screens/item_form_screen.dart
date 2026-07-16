@@ -7,6 +7,7 @@ import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:mobile_books/features/items/data/services/item_service.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
 import 'package:mobile_books/features/documents/data/services/document_service.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ItemFormScreen extends ConsumerStatefulWidget {
   final int? itemId;
@@ -398,12 +399,12 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                               ButtonSegment(
                                 value: 'Goods',
                                 label: Text('Goods'),
-                                icon: Icon(Icons.inventory),
+                                icon: Icon(AppIcons.inventory),
                               ),
                               ButtonSegment(
                                 value: 'Service',
                                 label: Text('Service'),
-                                icon: Icon(Icons.build_circle),
+                                icon: Icon(AppIcons.build_circle),
                               ),
                             ],
                             selected: {_itemType},
@@ -441,7 +442,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(Icons.image, color: AppColors.primaryBlue),
+                                      const Icon(AppIcons.image, color: AppColors.primaryBlue),
                                       const SizedBox(width: AppSpacing.s),
                                       Expanded(
                                         child: Text(
@@ -452,7 +453,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                                         ),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.clear, size: 18),
+                                        icon: const Icon(AppIcons.clear, size: 18),
                                         onPressed: () {
                                           setState(() {
                                             _imageUrl = null;
@@ -466,7 +467,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                             : const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.cloud_upload_outlined, size: 32, color: Colors.grey),
+                                  Icon(AppIcons.cloud_upload_outlined, size: 32, color: Colors.grey),
                                   SizedBox(height: 4),
                                   Text(
                                     'Drag image(s) here or Browse images',
@@ -589,7 +590,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                                   ),
                                   const SizedBox(width: AppSpacing.s),
                                   IconButton(
-                                    icon: const Icon(Icons.add, color: AppColors.primaryBlue),
+                                    icon: const Icon(AppIcons.add, color: AppColors.primaryBlue),
                                     onPressed: _showAddSalesAccountDialog,
                                     tooltip: 'Add Sales Account',
                                   ),
@@ -670,7 +671,7 @@ class _ItemFormScreenState extends ConsumerState<ItemFormScreen> {
                                   ),
                                   const SizedBox(width: AppSpacing.s),
                                   IconButton(
-                                    icon: const Icon(Icons.add, color: AppColors.primaryBlue),
+                                    icon: const Icon(AppIcons.add, color: AppColors.primaryBlue),
                                     onPressed: _showAddPurchaseAccountDialog,
                                     tooltip: 'Add Purchase Account',
                                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 enum AppButtonVariant { primary, secondary, ghost }
 
@@ -84,7 +85,7 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
         shadow = isEnabled ? AppShadows.button : null;
         break;
       case AppButtonVariant.secondary:
-        bg = AppColors.primary.withOpacity(0.10);
+        bg = AppColors.primary.withValues(alpha: 0.10);
         borderCol = AppColors.primary;
         textCol = AppColors.primary;
         shadow = null;
@@ -123,7 +124,7 @@ class _AppButtonState extends State<AppButton> with SingleTickerProviderStateMix
   Widget _buildChild(Color textColor) {
     if (widget.isSuccess) {
       return const Icon(
-        Icons.check_circle_outline,
+        AppIcons.check_circle_outline,
         color: Colors.white,
         size: 24,
       );

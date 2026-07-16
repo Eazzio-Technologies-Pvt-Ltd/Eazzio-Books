@@ -9,14 +9,12 @@ import 'package:mobile_books/features/customers/data/models/customer_contact.dar
 import 'package:mobile_books/features/customers/data/services/customer_service.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/widgets/common/unsaved_changes_dialog.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class CustomerFormScreen extends ConsumerStatefulWidget {
   final int? customerId;
 
-  const CustomerFormScreen({
-    super.key,
-    this.customerId,
-  });
+  const CustomerFormScreen({super.key, this.customerId});
 
   @override
   ConsumerState<CustomerFormScreen> createState() => _CustomerFormScreenState();
@@ -179,20 +177,37 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
   }
 
   void _setupBillingListeners() {
-    void copyIfChecked(TextEditingController source, TextEditingController dest) {
+    void copyIfChecked(
+      TextEditingController source,
+      TextEditingController dest,
+    ) {
       if (_copyBilling) {
         dest.text = source.text;
       }
     }
 
-    _billingAttention.addListener(() => copyIfChecked(_billingAttention, _shippingAttention));
-    _billingCountry.addListener(() => copyIfChecked(_billingCountry, _shippingCountry));
-    _billingAddressLine1.addListener(() => copyIfChecked(_billingAddressLine1, _shippingAddressLine1));
-    _billingAddressLine2.addListener(() => copyIfChecked(_billingAddressLine2, _shippingAddressLine2));
+    _billingAttention.addListener(
+      () => copyIfChecked(_billingAttention, _shippingAttention),
+    );
+    _billingCountry.addListener(
+      () => copyIfChecked(_billingCountry, _shippingCountry),
+    );
+    _billingAddressLine1.addListener(
+      () => copyIfChecked(_billingAddressLine1, _shippingAddressLine1),
+    );
+    _billingAddressLine2.addListener(
+      () => copyIfChecked(_billingAddressLine2, _shippingAddressLine2),
+    );
     _billingCity.addListener(() => copyIfChecked(_billingCity, _shippingCity));
-    _billingState.addListener(() => copyIfChecked(_billingState, _shippingState));
-    _billingPinCode.addListener(() => copyIfChecked(_billingPinCode, _shippingPinCode));
-    _billingPhone.addListener(() => copyIfChecked(_billingPhone, _shippingPhone));
+    _billingState.addListener(
+      () => copyIfChecked(_billingState, _shippingState),
+    );
+    _billingPinCode.addListener(
+      () => copyIfChecked(_billingPinCode, _shippingPinCode),
+    );
+    _billingPhone.addListener(
+      () => copyIfChecked(_billingPhone, _shippingPhone),
+    );
     _billingFax.addListener(() => copyIfChecked(_billingFax, _shippingFax));
   }
 
@@ -256,14 +271,19 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
       _isLoading = true;
     });
     try {
-      final customer = await ref.read(customerServiceProvider).getCustomerById(widget.customerId!);
+      final customer = await ref
+          .read(customerServiceProvider)
+          .getCustomerById(widget.customerId!);
       if (mounted) {
         _populateFields(customer);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load customer: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Failed to load customer: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
         context.pop();
       }
@@ -298,8 +318,12 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
     _isActive = customer.isActive;
 
     // Load addresses
-    final billing = customer.addresses.where((a) => a.type == 'billing').firstOrNull;
-    final shipping = customer.addresses.where((a) => a.type == 'shipping').firstOrNull;
+    final billing = customer.addresses
+        .where((a) => a.type == 'billing')
+        .firstOrNull;
+    final shipping = customer.addresses
+        .where((a) => a.type == 'shipping')
+        .firstOrNull;
 
     if (billing != null) {
       _billingAttention.text = billing.attention ?? '';
@@ -350,7 +374,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
 
     if (displayName.isEmpty && firstName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a display name or first name.')),
+        const SnackBar(
+          content: Text('Please enter a display name or first name.'),
+        ),
       );
       return;
     }
@@ -390,66 +416,105 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
 
       // Build contacts payload
       final contacts = _contacts
-          .where((c) => c.firstName.text.trim().isNotEmpty || c.lastName.text.trim().isNotEmpty)
-          .map((c) => CustomerContact(
-                salutation: c.salutation.text,
-                firstName: c.firstName.text.trim(),
-                lastName: c.lastName.text.trim(),
-                email: c.email.text.trim(),
-                workPhone: c.workPhone.text.trim(),
-                mobile: c.mobile.text.trim(),
-              ))
+          .where(
+            (c) =>
+                c.firstName.text.trim().isNotEmpty ||
+                c.lastName.text.trim().isNotEmpty,
+          )
+          .map(
+            (c) => CustomerContact(
+              salutation: c.salutation.text,
+              firstName: c.firstName.text.trim(),
+              lastName: c.lastName.text.trim(),
+              email: c.email.text.trim(),
+              workPhone: c.workPhone.text.trim(),
+              mobile: c.mobile.text.trim(),
+            ),
+          )
           .toList();
 
       final payload = {
         'customer_type': _customerType,
-        'customer_sub_type': _customerSubType.isNotEmpty ? _customerSubType : null,
+        'customer_sub_type': _customerSubType.isNotEmpty
+            ? _customerSubType
+            : null,
         'salutation': _salutation.isNotEmpty ? _salutation : null,
         'first_name': firstName.isNotEmpty ? firstName : null,
         'last_name': lastName.isNotEmpty ? lastName : null,
-        'company_name': _companyNameController.text.trim().isNotEmpty ? _companyNameController.text.trim() : null,
-        'display_name': displayName.isNotEmpty ? displayName : '$firstName $lastName'.trim(),
-        'email': _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
-        'phone': _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
-        'work_phone': _workPhoneController.text.trim().isNotEmpty ? _workPhoneController.text.trim() : null,
-        'mobile': _mobileController.text.trim().isNotEmpty ? _mobileController.text.trim() : null,
-        'remarks': _remarksController.text.trim().isNotEmpty ? _remarksController.text.trim() : null,
-        'pan': _panController.text.trim().isNotEmpty ? _panController.text.trim() : null,
-        'currency': _currencyController.text.trim().isNotEmpty ? _currencyController.text.trim() : 'INR',
-        'opening_balance': double.tryParse(_openingBalanceController.text.trim()) ?? 0.0,
-        'payment_terms': _paymentTermsController.text.trim().isNotEmpty ? _paymentTermsController.text.trim() : null,
+        'company_name': _companyNameController.text.trim().isNotEmpty
+            ? _companyNameController.text.trim()
+            : null,
+        'display_name': displayName.isNotEmpty
+            ? displayName
+            : '$firstName $lastName'.trim(),
+        'email': _emailController.text.trim().isNotEmpty
+            ? _emailController.text.trim()
+            : null,
+        'phone': _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
+        'work_phone': _workPhoneController.text.trim().isNotEmpty
+            ? _workPhoneController.text.trim()
+            : null,
+        'mobile': _mobileController.text.trim().isNotEmpty
+            ? _mobileController.text.trim()
+            : null,
+        'remarks': _remarksController.text.trim().isNotEmpty
+            ? _remarksController.text.trim()
+            : null,
+        'pan': _panController.text.trim().isNotEmpty
+            ? _panController.text.trim()
+            : null,
+        'currency': _currencyController.text.trim().isNotEmpty
+            ? _currencyController.text.trim()
+            : 'INR',
+        'opening_balance':
+            double.tryParse(_openingBalanceController.text.trim()) ?? 0.0,
+        'payment_terms': _paymentTermsController.text.trim().isNotEmpty
+            ? _paymentTermsController.text.trim()
+            : null,
         'enable_portal': _enablePortal,
-        'portal_language': _portalLanguageController.text.trim().isNotEmpty ? _portalLanguageController.text.trim() : 'en',
+        'portal_language': _portalLanguageController.text.trim().isNotEmpty
+            ? _portalLanguageController.text.trim()
+            : 'en',
         'is_active': _isActive,
         'addresses': addresses.map((e) => e.toJson()).toList(),
         'contacts': contacts.map((e) => e.toJson()).toList(),
-        'customer_owner_id': _customerOwnerId != null ? int.tryParse(_customerOwnerId!) : null,
+        'customer_owner_id': _customerOwnerId != null
+            ? int.tryParse(_customerOwnerId!)
+            : null,
       };
 
       if (isEdit) {
-        await ref.read(customersProvider.notifier).updateCustomer(widget.customerId!, payload);
+        await ref
+            .read(customersProvider.notifier)
+            .updateCustomer(widget.customerId!, payload);
       } else {
-        final customer = Customer.fromJson({
-          'id': 0,
-          ...payload,
-        });
+        final customer = Customer.fromJson({'id': 0, ...payload});
         await ref.read(customersProvider.notifier).createCustomer(customer);
       }
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(isEdit ? 'Customer updated successfully' : 'Customer created successfully'),
-              backgroundColor: AppColors.success,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isEdit
+                  ? 'Customer updated successfully'
+                  : 'Customer created successfully',
             ),
-          );
-          setState(() => _isSubmitted = true);
-          context.pop();
-        }
+            backgroundColor: AppColors.success,
+          ),
+        );
+        setState(() => _isSubmitted = true);
+        context.pop();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save customer: $e'), backgroundColor: AppColors.danger),
+          SnackBar(
+            content: Text('Failed to save customer: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -464,20 +529,18 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final hasUnsavedChanges = !_isSubmitted && (
-      _firstNameController.text.isNotEmpty ||
-      _lastNameController.text.isNotEmpty ||
-      _companyNameController.text.isNotEmpty ||
-      _displayNameController.text.isNotEmpty ||
-      _emailController.text.isNotEmpty
-    );
+    final hasUnsavedChanges =
+        !_isSubmitted &&
+        (_firstNameController.text.isNotEmpty ||
+            _lastNameController.text.isNotEmpty ||
+            _companyNameController.text.isNotEmpty ||
+            _displayNameController.text.isNotEmpty ||
+            _emailController.text.isNotEmpty);
 
     return UnsavedChangesWrapper(
       hasChanges: hasUnsavedChanges,
@@ -487,30 +550,31 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
           appBar: AppBar(
             automaticallyImplyLeading: false,
             title: Text(isEdit ? 'Edit Customer' : 'New Customer'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Basic Info'),
-              Tab(text: 'Addresses'),
-              Tab(text: 'Contacts'),
-              Tab(text: 'Other Details'),
-            ],
+            bottom: const TabBar(
+              isScrollable: true,
+              tabs: [
+                Tab(text: 'Basic Info'),
+                Tab(text: 'Addresses'),
+                Tab(text: 'Contacts'),
+                Tab(text: 'Other Details'),
+              ],
+            ),
           ),
-        ),
-        body: Form(
-          key: _formKey,
-          child: TabBarView(
-            children: [
-              _buildBasicInfoTab(),
-              _buildAddressesTab(isDark),
-              _buildContactsTab(isDark),
-              _buildOtherDetailsTab(),
-            ],
+          body: Form(
+            key: _formKey,
+            child: TabBarView(
+              children: [
+                _buildBasicInfoTab(),
+                _buildAddressesTab(isDark),
+                _buildContactsTab(isDark),
+                _buildOtherDetailsTab(),
+              ],
+            ),
           ),
+          bottomNavigationBar: _buildBottomActions(context),
         ),
-        bottomNavigationBar: _buildBottomActions(context),
       ),
-    ));
+    );
   }
 
   Widget _buildBasicInfoTab() {
@@ -521,7 +585,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
         children: [
           // Customer Type
           DropdownButtonFormField<String>(
-            value: _customerType,
+            initialValue: _customerType,
             decoration: const InputDecoration(labelText: 'Customer Type *'),
             items: const [
               DropdownMenuItem(value: 'Business', child: Text('Business')),
@@ -543,7 +607,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
               Expanded(
                 flex: 1,
                 child: DropdownButtonFormField<String>(
-                  value: _salutation,
+                  initialValue: _salutation,
                   decoration: const InputDecoration(labelText: 'Salutation'),
                   items: const [
                     DropdownMenuItem(value: '', child: Text('None')),
@@ -587,7 +651,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
           TextFormField(
             controller: _companyNameController,
             decoration: InputDecoration(
-              labelText: _customerType == 'Individual' ? "Father's Name" : 'Company Name',
+              labelText: _customerType == 'Individual'
+                  ? "Father's Name"
+                  : 'Company Name',
             ),
             onChanged: (_) => _updateDisplayNameSuggestion(),
           ),
@@ -601,7 +667,8 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
               hintText: 'Select display format or type name',
             ),
             validator: (value) {
-              if ((value == null || value.trim().isEmpty) && _firstNameController.text.trim().isEmpty) {
+              if ((value == null || value.trim().isEmpty) &&
+                  _firstNameController.text.trim().isEmpty) {
                 return 'Please enter display name or first name';
               }
               return null;
@@ -635,7 +702,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
           // Status Switch
           Row(
             children: [
-              const Text('Status: ', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Status: ',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const Spacer(),
               ChoiceChip(
                 label: const Text('Active'),
@@ -670,7 +740,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
             child: Row(
               children: [
                 Icon(
-                  _additionalOpen ? Icons.arrow_drop_down : Icons.arrow_right,
+                  _additionalOpen
+                      ? AppIcons.arrow_drop_down
+                      : AppIcons.arrow_right,
                   color: AppColors.primaryBlue,
                 ),
                 Text(
@@ -703,12 +775,15 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
             ),
             const SizedBox(height: AppSpacing.m),
             DropdownButtonFormField<String>(
-              value: _customerSubType,
+              initialValue: _customerSubType,
               decoration: const InputDecoration(labelText: 'Customer Sub‑Type'),
               items: const [
                 DropdownMenuItem(value: '', child: Text('None')),
                 DropdownMenuItem(value: 'Business', child: Text('Business')),
-                DropdownMenuItem(value: 'Individual', child: Text('Individual')),
+                DropdownMenuItem(
+                  value: 'Individual',
+                  child: Text('Individual'),
+                ),
               ],
               onChanged: (val) {
                 if (val != null) {
@@ -726,10 +801,13 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
 
   void _updateDisplayNameSuggestion() {
     if (_displayNameController.text.isEmpty ||
-        _displayNameController.text == '${_firstNameController.text} ${_lastNameController.text}'.trim() ||
+        _displayNameController.text ==
+            '${_firstNameController.text} ${_lastNameController.text}'.trim() ||
         _displayNameController.text == _companyNameController.text) {
-      if (_customerType == 'Individual' || _companyNameController.text.trim().isEmpty) {
-        _displayNameController.text = '${_firstNameController.text} ${_lastNameController.text}'.trim();
+      if (_customerType == 'Individual' ||
+          _companyNameController.text.trim().isEmpty) {
+        _displayNameController.text =
+            '${_firstNameController.text} ${_lastNameController.text}'.trim();
       } else {
         _displayNameController.text = _companyNameController.text.trim();
       }
@@ -743,7 +821,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Billing Address
-          Text('Billing Address', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Billing Address',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: AppSpacing.s),
           _addressCardFields(
             attention: _billingAttention,
@@ -761,7 +842,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
           // Shipping Address Header with copy checkbox
           Row(
             children: [
-              Text('Shipping Address', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Shipping Address',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const Spacer(),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -770,7 +854,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                     value: _copyBilling,
                     onChanged: _onCopyBillingChanged,
                   ),
-                  const Text('Same as Billing', style: TextStyle(fontSize: 12.0)),
+                  const Text(
+                    'Same as Billing',
+                    style: TextStyle(fontSize: 12.0),
+                  ),
                 ],
               ),
             ],
@@ -809,9 +896,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: Theme.of(context).dividerColor,
-        ),
+        side: BorderSide(color: Theme.of(context).dividerColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.m),
@@ -904,7 +989,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
             child: ElevatedButton.icon(
               onPressed: () => _addContactPerson(),
-              icon: const Icon(Icons.add),
+              icon: const Icon(AppIcons.add),
               label: const Text('Add Contact Person'),
             ),
           );
@@ -916,9 +1001,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
           margin: const EdgeInsets.only(bottom: AppSpacing.m),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: BorderSide(
-              color: Theme.of(context).dividerColor,
-            ),
+            side: BorderSide(color: Theme.of(context).dividerColor),
           ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.m),
@@ -934,7 +1017,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                     ),
                     if (_contacts.length > 1)
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                        icon: const Icon(
+                          AppIcons.delete_outline,
+                          color: AppColors.danger,
+                        ),
                         onPressed: () => _removeContactPerson(index),
                       ),
                   ],
@@ -945,8 +1031,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                     Expanded(
                       flex: 1,
                       child: DropdownButtonFormField<String>(
-                        value: contact.salutation.text,
-                        decoration: const InputDecoration(labelText: 'Salutation'),
+                        initialValue: contact.salutation.text,
+                        decoration: const InputDecoration(
+                          labelText: 'Salutation',
+                        ),
                         items: const [
                           DropdownMenuItem(value: '', child: Text('None')),
                           DropdownMenuItem(value: 'Mr.', child: Text('Mr.')),
@@ -966,7 +1054,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                       flex: 2,
                       child: TextFormField(
                         controller: contact.firstName,
-                        decoration: const InputDecoration(labelText: 'First Name'),
+                        decoration: const InputDecoration(
+                          labelText: 'First Name',
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.s),
@@ -974,7 +1064,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                       flex: 2,
                       child: TextFormField(
                         controller: contact.lastName,
-                        decoration: const InputDecoration(labelText: 'Last Name'),
+                        decoration: const InputDecoration(
+                          labelText: 'Last Name',
+                        ),
                       ),
                     ),
                   ],
@@ -992,7 +1084,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                       child: TextFormField(
                         controller: contact.workPhone,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(labelText: 'Work Phone'),
+                        decoration: const InputDecoration(
+                          labelText: 'Work Phone',
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.s),
@@ -1087,7 +1181,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
 
           // Owner Dropdown
           DropdownButtonFormField<String>(
-            value: _customerOwnerId,
+            initialValue: _customerOwnerId,
             decoration: const InputDecoration(labelText: 'Customer Owner'),
             items: [
               const DropdownMenuItem(value: null, child: Text('None')),
@@ -1120,22 +1214,20 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
-        color: Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
+        color:
+            Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
             Theme.of(context).cardColor,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),
-        ),
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      child: OverflowBar(
+        alignment: MainAxisAlignment.end,
+        spacing: AppSpacing.m,
+        overflowSpacing: AppSpacing.s,
         children: [
           TextButton(
             onPressed: _isSaving ? null : () => context.pop(),
             child: const Text('Cancel'),
           ),
-          const SizedBox(width: AppSpacing.m),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,

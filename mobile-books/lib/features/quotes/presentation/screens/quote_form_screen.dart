@@ -13,6 +13,7 @@ import 'package:mobile_books/features/quotes/data/models/salesperson.dart';
 import 'package:mobile_books/features/quotes/data/models/project.dart';
 import 'package:mobile_books/features/quotes/data/services/quote_service.dart';
 import 'package:mobile_books/features/quotes/presentation/providers/quote_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 /// Mutable line-item model used only within the form editor.
 class _LineItem {
@@ -139,8 +140,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
   Future<void> _loadQuoteData() async {
     setState(() => _isLoading = true);
     try {
-      final details =
-          await ref.read(quoteServiceProvider).getQuoteById(widget.quoteId!);
+      final details = await ref
+          .read(quoteServiceProvider)
+          .getQuoteById(widget.quoteId!);
       final q = details.quote;
       _customerId = q.customerId;
       _quoteNumber = q.quoteNumber;
@@ -154,34 +156,33 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       _discountType = q.discountType ?? 'flat';
 
       if (details.items.isNotEmpty) {
-        _lineItems = details.items
-            .map((i) {
-              final li = _LineItem(
-                itemId: i.itemId,
-                itemName: i.itemName ?? '',
-                description: i.description ?? '',
-                quantity: i.quantity,
-                unitPrice: i.unitPrice,
-                taxRate: i.taxRate,
-                discount: i.discount,
-                discountType: i.discountType,
-                hsnCode: i.hsnCode ?? '',
-                unit: i.unit ?? '',
-              );
-              li.syncControllers();
-              li.qtyController.text = i.quantity.toString();
-              li.discountController.text = i.discount.toString();
-              return li;
-            })
-            .toList();
+        _lineItems = details.items.map((i) {
+          final li = _LineItem(
+            itemId: i.itemId,
+            itemName: i.itemName ?? '',
+            description: i.description ?? '',
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            taxRate: i.taxRate,
+            discount: i.discount,
+            discountType: i.discountType,
+            hsnCode: i.hsnCode ?? '',
+            unit: i.unit ?? '',
+          );
+          li.syncControllers();
+          li.qtyController.text = i.quantity.toString();
+          li.discountController.text = i.discount.toString();
+          return li;
+        }).toList();
       }
       _isInit = true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to load quote: $e'),
-              backgroundColor: AppColors.danger),
+            content: Text('Failed to load quote: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -209,8 +210,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
     if (_customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please select a customer'),
-            backgroundColor: AppColors.warning),
+          content: Text('Please select a customer'),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
@@ -218,8 +220,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
         _lineItems.every((i) => i.itemName.isEmpty && i.itemId == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Add at least one line item'),
-            backgroundColor: AppColors.warning),
+          content: Text('Add at least one line item'),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
@@ -240,19 +243,20 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
           'adjustment': double.tryParse(_adjustmentController.text) ?? 0.0,
           'discount_type': _discountType,
           'items': _lineItems
-              .map((i) => {
-                    'item_id': i.itemId,
-                    'item_name': i.itemName.isEmpty ? null : i.itemName,
-                    'hsn_code': i.hsnCode.isEmpty ? null : i.hsnCode,
-                    'unit': i.unit.isEmpty ? null : i.unit,
-                    'description':
-                        i.description.isEmpty ? null : i.description,
-                    'quantity': i.quantity,
-                    'unit_price': i.unitPrice,
-                    'tax_rate': i.taxRate,
-                    'discount': i.discount,
-                    'discount_type': i.discountType,
-                  })
+              .map(
+                (i) => {
+                  'item_id': i.itemId,
+                  'item_name': i.itemName.isEmpty ? null : i.itemName,
+                  'hsn_code': i.hsnCode.isEmpty ? null : i.hsnCode,
+                  'unit': i.unit.isEmpty ? null : i.unit,
+                  'description': i.description.isEmpty ? null : i.description,
+                  'quantity': i.quantity,
+                  'unit_price': i.unitPrice,
+                  'tax_rate': i.taxRate,
+                  'discount': i.discount,
+                  'discount_type': i.discountType,
+                },
+              )
               .toList(),
         };
         await ref
@@ -288,22 +292,23 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
         );
 
         final itemsPayload = _lineItems
-            .map((i) => QuoteItem(
-                  id: 0,
-                  quoteId: 0,
-                  itemId: i.itemId,
-                  itemName: i.itemName.isEmpty ? null : i.itemName,
-                  hsnCode: i.hsnCode.isEmpty ? null : i.hsnCode,
-                  unit: i.unit.isEmpty ? null : i.unit,
-                  description:
-                      i.description.isEmpty ? null : i.description,
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discount: i.discount,
-                  discountType: i.discountType,
-                  total: i.lineTotal,
-                ))
+            .map(
+              (i) => QuoteItem(
+                id: 0,
+                quoteId: 0,
+                itemId: i.itemId,
+                itemName: i.itemName.isEmpty ? null : i.itemName,
+                hsnCode: i.hsnCode.isEmpty ? null : i.hsnCode,
+                unit: i.unit.isEmpty ? null : i.unit,
+                description: i.description.isEmpty ? null : i.description,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                taxRate: i.taxRate,
+                discount: i.discount,
+                discountType: i.discountType,
+                total: i.lineTotal,
+              ),
+            )
             .toList();
 
         final created = await ref
@@ -312,19 +317,31 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
 
         if (sendImmediately) {
           final customersState = ref.read(customersProvider);
-          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final customer = customersState.value
+              ?.where((c) => c.id == _customerId)
+              .firstOrNull;
           final toEmail = customer?.email ?? '';
-          await ref.read(quotesProvider.notifier).sendEmail(
-            created.id,
-            to: toEmail.isEmpty ? 'customer@example.com' : toEmail,
-            subject: 'Quote #${created.quoteNumber} - awaiting your approval',
-            body: 'Dear Customer,\n\nPlease find your quote statement attached in PDF.\n\nQuote Number: ${created.quoteNumber}\nTotal: ₹${created.totalAmount.toStringAsFixed(2)}\n\nBest regards,',
-          );
+          await ref
+              .read(quotesProvider.notifier)
+              .sendEmail(
+                created.id,
+                to: toEmail.isEmpty ? 'customer@example.com' : toEmail,
+                subject:
+                    'Quote #${created.quoteNumber} - awaiting your approval',
+                body:
+                    'Dear Customer,\n\nPlease find your quote statement attached in PDF.\n\nQuote Number: ${created.quoteNumber}\nTotal: ₹${created.totalAmount.toStringAsFixed(2)}\n\nBest regards,',
+              );
         }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(sendImmediately ? 'Quote saved & sent successfully' : 'Quote created successfully')),
+            SnackBar(
+              content: Text(
+                sendImmediately
+                    ? 'Quote saved & sent successfully'
+                    : 'Quote created successfully',
+              ),
+            ),
           );
           context.pop();
         }
@@ -333,8 +350,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: AppColors.danger),
+            content: Text(e.toString()),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -402,9 +420,15 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                   id: 0,
                   customerType: 'Business',
                   displayName: nameCtrl.text.trim(),
-                  companyName: companyCtrl.text.trim().isEmpty ? null : companyCtrl.text.trim(),
-                  email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
+                  companyName: companyCtrl.text.trim().isEmpty
+                      ? null
+                      : companyCtrl.text.trim(),
+                  email: emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim().isEmpty
+                      ? null
+                      : phoneCtrl.text.trim(),
                   currency: 'INR',
                   openingBalance: 0.0,
                   enablePortal: false,
@@ -473,8 +497,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
               const SizedBox(height: AppSpacing.s),
               TextField(
                 controller: empIdCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Employee ID'),
+                decoration: const InputDecoration(labelText: 'Employee ID'),
               ),
             ],
           ),
@@ -489,8 +512,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
               if (nameCtrl.text.trim().isEmpty) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
-                      content: Text('Name is required'),
-                      backgroundColor: AppColors.warning),
+                    content: Text('Name is required'),
+                    backgroundColor: AppColors.warning,
+                  ),
                 );
                 return;
               }
@@ -514,8 +538,9 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: AppColors.danger),
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.danger,
+                    ),
                   );
                 }
               }
@@ -547,14 +572,12 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
             children: [
               TextField(
                 controller: nameCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Project Name *'),
+                decoration: const InputDecoration(labelText: 'Project Name *'),
               ),
               const SizedBox(height: AppSpacing.s),
               TextField(
                 controller: descCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Description'),
+                decoration: const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
               ),
             ],
@@ -570,35 +593,38 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
               if (nameCtrl.text.trim().isEmpty) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
-                      content: Text('Project name is required'),
-                      backgroundColor: AppColors.warning),
+                    content: Text('Project name is required'),
+                    backgroundColor: AppColors.warning,
+                  ),
                 );
                 return;
               }
               try {
-                final proj =
-                    await ref.read(quoteServiceProvider).createProject(
-                          Project(
-                            id: 0,
-                            userId: 0,
-                            customerId: _customerId,
-                            projectName: nameCtrl.text.trim(),
-                            budget: 0,
-                            billingType: 'Fixed Cost',
-                            hourlyRate: 0,
-                            status: 'Active',
-                            description: descCtrl.text.trim().isEmpty
-                                ? null
-                                : descCtrl.text.trim(),
-                          ),
-                        );
+                final proj = await ref
+                    .read(quoteServiceProvider)
+                    .createProject(
+                      Project(
+                        id: 0,
+                        userId: 0,
+                        customerId: _customerId,
+                        projectName: nameCtrl.text.trim(),
+                        budget: 0,
+                        billingType: 'Fixed Cost',
+                        hourlyRate: 0,
+                        status: 'Active',
+                        description: descCtrl.text.trim().isEmpty
+                            ? null
+                            : descCtrl.text.trim(),
+                      ),
+                    );
                 if (ctx.mounted) Navigator.pop(ctx, proj);
               } catch (e) {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: AppColors.danger),
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.danger,
+                    ),
                   );
                 }
               }
@@ -660,20 +686,26 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
         actions: [
           if (!_isEditMode)
             TextButton.icon(
-              onPressed: _isLoading ? null : () => _saveForm(sendImmediately: true),
-              icon: const Icon(Icons.send_and_archive),
+              onPressed: _isLoading
+                  ? null
+                  : () => _saveForm(sendImmediately: true),
+              icon: const Icon(AppIcons.send_and_archive),
               label: const Text('Save & Send'),
             ),
           TextButton.icon(
-            onPressed: _isLoading ? null : () => _saveForm(sendImmediately: false),
+            onPressed: _isLoading
+                ? null
+                : () => _saveForm(sendImmediately: false),
             icon: _isLoading
                 ? const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.primaryBlue),
+                      strokeWidth: 2,
+                      color: AppColors.primaryBlue,
+                    ),
                   )
-                : const Icon(Icons.save),
+                : const Icon(AppIcons.save),
             label: Text(_isLoading ? 'Saving...' : 'Save'),
           ),
         ],
@@ -694,8 +726,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Quote Details',
-                                style: textTheme.titleMedium),
+                            Text('Quote Details', style: textTheme.titleMedium),
                             const Divider(),
                             const SizedBox(height: AppSpacing.s),
 
@@ -704,9 +735,10 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                               data: (customers) =>
                                   _buildCustomerDropdown(customers),
                               loading: () => const LinearProgressIndicator(),
-                              error: (e, _) => Text('Error: $e',
-                                  style: const TextStyle(
-                                      color: AppColors.danger)),
+                              error: (e, _) => Text(
+                                'Error: $e',
+                                style: const TextStyle(color: AppColors.danger),
+                              ),
                             ),
                             const SizedBox(height: AppSpacing.m),
 
@@ -714,8 +746,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                             _buildDateField(
                               label: 'Quote Date *',
                               value: _quoteDate,
-                              onPicked: (d) =>
-                                  setState(() => _quoteDate = d),
+                              onPicked: (d) => setState(() => _quoteDate = d),
                             ),
                             const SizedBox(height: AppSpacing.m),
 
@@ -723,8 +754,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                             _buildDateField(
                               label: 'Expiry Date',
                               value: _expiryDate,
-                              onPicked: (d) =>
-                                  setState(() => _expiryDate = d),
+                              onPicked: (d) => setState(() => _expiryDate = d),
                             ),
                           ],
                         ),
@@ -739,8 +769,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Assignment',
-                                style: textTheme.titleMedium),
+                            Text('Assignment', style: textTheme.titleMedium),
                             const Divider(),
                             const SizedBox(height: AppSpacing.s),
 
@@ -771,16 +800,21 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                            OverflowBar(
+                              alignment: MainAxisAlignment.spaceBetween,
+                              overflowAlignment: OverflowBarAlignment.end,
+                              spacing: AppSpacing.s,
+                              overflowSpacing: AppSpacing.s,
                               children: [
-                                Text('Line Items',
-                                    style: textTheme.titleMedium),
+                                Text(
+                                  'Line Items',
+                                  style: textTheme.titleMedium,
+                                ),
                                 TextButton.icon(
                                   onPressed: () => setState(
-                                      () => _lineItems.add(_LineItem())),
-                                  icon: const Icon(Icons.add, size: 18),
+                                    () => _lineItems.add(_LineItem()),
+                                  ),
+                                  icon: const Icon(AppIcons.add, size: 18),
                                   label: const Text('Add Item'),
                                 ),
                               ],
@@ -791,15 +825,11 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                             catalogItemsState.when(
                               data: (catalogItems) => Column(
                                 children: [
-                                  for (int i = 0;
-                                      i < _lineItems.length;
-                                      i++)
-                                    _buildLineItemCard(
-                                        i, catalogItems),
+                                  for (int i = 0; i < _lineItems.length; i++)
+                                    _buildLineItemCard(i, catalogItems),
                                 ],
                               ),
-                              loading: () =>
-                                  const LinearProgressIndicator(),
+                              loading: () => const LinearProgressIndicator(),
                               error: (e, _) => Text('Error: $e'),
                             ),
                           ],
@@ -818,8 +848,10 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                             Text('Summary', style: textTheme.titleMedium),
                             const Divider(),
                             const SizedBox(height: AppSpacing.s),
-                            _summaryRow('Subtotal',
-                                '₹${_subtotal.toStringAsFixed(2)}'),
+                            _summaryRow(
+                              'Subtotal',
+                              '₹${_subtotal.toStringAsFixed(2)}',
+                            ),
                             _summaryRow(
                               'Total Discount',
                               '- ₹${_totalDiscount.toStringAsFixed(2)}',
@@ -832,11 +864,19 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                             ),
                             const SizedBox(height: AppSpacing.s),
                             DropdownButtonFormField<String>(
-                              value: _discountType,
-                              decoration: const InputDecoration(labelText: 'Discount Type'),
+                              initialValue: _discountType,
+                              decoration: const InputDecoration(
+                                labelText: 'Discount Type',
+                              ),
                               items: const [
-                                DropdownMenuItem(value: 'percentage', child: Text('Percentage')),
-                                DropdownMenuItem(value: 'flat', child: Text('Flat')),
+                                DropdownMenuItem(
+                                  value: 'percentage',
+                                  child: Text('Percentage'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'flat',
+                                  child: Text('Flat'),
+                                ),
                               ],
                               onChanged: (val) {
                                 if (val != null) {
@@ -849,7 +889,11 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                             const SizedBox(height: AppSpacing.s),
                             TextFormField(
                               controller: _adjustmentController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                    signed: true,
+                                  ),
                               decoration: const InputDecoration(
                                 labelText: 'Adjustment',
                                 hintText: 'e.g. +10.00 or -10.00',
@@ -884,8 +928,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Notes & Terms',
-                                style: textTheme.titleMedium),
+                            Text('Notes & Terms', style: textTheme.titleMedium),
                             const Divider(),
                             const SizedBox(height: AppSpacing.s),
                             TextField(
@@ -920,20 +963,24 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                           backgroundColor: AppColors.primaryBlue,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.m),
+                            vertical: AppSpacing.m,
+                          ),
                         ),
                         child: _isLoading
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : Text(
                                 _isEditMode ? 'Update Quote' : 'Create Quote',
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                       ),
                     ),
@@ -951,39 +998,56 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
 
   /// Customer dropdown with display name resolution and inline "+ Add" button
   Widget _buildCustomerDropdown(List<Customer> customers) {
-    return Row(
-      children: [
-        Expanded(
-          child: SearchableAutocompleteField<Customer>(
-            labelText: 'Customer *',
-            initialValue: customers.where((c) => c.id == _customerId).firstOrNull,
-            items: customers,
-            itemLabelBuilder: (c) {
-              final name = c.displayName ??
-                  [c.firstName, c.lastName]
-                      .where((s) => s != null && s.isNotEmpty)
-                      .join(' ');
-              return name.isNotEmpty ? name : (c.email ?? '');
-            },
-            searchMatcher: (c, query) {
-              final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
-              final email = (c.email ?? '').toLowerCase();
-              final q = query.toLowerCase();
-              return name.contains(q) || email.contains(q);
-            },
-            onChanged: (val) => setState(() => _customerId = val?.id),
-            validator: (val) => val == null ? 'Customer is required' : null,
-            onAddNew: _showAddCustomerDialog,
-            addNewLabel: 'Add New Customer',
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s),
-        IconButton(
-          onPressed: _showAddCustomerDialog,
-          icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
-          tooltip: 'Add Customer',
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchableAutocompleteField<Customer>(
+              labelText: 'Customer *',
+              initialValue: customers
+                  .where((c) => c.id == _customerId)
+                  .firstOrNull,
+              items: customers,
+              itemLabelBuilder: (c) {
+                final name =
+                    c.displayName ??
+                    [
+                      c.firstName,
+                      c.lastName,
+                    ].where((s) => s != null && s.isNotEmpty).join(' ');
+                return name.isNotEmpty ? name : (c.email ?? '');
+              },
+              searchMatcher: (c, query) {
+                final name =
+                    (c.displayName ??
+                            '${c.firstName ?? ""} ${c.lastName ?? ""}')
+                        .toLowerCase();
+                final email = (c.email ?? '').toLowerCase();
+                final q = query.toLowerCase();
+                return name.contains(q) || email.contains(q);
+              },
+              onChanged: (val) => setState(() => _customerId = val?.id),
+              validator: (val) => val == null ? 'Customer is required' : null,
+              onAddNew: _showAddCustomerDialog,
+              addNewLabel: 'Add New Customer',
+            ),
+            SizedBox(height: compact ? AppSpacing.s : 0),
+            Align(
+              alignment: compact ? Alignment.centerRight : Alignment.centerLeft,
+              child: IconButton(
+                onPressed: _showAddCustomerDialog,
+                icon: const Icon(
+                  AppIcons.person_add,
+                  color: AppColors.primaryBlue,
+                ),
+                tooltip: 'Add Customer',
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1005,7 +1069,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          suffixIcon: const Icon(Icons.calendar_today, size: 18),
+          suffixIcon: const Icon(AppIcons.calendar_today, size: 18),
         ),
         child: Text(displayText),
       ),
@@ -1014,55 +1078,77 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
 
   /// Salesperson dropdown with inline "+ Add" button
   Widget _buildSalespersonDropdown(List<Salesperson> list) {
-    return Row(
-      children: [
-        Expanded(
-          child: SearchableAutocompleteField<Salesperson>(
-            labelText: 'Salesperson',
-            initialValue: list.where((sp) => sp.id == _salespersonId).firstOrNull,
-            items: list,
-            itemLabelBuilder: (sp) => sp.name,
-            searchMatcher: (sp, query) => sp.name.toLowerCase().contains(query.toLowerCase()),
-            onChanged: (val) => setState(() => _salespersonId = val?.id),
-            onAddNew: _showAddSalespersonDialog,
-            addNewLabel: 'Add New Salesperson',
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s),
-        IconButton(
-          onPressed: _showAddSalespersonDialog,
-          icon: const Icon(Icons.person_add_alt_1,
-              color: AppColors.primaryBlue),
-          tooltip: 'Add Salesperson',
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchableAutocompleteField<Salesperson>(
+              labelText: 'Salesperson',
+              initialValue: list
+                  .where((sp) => sp.id == _salespersonId)
+                  .firstOrNull,
+              items: list,
+              itemLabelBuilder: (sp) => sp.name,
+              searchMatcher: (sp, query) =>
+                  sp.name.toLowerCase().contains(query.toLowerCase()),
+              onChanged: (val) => setState(() => _salespersonId = val?.id),
+              onAddNew: _showAddSalespersonDialog,
+              addNewLabel: 'Add New Salesperson',
+            ),
+            SizedBox(height: compact ? AppSpacing.s : 0),
+            Align(
+              alignment: compact ? Alignment.centerRight : Alignment.centerLeft,
+              child: IconButton(
+                onPressed: _showAddSalespersonDialog,
+                icon: const Icon(
+                  AppIcons.person_add_alt_1,
+                  color: AppColors.primaryBlue,
+                ),
+                tooltip: 'Add Salesperson',
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   /// Project dropdown with inline "+ Add" button
   Widget _buildProjectDropdown(List<Project> list) {
-    return Row(
-      children: [
-        Expanded(
-          child: SearchableAutocompleteField<Project>(
-            labelText: 'Project',
-            initialValue: list.where((p) => p.id == _projectId).firstOrNull,
-            items: list,
-            itemLabelBuilder: (p) => p.projectName,
-            searchMatcher: (p, query) => p.projectName.toLowerCase().contains(query.toLowerCase()),
-            onChanged: (val) => setState(() => _projectId = val?.id),
-            onAddNew: _showAddProjectDialog,
-            addNewLabel: 'Add New Project',
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s),
-        IconButton(
-          onPressed: _showAddProjectDialog,
-          icon: const Icon(Icons.create_new_folder,
-              color: AppColors.primaryBlue),
-          tooltip: 'Add Project',
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchableAutocompleteField<Project>(
+              labelText: 'Project',
+              initialValue: list.where((p) => p.id == _projectId).firstOrNull,
+              items: list,
+              itemLabelBuilder: (p) => p.projectName,
+              searchMatcher: (p, query) =>
+                  p.projectName.toLowerCase().contains(query.toLowerCase()),
+              onChanged: (val) => setState(() => _projectId = val?.id),
+              onAddNew: _showAddProjectDialog,
+              addNewLabel: 'Add New Project',
+            ),
+            SizedBox(height: compact ? AppSpacing.s : 0),
+            Align(
+              alignment: compact ? Alignment.centerRight : Alignment.centerLeft,
+              child: IconButton(
+                onPressed: _showAddProjectDialog,
+                icon: const Icon(
+                  AppIcons.create_new_folder,
+                  color: AppColors.primaryBlue,
+                ),
+                tooltip: 'Add Project',
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1084,14 +1170,18 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 Text(
                   'Item ${index + 1}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
                 if (_lineItems.length > 1)
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline,
-                        color: AppColors.danger, size: 20),
-                    onPressed: () =>
-                        setState(() => _lineItems.removeAt(index)),
+                    icon: const Icon(
+                      AppIcons.remove_circle_outline,
+                      color: AppColors.danger,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _lineItems.removeAt(index)),
                     tooltip: 'Remove Item',
                   ),
               ],
@@ -1101,10 +1191,13 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
             // Catalog item dropdown (auto-fills fields)
             SearchableAutocompleteField<Item>(
               labelText: 'Select from Catalog',
-              initialValue: catalogItems.where((c) => c.id == li.itemId).firstOrNull,
+              initialValue: catalogItems
+                  .where((c) => c.id == li.itemId)
+                  .firstOrNull,
               items: catalogItems,
               itemLabelBuilder: (item) => item.name,
-              searchMatcher: (item, query) => item.name.toLowerCase().contains(query.toLowerCase()),
+              searchMatcher: (item, query) =>
+                  item.name.toLowerCase().contains(query.toLowerCase()),
               onChanged: (val) {
                 if (val != null) {
                   _handleCatalogItemSelected(index, val);
@@ -1123,8 +1216,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
             // Item name (manual entry fallback)
             TextFormField(
               controller: li.nameController,
-              decoration:
-                  const InputDecoration(labelText: 'Item Name'),
+              decoration: const InputDecoration(labelText: 'Item Name'),
               onChanged: (val) => li.itemName = val,
             ),
             const SizedBox(height: AppSpacing.s),
@@ -1132,8 +1224,7 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
             // Description
             TextFormField(
               controller: li.descController,
-              decoration:
-                  const InputDecoration(labelText: 'Description'),
+              decoration: const InputDecoration(labelText: 'Description'),
               onChanged: (val) => li.description = val,
             ),
             const SizedBox(height: AppSpacing.s),
@@ -1144,13 +1235,12 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: li.qtyController,
-                    decoration:
-                        const InputDecoration(labelText: 'Quantity'),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(
-                            decimal: true),
-                    onChanged: (val) => setState(() =>
-                        li.quantity = double.tryParse(val) ?? 0),
+                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) =>
+                        setState(() => li.quantity = double.tryParse(val) ?? 0),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
                         return 'Required';
@@ -1167,13 +1257,13 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: li.priceController,
-                    decoration:
-                        const InputDecoration(labelText: 'Unit Price'),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(
-                            decimal: true),
-                    onChanged: (val) => setState(() =>
-                        li.unitPrice = double.tryParse(val) ?? 0),
+                    decoration: const InputDecoration(labelText: 'Unit Price'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) => setState(
+                      () => li.unitPrice = double.tryParse(val) ?? 0,
+                    ),
                   ),
                 ),
               ],
@@ -1186,21 +1276,19 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: li.taxController,
-                    decoration:
-                        const InputDecoration(labelText: 'Tax Rate %'),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(
-                            decimal: true),
-                    onChanged: (val) => setState(
-                        () => li.taxRate = double.tryParse(val) ?? 0),
+                    decoration: const InputDecoration(labelText: 'Tax Rate %'),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) =>
+                        setState(() => li.taxRate = double.tryParse(val) ?? 0),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
                 Expanded(
                   child: TextFormField(
                     controller: li.hsnController,
-                    decoration:
-                        const InputDecoration(labelText: 'HSN Code'),
+                    decoration: const InputDecoration(labelText: 'HSN Code'),
                     onChanged: (val) => li.hsnCode = val,
                   ),
                 ),
@@ -1209,39 +1297,84 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
             const SizedBox(height: AppSpacing.s),
 
             // Discount + Discount Type row
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: li.discountController,
-                    decoration:
-                        const InputDecoration(labelText: 'Discount'),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(
-                            decimal: true),
-                    onChanged: (val) => setState(() =>
-                        li.discount = double.tryParse(val) ?? 0),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s),
-                Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: li.discountType,
-                    decoration:
-                        const InputDecoration(labelText: 'Type'),
-                    items: const [
-                      DropdownMenuItem(
-                          value: 'flat', child: Text('Flat (₹)')),
-                      DropdownMenuItem(
-                          value: 'percent', child: Text('Percent (%)')),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 430;
+                if (compact) {
+                  return Column(
+                    children: [
+                      TextFormField(
+                        controller: li.discountController,
+                        decoration: const InputDecoration(
+                          labelText: 'Discount',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (val) => setState(
+                          () => li.discount = double.tryParse(val) ?? 0,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s),
+                      DropdownButtonFormField<String>(
+                        initialValue: li.discountType,
+                        decoration: const InputDecoration(labelText: 'Type'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'flat',
+                            child: Text('Flat (₹)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'percent',
+                            child: Text('Percent (%)'),
+                          ),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => li.discountType = val ?? 'flat'),
+                      ),
                     ],
-                    onChanged: (val) => setState(
-                        () => li.discountType = val ?? 'flat'),
-                  ),
-                ),
-              ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: li.discountController,
+                        decoration: const InputDecoration(
+                          labelText: 'Discount',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (val) => setState(
+                          () => li.discount = double.tryParse(val) ?? 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s),
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: li.discountType,
+                        decoration: const InputDecoration(labelText: 'Type'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'flat',
+                            child: Text('Flat (₹)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'percent',
+                            child: Text('Percent (%)'),
+                          ),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => li.discountType = val ?? 'flat'),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: AppSpacing.m),
 
@@ -1253,14 +1386,16 @@ class _QuoteFormScreenState extends ConsumerState<QuoteFormScreen> {
                 color: AppColors.primaryBlue.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                runSpacing: AppSpacing.xs,
                 children: [
                   const Text(
                     'Line Total',
                     style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondaryLight),
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondaryLight,
+                    ),
                   ),
                   Text(
                     '₹${li.lineTotal.toStringAsFixed(2)}',

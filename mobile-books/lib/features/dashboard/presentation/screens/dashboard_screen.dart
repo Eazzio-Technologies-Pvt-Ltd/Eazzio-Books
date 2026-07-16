@@ -12,6 +12,20 @@ import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile_books/features/dashboard/presentation/providers/deposit_balances_provider.dart';
 import 'package:mobile_books/features/organizations/presentation/providers/organization_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
+
+class DashboardSelectedPlanNotifier extends Notifier<String> {
+  @override
+  String build() => 'premium';
+  
+  void setPlan(String plan) {
+    state = plan;
+  }
+}
+
+final selectedDashboardUpgradePlanProvider = NotifierProvider<DashboardSelectedPlanNotifier, String>(() {
+  return DashboardSelectedPlanNotifier();
+});
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -194,82 +208,133 @@ class DashboardScreen extends ConsumerWidget {
         },
         child: summaryState.when(
           data: (summary) {
+            final paymentsAsync = ref.watch(projectedPaymentsProvider);
+            final expensesAsync = ref.watch(projectedExpensesProvider);
+            final payData = paymentsAsync.value ?? {};
+            final expData = expensesAsync.value ?? {};
+            final double totalProjIncome = (payData['total_projected_payment'] as num?)?.toDouble() ?? 0.0;
+            final double totalProjExpense = (expData['total_projected_expense'] as num?)?.toDouble() ?? 0.0;
+
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSearchSearchBar(context),
                   _buildGreetingHeader(context, ref),
-                  const SizedBox(height: AppSpacing.s),
+                  _buildSearchSearchBar(context),
+                  const SizedBox(height: 16),
 
-                  // 1. STAT CARDS (RECEIVABLES, PAYABLES, INCOME, EXPENSES)
+                  // 1. STAT CARDS (Summary Cards)
                   _buildStatCards(context, summary.topSummary),
-                  const SizedBox(height: AppSpacing.s),
+                  const SizedBox(height: 16),
 
-                  // 2. MONTHLY FILTER BAR
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: AppSpacing.s,
-                    runSpacing: AppSpacing.s,
+                  // 2. MONTHLY FILTER BAR & METRICS GRID
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Monthly Overview',
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
                       ),
+                      const SizedBox(height: 8),
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          DropdownButton<int>(
-                            value: selectedMonth,
-                            onChanged: (val) {
-                              if (val != null) {
-                                ref.read(dashboardMonthProvider.notifier).state = val;
-                              }
-                            },
-                            items: List.generate(12, (index) {
-                              return DropdownMenuItem(
-                                value: index + 1,
-                                child: Text(monthNames[index]),
-                              );
-                            }),
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: DropdownButton<int>(
+                                  value: selectedMonth,
+                                  isExpanded: true,
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      ref.read(dashboardMonthProvider.notifier).state = val;
+                                    }
+                                  },
+                                  items: List.generate(12, (index) {
+                                    return DropdownMenuItem(
+                                      value: index + 1,
+                                      child: Text(monthNames[index], style: const TextStyle(fontSize: 12)),
+                                    );
+                                  }),
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: AppSpacing.s),
-                          DropdownButton<int>(
-                            value: selectedYear,
-                            onChanged: (val) {
-                              if (val != null) {
-                                ref.read(dashboardYearProvider.notifier).state = val;
-                              }
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: DropdownButton<int>(
+                                  value: selectedYear,
+                                  isExpanded: true,
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      ref.read(dashboardYearProvider.notifier).state = val;
+                                    }
+                                  },
+                                  items: yearsList.map((y) {
+                                    return DropdownMenuItem(
+                                      value: y,
+                                      child: Text(y.toString(), style: const TextStyle(fontSize: 12)),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryBlue,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () {
+                              ref.read(dashboardSummaryProvider.notifier).refresh();
                             },
-                            items: yearsList.map((y) {
-                              return DropdownMenuItem(
-                                value: y,
-                                child: Text(y.toString()),
-                              );
-                            }).toList(),
+                            child: const Text('Apply', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-
-                  // 3. MONTHLY METRICS GRID
+                  const SizedBox(height: 12),
                   _buildMonthlyMetricsGrid(context, summary.selectedMonth),
-                  const SizedBox(height: AppSpacing.s),
+                  const SizedBox(height: 16),
 
-                  // 7. EXPENSES BY CATEGORY AND BANK ACCOUNTS (Row on large screens, Column on mobile)
-                  _buildBottomLists(context, summary.chartData),
-                  const SizedBox(height: AppSpacing.s),
+                  // 3. PROJECTED METRICS & CASH BALANCES (Unified 2x2 grid)
+                  _buildProjectionsAndCashGrid(
+                    context,
+                    totalProjIncome,
+                    totalProjExpense,
+                    monthNames[selectedMonth - 1],
+                    selectedYear,
+                    ref,
+                  ),
+                  const SizedBox(height: 16),
 
-                  // 4. PROJECTIONS AND EXPECTED SURPLUS (before Quick Actions)
-                  _buildProjectionsSection(context),
-                  const SizedBox(height: AppSpacing.s),
+                  // 4. SUBSCRIPTION & UPGRADE CARD
+                  _buildSubscriptionCard(context, ref),
+                  const SizedBox(height: 16),
 
-                  // Quick Actions at the bottom
+                  // 5. BANK ACCOUNTS (moved below Subscription)
+                  _buildBanksList(context, summary.chartData.banks),
+                  const SizedBox(height: 16),
+
+                  // 6. QUICK ACTIONS
                   _buildQuickActions(context),
                 ],
               ),
@@ -295,53 +360,89 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildStatCards(BuildContext context, TopSummary top) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
-          childAspectRatio: constraints.maxWidth > 600 ? 1.8 : 1.55,
-          children: [
-            _buildStatCard(
-              context,
-              title: 'Total Receivables',
-              amount: top.totalReceivables,
-              sub: 'Unpaid Invoices',
-              icon: Icons.currency_rupee,
-              iconColor: const Color(0xFFD97706), // Amber
-              iconBgColor: const Color(0xFFFEF3C7),
-            ),
-            _buildStatCard(
-              context,
-              title: 'Total Payables',
-              amount: top.totalPayables,
-              sub: 'Unpaid Bills',
-              icon: Icons.credit_card,
-              iconColor: const Color(0xFFDC2626), // Red
-              iconBgColor: const Color(0xFFFEE2E2),
-            ),
-            _buildStatCard(
-              context,
-              title: 'Total Income',
-              amount: top.totalIncome,
-              sub: 'All Time',
-              icon: Icons.trending_up,
-              iconColor: const Color(0xFF059669), // Green
-              iconBgColor: const Color(0xFFD1FAE5),
-            ),
-            _buildStatCard(
-              context,
-              title: 'Total Expenses',
-              amount: top.totalExpenses,
-              sub: 'All Time',
-              icon: Icons.trending_down,
-              iconColor: const Color(0xFF7C3AED), // Purple
-              iconBgColor: const Color(0xFFF3E8FF),
-            ),
-          ],
+        final card1 = _buildStatCard(
+          context,
+          title: 'Total Receivables',
+          amount: top.totalReceivables,
+          sub: 'Unpaid Invoices',
+          icon: AppIcons.currency_rupee,
+          iconColor: const Color(0xFFD97706), // Amber
+          iconBgColor: const Color(0xFFFEF3C7),
+          onTap: () => context.push('/invoices'),
         );
+        final card2 = _buildStatCard(
+          context,
+          title: 'Total Payables',
+          amount: top.totalPayables,
+          sub: 'Unpaid Bills',
+          icon: AppIcons.credit_card,
+          iconColor: const Color(0xFFDC2626), // Red
+          iconBgColor: const Color(0xFFFEE2E2),
+          onTap: () => context.push('/bills'),
+        );
+        final card3 = _buildStatCard(
+          context,
+          title: 'Total Income',
+          amount: top.totalIncome,
+          sub: 'All Time',
+          icon: AppIcons.trending_up,
+          iconColor: const Color(0xFF059669), // Green
+          iconBgColor: const Color(0xFFD1FAE5),
+          onTap: () => context.push('/invoices'),
+        );
+        final card4 = _buildStatCard(
+          context,
+          title: 'Total Expenses',
+          amount: top.totalExpenses,
+          sub: 'All Time',
+          icon: AppIcons.trending_down,
+          iconColor: const Color(0xFF7C3AED), // Purple
+          iconBgColor: const Color(0xFFF3E8FF),
+          onTap: () => context.push('/expenses'),
+        );
+
+        // On mobile use IntrinsicHeight rows (auto-size to content, no overflow)
+        // On wide screens use a 4-column row
+        if (constraints.maxWidth > 600) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: card1),
+              const SizedBox(width: 12),
+              Expanded(child: card2),
+              const SizedBox(width: 12),
+              Expanded(child: card3),
+              const SizedBox(width: 12),
+              Expanded(child: card4),
+            ],
+          );
+        } else {
+          return Column(
+            children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: card1),
+                    const SizedBox(width: 12),
+                    Expanded(child: card2),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: card3),
+                    const SizedBox(width: 12),
+                    Expanded(child: card4),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
       },
     );
   }
@@ -354,60 +455,74 @@ class DashboardScreen extends ConsumerWidget {
     required IconData icon,
     required Color iconColor,
     required Color iconBgColor,
+    VoidCallback? onTap,
   }) {
-    Color subColor = AppColors.textSecondaryLight;
-    if (title.contains('Receivables') || title.contains('Payables')) {
-      subColor = const Color(0xFFDC2626); // Red
+    final mutedIconBg = iconColor.withValues(alpha: 0.08);
+
+    Color tagBgColor = const Color(0xFFFEF3C7);
+    Color tagTextColor = const Color(0xFFD97706);
+    if (title.contains('Payables')) {
+      tagBgColor = const Color(0xFFFEE2E2);
+      tagTextColor = const Color(0xFFDC2626);
     } else if (title.contains('Income')) {
-      subColor = const Color(0xFF059669); // Green
+      tagBgColor = const Color(0xFFD1FAE5);
+      tagTextColor = const Color(0xFF059669);
     } else if (title.contains('Expenses')) {
-      subColor = const Color(0xFF7C3AED); // Purple
+      tagBgColor = const Color(0xFFFEE2E2);
+      tagTextColor = const Color(0xFFDC2626);
     }
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: iconBgColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 12),
+    return _buildDecoratedCard(
+      padding: const EdgeInsets.all(12),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: mutedIconBg,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontSize: 9.5, color: AppColors.textSecondaryLight),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                _formatCurrency(context, amount),
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                maxLines: 1,
+                child: Icon(icon, color: iconColor, size: 16),
               ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondaryLight),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _formatCurrency(context, amount),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+              maxLines: 1,
             ),
-            Text(
-              sub,
-              style: TextStyle(fontSize: 8.5, color: subColor, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: tagBgColor,
+              borderRadius: BorderRadius.circular(4),
             ),
-          ],
-        ),
+            child: Text(
+              'Current Financial Year',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: tagTextColor),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -415,21 +530,44 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildMonthlyMetricsGrid(BuildContext context, SelectedMonthSummary selected) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
-          childAspectRatio: constraints.maxWidth > 600 ? 2.0 : 1.75,
-          children: [
-            _buildMetricCard(context, 'INCOME', selected.incomeReceived, const Color(0xFF059669)),
-            _buildMetricCard(context, 'EXPENSES', selected.expenses, const Color(0xFFDC2626)),
-            _buildMetricCard(context, 'PROFIT', selected.profit, selected.profit >= 0 ? const Color(0xFF059669) : const Color(0xFFDC2626)),
-            _buildMetricCard(context, 'NET CASH', selected.netCashPosition, AppColors.primaryBlue),
-          ],
-        );
+        final card1 = _buildMetricCard(context, 'BUSINESS VALUE', selected.incomeReceived, const Color(0xFF059669));
+        final card2 = _buildMetricCard(context, 'EXPENSES', selected.expenses, const Color(0xFFDC2626));
+        final card3 = _buildMetricCard(context, 'PROFIT', selected.profit, const Color(0xFF059669));
+        final card4 = _buildMetricCard(context, 'NET CASH', selected.netCashPosition, AppColors.primaryBlue);
+
+        if (constraints.maxWidth > 600) {
+          return Row(
+            children: [
+              Expanded(child: card1),
+              const SizedBox(width: 12),
+              Expanded(child: card2),
+              const SizedBox(width: 12),
+              Expanded(child: card3),
+              const SizedBox(width: 12),
+              Expanded(child: card4),
+            ],
+          );
+        } else {
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: card1),
+                  const SizedBox(width: 12),
+                  Expanded(child: card2),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: card3),
+                  const SizedBox(width: 12),
+                  Expanded(child: card4),
+                ],
+              ),
+            ],
+          );
+        }
       },
     );
   }
@@ -484,30 +622,27 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildMetricCard(BuildContext context, String label, double value, Color valueColor) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+    return _buildDecoratedCard(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _formatCurrency(context, value),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: valueColor),
+              maxLines: 1,
             ),
-            const SizedBox(height: 2),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                _formatCurrency(context, value),
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: valueColor),
-                maxLines: 1,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -520,51 +655,61 @@ class DashboardScreen extends ConsumerWidget {
     required String subtext,
     required VoidCallback onViewTap,
   }) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.m),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: onViewTap,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'View',
-                        style: TextStyle(fontSize: 12, color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
-                      ),
-                      Icon(Icons.arrow_right_alt, size: 14, color: AppColors.primaryBlue),
-                    ],
-                  ),
-                ),
-              ],
+    return _buildDecoratedCard(
+      padding: const EdgeInsets.all(12),
+      onTap: onViewTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title gets full width — wraps to 2 lines if needed
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textSecondaryLight,
             ),
-            const SizedBox(height: AppSpacing.s),
-            Text(
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          // View link on its own row, right-aligned
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text(
+                    'View',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.primaryBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Icon(AppIcons.arrow_right_alt, size: 14, color: AppColors.primaryBlue),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
               _formatCurrency(context, amount),
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: amountColor),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: amountColor),
             ),
-            const SizedBox(height: AppSpacing.s),
-            Text(
-              subtext,
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtext,
+            style: const TextStyle(fontSize: 10, color: AppColors.textSecondaryLight),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -623,196 +768,391 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProjectionsSection(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, child) {
-        final paymentsAsync = ref.watch(projectedPaymentsProvider);
-        final expensesAsync = ref.watch(projectedExpensesProvider);
+  Widget _buildProjectionsAndCashGrid(
+    BuildContext context,
+    double totalProjIncome,
+    double totalProjExpense,
+    String monthStr,
+    int selectedYear,
+    WidgetRef ref,
+  ) {
+    final depositBalancesAsync = ref.watch(depositBalancesProvider);
+    final localMonthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final selectedMonthIndex = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ].indexOf(monthStr);
+    int nextMonthVal = selectedMonthIndex + 1;
+    int nextYearVal = selectedYear;
+    if (nextMonthVal >= 12) {
+      nextMonthVal = 0;
+      nextYearVal += 1;
+    }
+    final nextMonthStr = localMonthNames[nextMonthVal];
 
-        if (paymentsAsync.isLoading || expensesAsync.isLoading) {
-          final isMobile = MediaQuery.of(context).size.width <= 768;
-          if (isMobile) {
-            return Column(
-              children: [
-                LoadingSkeleton.skeletonCard(height: 110),
-                const SizedBox(height: AppSpacing.s),
-                LoadingSkeleton.skeletonCard(height: 110),
-                const SizedBox(height: AppSpacing.s),
-                LoadingSkeleton.skeletonCard(height: 140),
-              ],
-            );
-          } else {
-            return Row(
-              children: [
-                Expanded(child: LoadingSkeleton.skeletonCard(height: 110)),
-                const SizedBox(width: AppSpacing.s),
-                Expanded(child: LoadingSkeleton.skeletonCard(height: 110)),
-                const SizedBox(width: AppSpacing.s),
-                Expanded(child: LoadingSkeleton.skeletonCard(height: 140)),
-              ],
-            );
-          }
-        }
+    final card1 = _buildProjectionCard(
+      context,
+      title: 'Projected Income ($nextMonthStr $nextYearVal)',
+      amount: totalProjIncome,
+      amountColor: const Color(0xFF059669),
+      subtext: totalProjIncome == 0 ? 'No projected income.' : 'Expected for $nextMonthStr $nextYearVal.',
+      onViewTap: () => context.push('/projected-payments'),
+    );
 
-        if (paymentsAsync.hasError || expensesAsync.hasError) {
-          return const SizedBox.shrink();
-        }
+    final card2 = _buildProjectionCard(
+      context,
+      title: 'Projected Expense ($nextMonthStr $nextYearVal)',
+      amount: totalProjExpense,
+      amountColor: const Color(0xFFDC2626),
+      subtext: totalProjExpense == 0 ? 'No projected expenses.' : 'Expected for $nextMonthStr $nextYearVal.',
+      onViewTap: () => context.push('/projected-expenses'),
+    );
 
-        final payData = paymentsAsync.value ?? {};
-        final expData = expensesAsync.value ?? {};
-
-        final double totalProjIncome = (payData['total_projected_payment'] as num?)?.toDouble() ?? 0.0;
-        final double totalProjExpense = (expData['total_projected_expense'] as num?)?.toDouble() ?? 0.0;
-        final double surplus = totalProjIncome - totalProjExpense;
-        final isPositive = surplus >= 0;
-
-        final isMobile = MediaQuery.of(context).size.width <= 768;
-
-        final monthNames = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        final selectedMonth = ref.watch(dashboardMonthProvider);
-        final selectedYear = ref.watch(dashboardYearProvider);
-        final monthStr = monthNames[selectedMonth - 1];
-
-        final depositBalancesAsync = ref.watch(depositBalancesProvider);
-
-        final cards = [
-          _buildProjectionCard(
-            context,
-            title: 'Projected Income',
-            amount: totalProjIncome,
-            amountColor: const Color(0xFF059669),
-            subtext: totalProjIncome == 0 ? 'No projected income.' : 'Expected income payments for $monthStr $selectedYear.',
-            onViewTap: () => context.push('/projected-payments'),
-          ),
-          _buildProjectionCard(
-            context,
-            title: 'Projected Expense',
-            amount: totalProjExpense,
-            amountColor: const Color(0xFFDC2626),
-            subtext: totalProjExpense == 0 ? 'No projected expenses.' : 'Expected expense payments for $monthStr $selectedYear.',
-            onViewTap: () => context.push('/projected-expenses'),
-          ),
-
-          // Petty Cash Card
-          Card(
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              onTap: () => context.push('/banking/petty-cash'),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.m),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Petty Cash Balance',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Icon(Icons.wallet, size: 16, color: const Color(0xFF059669)),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.s),
-                    depositBalancesAsync.when(
-                      data: (balances) => Text(
-                        _formatCurrency(context, balances.pettyCash),
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
-                      ),
-                      loading: () => const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                      error: (e, s) => const Text('₹0.00'),
-                    ),
-                    const SizedBox(height: AppSpacing.s),
-                    const Text(
-                      'Click to view ledger',
-                      style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Undeposited Funds Card
-          Card(
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              onTap: () => context.push('/banking/undeposited-funds'),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.m),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Undeposited Funds',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondaryLight),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Icon(Icons.business_center, size: 16, color: AppColors.primaryBlue),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.s),
-                    depositBalancesAsync.when(
-                      data: (balances) => Text(
-                        _formatCurrency(context, balances.undepositedFunds),
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
-                      ),
-                      loading: () => const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-                      error: (e, s) => const Text('₹0.00'),
-                    ),
-                    const SizedBox(height: AppSpacing.s),
-                    const Text(
-                      'Click to view ledger',
-                      style: TextStyle(fontSize: 11, color: AppColors.textSecondaryLight),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ];
-
-        if (isMobile) {
-          return Column(
-            children: [
-              cards[0],
-              const SizedBox(height: AppSpacing.s),
-              cards[1],
-              const SizedBox(height: AppSpacing.s),
-              cards[2],
-              const SizedBox(height: AppSpacing.s),
-              cards[3],
-            ],
-          );
-        } else {
-          return Row(
+    return depositBalancesAsync.when(
+      data: (balances) {
+        final card3 = _buildDecoratedCard(
+          onTap: () => context.push('/banking/petty-cash'),
+          padding: const EdgeInsets.all(12),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: cards[0]),
-              const SizedBox(width: AppSpacing.s),
-              Expanded(child: cards[1]),
-              const SizedBox(width: AppSpacing.s),
-              Expanded(child: cards[2]),
-              const SizedBox(width: AppSpacing.s),
-              Expanded(child: cards[3]),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Petty Cash',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(AppIcons.wallet, size: 14, color: const Color(0xFF059669).withValues(alpha: 0.6)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _formatCurrency(context, balances.pettyCash),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF059669)),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Click to view ledger →',
+                style: TextStyle(fontSize: 8, color: AppColors.textSecondaryLight),
+              ),
             ],
-          );
-        }
+          ),
+        );
+
+        final card4 = _buildDecoratedCard(
+          onTap: () => context.push('/banking/undeposited-funds'),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Undeposited',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(AppIcons.business_center, size: 14, color: AppColors.primaryBlue.withValues(alpha: 0.6)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _formatCurrency(context, balances.undepositedFunds),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Click to view ledger →',
+                style: TextStyle(fontSize: 8, color: AppColors.textSecondaryLight),
+              ),
+            ],
+          ),
+        );
+
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: card1),
+                const SizedBox(width: 12),
+                Expanded(child: card2),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: card3),
+                const SizedBox(width: 12),
+                Expanded(child: card4),
+              ],
+            ),
+          ],
+        );
       },
+      loading: () => Container(
+        height: 160,
+        alignment: Alignment.center,
+        child: const CircularProgressIndicator(),
+      ),
+      error: (e, _) => Container(
+        height: 160,
+        alignment: Alignment.center,
+        child: Text('Error: $e', style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionCard(BuildContext context, WidgetRef ref) {
+    final selectedPlan = ref.watch(selectedDashboardUpgradePlanProvider);
+    final isPremiumSelected = selectedPlan == 'premium';
+    final isProfessionalSelected = selectedPlan == 'professional';
+
+    return _buildDecoratedCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(AppIcons.payment, color: AppColors.primaryBlue, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Subscription & Upgrade',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+                    ),
+                    Text(
+                      'Manage your current plan',
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text('Current: ', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Free',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Standard Premium Card
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => ref.read(selectedDashboardUpgradePlanProvider.notifier).setPlan('premium'),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isPremiumSelected ? const Color(0xFFEFF6FF) : Colors.transparent,
+                        border: Border.all(
+                          color: isPremiumSelected ? const Color(0xFF0D9488) : Colors.grey.shade200,
+                          width: isPremiumSelected ? 1.5 : 1.0,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Badge Label Chip
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDBEAFE),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    '★ Popular',
+                                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'STANDARD PREMIUM',
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '₹749/mo',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (isPremiumSelected) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 36,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0D9488),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                ),
+                                onPressed: () => context.push('/pricing'),
+                                child: const Text(
+                                  '🔒 Upgrade Now',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Professional Card
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => ref.read(selectedDashboardUpgradePlanProvider.notifier).setPlan('professional'),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isProfessionalSelected ? const Color(0xFFF5F3FF) : Colors.transparent,
+                        border: Border.all(
+                          color: isProfessionalSelected ? const Color(0xFF7C3AED) : Colors.grey.shade200,
+                          width: isProfessionalSelected ? 1.5 : 1.0,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Badge Label Chip
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E8FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'PROFESSIONAL',
+                                    style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'PROFESSIONAL',
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '₹1499/mo',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (isProfessionalSelected) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 36,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF7C3AED),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: EdgeInsets.zero,
+                                ),
+                                onPressed: () => context.push('/pricing'),
+                                child: const Text(
+                                  '🔒 Pay & Upgrade Now',
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1008,44 +1348,42 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildBanksList(BuildContext context, List<BankAccount> banks) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.m),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Bank Accounts', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.s),
-            if (banks.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.l),
-                child: Center(child: Text('No active bank accounts found.', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight))),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: banks.length,
-                separatorBuilder: (context, index) => const Divider(),
-                itemBuilder: (context, index) {
-                  final bank = banks[index];
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFEFF6FF),
-                      child: Icon(Icons.account_balance, color: AppColors.primaryBlue),
-                    ),
-                    title: Text(bank.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                    subtitle: Text('Acct: ${bank.accountNumber}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
-                    trailing: Text(
-                      _formatCurrency(context, bank.balance),
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
+    return _buildDecoratedCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Bank Accounts', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
+          const SizedBox(height: AppSpacing.s),
+          if (banks.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.l),
+              child: Center(child: Text('No active bank accounts found.', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight))),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: banks.length,
+              separatorBuilder: (context, index) => const Divider(),
+              itemBuilder: (context, index) {
+                final bank = banks[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.08),
+                    child: const Icon(AppIcons.account_balance, color: AppColors.primaryBlue, size: 20),
+                  ),
+                  title: Text(bank.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
+                  subtitle: Text('Acct: ${bank.accountNumber}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryLight)),
+                  trailing: Text(
+                    _formatCurrency(context, bank.balance),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
     );
   }
@@ -1097,13 +1435,13 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
-      {'label': 'Invoice', 'icon': Icons.description_outlined, 'path': '/invoices/new'},
-      {'label': 'Quote', 'icon': Icons.request_quote_outlined, 'path': '/quotes/new'},
-      {'label': 'Customer', 'icon': Icons.people_outline, 'path': '/customers/new'},
-      {'label': 'Item', 'icon': Icons.inventory_2_outlined, 'path': '/items/new'},
-      {'label': 'Bill', 'icon': Icons.receipt_long_outlined, 'path': '/bills/new'},
-      {'label': 'Expense', 'icon': Icons.shopping_bag_outlined, 'path': '/expenses/new'},
-      {'label': 'Journal', 'icon': Icons.calculate_outlined, 'path': '/accounting/journals/new'},
+      {'label': 'Invoice', 'icon': AppIcons.description_outlined, 'path': '/invoices/new'},
+      {'label': 'Quote', 'icon': AppIcons.request_quote_outlined, 'path': '/quotes/new'},
+      {'label': 'Customer', 'icon': AppIcons.people_outline, 'path': '/customers/new'},
+      {'label': 'Item', 'icon': AppIcons.inventory_2_outlined, 'path': '/items/new'},
+      {'label': 'Bill', 'icon': AppIcons.receipt_long_outlined, 'path': '/bills/new'},
+      {'label': 'Expense', 'icon': AppIcons.shopping_bag_outlined, 'path': '/expenses/new'},
+      {'label': 'Journal', 'icon': AppIcons.calculate_outlined, 'path': '/accounting/journals/new'},
     ];
 
     return Column(
@@ -1114,41 +1452,36 @@ class DashboardScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: AppColors.textPrimaryLight,
           ),
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 98,
+          height: 80,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: actions.length,
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final act = actions[index];
-              return InkWell(
-                onTap: () => context.push(act['path'] as String),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: 80,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.borderLight),
-                  ),
+              return SizedBox(
+                width: 80,
+                child: _buildDecoratedCard(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  onTap: () => context.push(act['path'] as String),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         act['icon'] as IconData,
                         color: AppColors.primaryBlue,
-                        size: 24,
+                        size: 20,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         act['label'] as String,
                         textAlign: TextAlign.center,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 10,
@@ -1166,20 +1499,49 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildDecoratedCard({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    VoidCallback? onTap,
+  }) {
+    final Widget cardContent = Container(
+      margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 1),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+      ),
+      padding: padding ?? const EdgeInsets.all(12),
+      child: child,
+    );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: cardContent,
+        ),
+      );
+    }
+    return cardContent;
+  }
+
   Widget _buildSearchSearchBar(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.m),
+      margin: const EdgeInsets.only(bottom: AppSpacing.s),
       child: InkWell(
         onTap: () => _showDashboardSearchDialog(context),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: isDark ? Colors.white10 : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark ? Colors.white10 : Colors.grey.shade200,
             ),
@@ -1187,9 +1549,9 @@ class DashboardScreen extends ConsumerWidget {
           child: Row(
             children: [
               Icon(
-                Icons.search,
+                AppIcons.search,
                 color: isDark ? Colors.white54 : Colors.grey.shade500,
-                size: 20,
+                size: 18,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1198,7 +1560,7 @@ class DashboardScreen extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isDark ? Colors.white54 : Colors.grey.shade500,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -1228,7 +1590,7 @@ class DashboardScreen extends ConsumerWidget {
                       autofocus: true,
                       decoration: const InputDecoration(
                         hintText: 'Search customers, items, invoices, quotes...',
-                        prefixIcon: Icon(Icons.search),
+                        prefixIcon: Icon(AppIcons.search),
                       ),
                       onChanged: (val) {
                         setDialogState(() {

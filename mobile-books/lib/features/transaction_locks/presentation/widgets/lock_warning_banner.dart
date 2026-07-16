@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/transaction_locks/providers/transaction_lock_provider.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class LockWarningBanner extends ConsumerWidget {
   final TransactionLockModule module;
@@ -48,7 +49,7 @@ class LockWarningBanner extends ConsumerWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 2.0),
-            child: Icon(Icons.lock, color: AppColors.danger, size: 18.0),
+            child: Icon(AppIcons.lock, color: AppColors.danger, size: 18.0),
           ),
           const SizedBox(width: AppSpacing.s),
           Expanded(

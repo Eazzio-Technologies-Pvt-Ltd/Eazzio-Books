@@ -71,7 +71,7 @@ class StateDropdownField extends StatelessWidget {
         labelText: label,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       ),
-      value: normalisedValue,
+      initialValue: normalisedValue,
       items: indianStates.map((state) {
         return DropdownMenuItem<String>(
           value: state,

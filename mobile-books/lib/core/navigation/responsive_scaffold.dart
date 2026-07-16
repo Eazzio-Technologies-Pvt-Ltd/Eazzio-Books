@@ -15,6 +15,7 @@ import 'package:mobile_books/features/dashboard/presentation/providers/notificat
 import 'package:mobile_books/features/dashboard/data/models/notification_model.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
 import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 final globalSearchProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, query) async {
   if (query.trim().isEmpty) return {};
@@ -50,12 +51,12 @@ class SidebarSubmenuItem {
 const List<SidebarMenuItem> sidebarMenus = [
   SidebarMenuItem(
     label: 'Home',
-    icon: Icons.home_outlined,
+    icon: AppIcons.home_outlined,
     path: '/dashboard',
   ),
   SidebarMenuItem(
     label: 'Items',
-    icon: Icons.inventory_2_outlined,
+    icon: AppIcons.inventory_2_outlined,
     children: [
       SidebarSubmenuItem(label: 'Items', path: '/items'),
       SidebarSubmenuItem(label: 'New Item', path: '/items/new'),
@@ -67,7 +68,7 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Sales',
-    icon: Icons.shopping_cart_outlined,
+    icon: AppIcons.shopping_cart_outlined,
     children: [
       SidebarSubmenuItem(label: 'Customers', path: '/customers'),
       SidebarSubmenuItem(label: 'Quotes', path: '/quotes'),
@@ -82,7 +83,7 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Purchases',
-    icon: Icons.shopping_bag_outlined,
+    icon: AppIcons.shopping_bag_outlined,
     children: [
       SidebarSubmenuItem(label: 'Vendors', path: '/vendors'),
       SidebarSubmenuItem(label: 'Expenses', path: '/expenses'),
@@ -95,7 +96,7 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Time Tracking',
-    icon: Icons.access_time_outlined,
+    icon: AppIcons.access_time_outlined,
     children: [
       SidebarSubmenuItem(label: 'Projects', path: '/projects'),
       SidebarSubmenuItem(label: 'Timesheets', path: '/timesheets'),
@@ -103,7 +104,7 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Banking',
-    icon: Icons.account_balance_outlined,
+    icon: AppIcons.account_balance_outlined,
     children: [
       SidebarSubmenuItem(label: 'Bank Accounts', path: '/banking'),
       SidebarSubmenuItem(label: 'Bank Rules', path: '/bank-rules'),
@@ -112,7 +113,7 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Accountant',
-    icon: Icons.calculate_outlined,
+    icon: AppIcons.calculate_outlined,
     children: [
       SidebarSubmenuItem(label: 'Chart of Accounts', path: '/accounting/coa'),
       SidebarSubmenuItem(label: 'Manual Journals', path: '/accounting/journals'),
@@ -124,7 +125,7 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Reports',
-    icon: Icons.assessment_outlined,
+    icon: AppIcons.assessment_outlined,
     children: [
       SidebarSubmenuItem(label: 'Profit & Loss', path: '/reports/profit-loss'),
       SidebarSubmenuItem(label: 'Balance Sheet', path: '/reports/balance-sheet'),
@@ -134,7 +135,7 @@ const List<SidebarMenuItem> sidebarMenus = [
   ),
   SidebarMenuItem(
     label: 'Documents',
-    icon: Icons.description_outlined,
+    icon: AppIcons.description_outlined,
     children: [
       SidebarSubmenuItem(label: 'All Documents', path: '/documents'),
       SidebarSubmenuItem(label: 'Upload Documents', path: '/documents/upload'),
@@ -185,7 +186,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                       autofocus: true,
                       decoration: const InputDecoration(
                         hintText: 'Search customers, items, invoices, quotes...',
-                        prefixIcon: Icon(Icons.search),
+                        prefixIcon: Icon(AppIcons.search),
                       ),
                       onChanged: (val) {
                         setDialogState(() {
@@ -419,19 +420,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
           final orgId = int.tryParse(parts[1]) ?? 0;
           final orgName = parts.sublist(2).join('_');
           
-          if (isFree) {
-            final firstOrgId = orgState.organizations.isNotEmpty ? orgState.organizations.first.id : 0;
-            if (orgId != firstOrgId) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Switching to other organizations is a premium feature. Please upgrade your plan.'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              context.push('/pricing');
-              return;
-            }
-          }
+
           
           final success = await ref.read(organizationsProvider.notifier).switchOrg(orgId, orgName);
           if (success && context.mounted) {
@@ -474,7 +463,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                     ),
                   ),
                   if (isActive)
-                    const Icon(Icons.check, color: AppColors.primaryBlue, size: 18),
+                    const Icon(AppIcons.check, color: AppColors.primaryBlue, size: 18),
                 ],
               ),
             ),
@@ -488,7 +477,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
             value: 'create_new',
             child: Row(
               children: [
-                Icon(Icons.add, color: AppColors.primaryBlue, size: 18),
+                Icon(AppIcons.add, color: AppColors.primaryBlue, size: 18),
                 SizedBox(width: 8),
                 Text('Create New Organization'),
               ],
@@ -501,7 +490,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         child: isMobile
-            ? const Icon(Icons.business_outlined, size: 22)
+            ? const Icon(AppIcons.business_outlined, size: 22)
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -515,7 +504,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.arrow_drop_down),
+                  const Icon(AppIcons.arrow_drop_down),
                 ],
               ),
       ),
@@ -534,7 +523,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
       child: IconButton(
         key: const Key('quickActionButton'),
         padding: EdgeInsets.zero,
-        icon: const Icon(Icons.add, color: Colors.white, size: 20),
+        icon: const Icon(AppIcons.add, color: Colors.white, size: 20),
         onPressed: () => _showQuickActionsBottomSheet(context),
       ),
     );
@@ -588,7 +577,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.description_outlined, color: AppColors.primaryBlue),
+                leading: const Icon(AppIcons.description_outlined, color: AppColors.primaryBlue),
                 title: const Text('New Invoice'),
                 onTap: () {
                   Navigator.pop(context);
@@ -596,7 +585,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.request_quote_outlined, color: AppColors.primaryBlue),
+                leading: const Icon(AppIcons.request_quote_outlined, color: AppColors.primaryBlue),
                 title: const Text('New Quote'),
                 onTap: () {
                   Navigator.pop(context);
@@ -604,7 +593,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.people_outline, color: AppColors.primaryBlue),
+                leading: const Icon(AppIcons.people_outline, color: AppColors.primaryBlue),
                 title: const Text('New Customer'),
                 onTap: () {
                   Navigator.pop(context);
@@ -612,7 +601,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.inventory_2_outlined, color: AppColors.primaryBlue),
+                leading: const Icon(AppIcons.inventory_2_outlined, color: AppColors.primaryBlue),
                 title: const Text('New Item'),
                 onTap: () {
                   Navigator.pop(context);
@@ -620,7 +609,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.receipt_long_outlined, color: AppColors.primaryBlue),
+                leading: const Icon(AppIcons.receipt_long_outlined, color: AppColors.primaryBlue),
                 title: const Text('New Bill'),
                 onTap: () {
                   Navigator.pop(context);
@@ -628,7 +617,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryBlue),
+                leading: const Icon(AppIcons.shopping_bag_outlined, color: AppColors.primaryBlue),
                 title: const Text('New Expense'),
                 onTap: () {
                   Navigator.pop(context);
@@ -636,7 +625,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.calculate_outlined, color: AppColors.primaryBlue),
+                leading: const Icon(AppIcons.calculate_outlined, color: AppColors.primaryBlue),
                 title: const Text('New Journal Entry'),
                 onTap: () {
                   Navigator.pop(context);
@@ -665,9 +654,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
       builder: (context) {
         return Consumer(
           builder: (context, ref, child) {
-            final themeMode = ref.watch(themeModeProvider);
-            final isDark = themeMode == ThemeMode.dark || 
-                (themeMode == ThemeMode.system && MediaQuery.of(context).platformBrightness == Brightness.dark);
+            const isDark = false;
             
             return SafeArea(
               child: Column(
@@ -714,7 +701,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.business, color: AppColors.textSecondaryLight),
+                    leading: const Icon(AppIcons.business, color: AppColors.textSecondaryLight),
                     title: const Text('Organization Settings'),
                     onTap: () {
                       Navigator.pop(context);
@@ -722,7 +709,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.people_alt_outlined, color: AppColors.textSecondaryLight),
+                    leading: const Icon(AppIcons.people_alt_outlined, color: AppColors.textSecondaryLight),
                     title: const Text('Users & Roles'),
                     onTap: () {
                       Navigator.pop(context);
@@ -730,28 +717,17 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.percent, color: AppColors.textSecondaryLight),
+                    leading: const Icon(AppIcons.percent, color: AppColors.textSecondaryLight),
                     title: const Text('Taxes'),
                     onTap: () {
                       Navigator.pop(context);
                       context.push('/taxes');
                     },
                   ),
-                  SwitchListTile(
-                    secondary: Icon(
-                      isDark ? Icons.dark_mode : Icons.light_mode,
-                      color: AppColors.textSecondaryLight,
-                    ),
-                    title: const Text('Dark Mode'),
-                    value: isDark,
-                    onChanged: (bool value) {
-                      ref.read(themeModeProvider.notifier).setThemeMode(
-                          value ? ThemeMode.dark : ThemeMode.light);
-                    },
-                  ),
+
                   const Divider(),
                   ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.redAccent),
+                    leading: const Icon(AppIcons.logout, color: Colors.redAccent),
                     title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
                     onTap: () {
                       Navigator.pop(context);
@@ -781,7 +757,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               clipBehavior: Clip.none,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
+                  icon: const Icon(AppIcons.notifications_outlined),
                   onPressed: () => _showNotificationsBottomSheet(context, ref, list),
                 ),
                 if (hasNotifications)
@@ -813,7 +789,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
             );
           },
           orElse: () => IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: const Icon(AppIcons.notifications_outlined),
             onPressed: () => _showNotificationsBottomSheet(context, ref, []),
           ),
         );
@@ -873,7 +849,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                               return ListTile(
                                 leading: const CircleAvatar(
                                   backgroundColor: Colors.amberAccent,
-                                  child: Icon(Icons.payment_outlined, color: Colors.black87),
+                                  child: Icon(AppIcons.payment_outlined, color: Colors.black87),
                                 ),
                                 title: Text(
                                   'Installment Due: ${n.invoiceNumber}',
@@ -950,7 +926,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               child: const Text('Cancel'),
             ),
             ElevatedButton.icon(
-              icon: const Icon(Icons.chat_bubble_outline, size: 16),
+              icon: const Icon(AppIcons.chat_bubble_outline, size: 16),
               label: const Text('Send to WhatsApp'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF25D366),
@@ -978,7 +954,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               },
             ),
             ElevatedButton.icon(
-              icon: const Icon(Icons.email_outlined, size: 16),
+              icon: const Icon(AppIcons.email_outlined, size: 16),
               label: const Text('Send to Email'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF006EE6),
@@ -1025,7 +1001,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 message: 'Upgrade',
                 child: IconButton(
                   key: const Key('appbarUpgradeButton'),
-                  icon: const Icon(Icons.workspace_premium, color: Colors.amber, size: 20),
+                  icon: const Icon(AppIcons.workspace_premium, color: Colors.amber, size: 20),
                   onPressed: () => context.push('/pricing'),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -1039,7 +1015,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
             if (originalAppBar.actions != null) ...originalAppBar.actions!,
             TextButton.icon(
               key: const Key('appbarUpgradeButton'),
-              icon: const Icon(Icons.workspace_premium, color: Colors.amber, size: 16),
+              icon: const Icon(AppIcons.workspace_premium, color: Colors.amber, size: 16),
               label: const Text(
                 'Upgrade',
                 style: TextStyle(
@@ -1075,7 +1051,7 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
               ? (canPop 
                   ? IconButton(
                       key: const Key('backButton'),
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(AppIcons.arrow_back),
                       onPressed: () => context.pop(),
                     )
                   : originalAppBar.leading)
@@ -1116,12 +1092,12 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
             ? (canPop 
                 ? IconButton(
                     key: const Key('backButton'),
-                    icon: const Icon(Icons.arrow_back),
+                    icon: const Icon(AppIcons.arrow_back),
                     onPressed: () => context.pop(),
                   )
                 : IconButton(
                     key: const Key('drawerOpenButton'),
-                    icon: const Icon(Icons.menu),
+                    icon: const Icon(AppIcons.menu),
                     onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                   ))
             : null,
@@ -1159,14 +1135,23 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(subscriptionLimitProvider, (previous, next) {
+      if (next != null) {
+        UpgradeContinueSheet.show(
+          context,
+          title: 'Upgrade Required',
+          description: next,
+        );
+        ref.read(subscriptionLimitProvider.notifier).state = null;
+      }
+    });
+
     final width = MediaQuery.of(context).size.width;
     // Set breakpoint slightly higher to accommodate 800px width test environment as mobile if needed,
     // or keep 768px but ensure it behaves robustly. Let's use 768px to align with web.
     final isMobile = width <= 768;
     
-    final themeMode = ref.watch(themeModeProvider);
-    final isDark = themeMode == ThemeMode.dark ||
-        (themeMode == ThemeMode.system && MediaQuery.of(context).platformBrightness == Brightness.dark);
+    const isDark = false;
     final baseTheme = isDark ? AppTheme.darkTheme : AppTheme.lightTheme;
     final theme = baseTheme.copyWith(
       textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
@@ -1223,28 +1208,28 @@ class _ResponsiveScaffoldState extends ConsumerState<ResponsiveScaffold> {
                 },
                 items: const [
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.home_outlined),
-                    activeIcon: Icon(Icons.home),
+                    icon: Icon(AppIcons.home_outlined),
+                    activeIcon: Icon(AppIcons.home),
                     label: 'Home',
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.people_outline),
-                    activeIcon: Icon(Icons.people),
+                    icon: Icon(AppIcons.people_outline),
+                    activeIcon: Icon(AppIcons.people),
                     label: 'Customers',
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.receipt_long_outlined),
-                    activeIcon: Icon(Icons.receipt_long),
+                    icon: Icon(AppIcons.receipt_long_outlined),
+                    activeIcon: Icon(AppIcons.receipt_long),
                     label: 'Invoices',
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.money_off_outlined),
-                    activeIcon: Icon(Icons.money_off),
+                    icon: Icon(AppIcons.money_off_outlined),
+                    activeIcon: Icon(AppIcons.money_off),
                     label: 'Expenses',
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.menu_outlined),
-                    activeIcon: Icon(Icons.menu),
+                    icon: Icon(AppIcons.menu_outlined),
+                    activeIcon: Icon(AppIcons.menu),
                     label: 'More',
                   ),
                 ],
@@ -1458,7 +1443,7 @@ class CustomSidebar extends ConsumerWidget {
                                 const Positioned(
                                   top: 4,
                                   right: 4,
-                                  child: Icon(Icons.lock, size: 10, color: Colors.amber),
+                                  child: Icon(AppIcons.lock, size: 10, color: Colors.amber),
                                 ),
                             ],
                           ),
@@ -1528,12 +1513,12 @@ class CustomSidebar extends ConsumerWidget {
                                 ),
                               ),
                               if (isLocked)
-                                const Icon(Icons.lock, size: 14, color: Colors.amber)
+                                const Icon(AppIcons.lock, size: 14, color: Colors.amber)
                               else if (hasChildren)
                                 Icon(
                                   isExpanded
-                                      ? Icons.keyboard_arrow_down
-                                      : Icons.keyboard_arrow_right,
+                                      ? AppIcons.keyboard_arrow_down
+                                      : AppIcons.keyboard_arrow_right,
                                   color: textUnselected.withValues(alpha: 0.6),
                                   size: 16,
                                 ),
@@ -1596,7 +1581,7 @@ class CustomSidebar extends ConsumerWidget {
                                         if (isSubLocked)
                                           const Padding(
                                             padding: EdgeInsets.only(right: 12),
-                                            child: Icon(Icons.lock, size: 12, color: Colors.amber),
+                                            child: Icon(AppIcons.lock, size: 12, color: Colors.amber),
                                           ),
                                       ],
                                     ),
@@ -1655,7 +1640,7 @@ class CustomSidebar extends ConsumerWidget {
                 Center(
                   child: IconButton(
                     icon: Icon(
-                      isCollapsed ? Icons.chevron_right : Icons.chevron_left,
+                      isCollapsed ? AppIcons.chevron_right : AppIcons.chevron_left,
                       color: textUnselected,
                     ),
                     onPressed: onCollapseToggle,
@@ -1782,7 +1767,7 @@ class AppNavigationDrawer extends ConsumerWidget {
                   return ListTile(
                     leading: Icon(menu.icon, color: isLocked ? Colors.grey : null),
                     title: Text(menu.label, style: TextStyle(color: isLocked ? Colors.grey : null)),
-                    trailing: isLocked ? const Icon(Icons.lock, size: 14, color: Colors.amber) : null,
+                    trailing: isLocked ? const Icon(AppIcons.lock, size: 14, color: Colors.amber) : null,
                     selected: isSelected,
                     onTap: () {
                       Navigator.pop(context);
@@ -1810,7 +1795,7 @@ class AppNavigationDrawer extends ConsumerWidget {
                         ),
                       ),
                       if (isLocked)
-                        const Icon(Icons.lock, size: 14, color: Colors.amber),
+                        const Icon(AppIcons.lock, size: 14, color: Colors.amber),
                     ],
                   ),
                   initiallyExpanded: anyChildSelected,
@@ -1823,7 +1808,7 @@ class AppNavigationDrawer extends ConsumerWidget {
                         child.label,
                         style: TextStyle(color: isSubLocked ? Colors.grey : null),
                       ),
-                      trailing: isSubLocked ? const Icon(Icons.lock, size: 12, color: Colors.amber) : null,
+                      trailing: isSubLocked ? const Icon(AppIcons.lock, size: 12, color: Colors.amber) : null,
                       selected: isSubSelected,
                       onTap: () {
                         Navigator.pop(context);

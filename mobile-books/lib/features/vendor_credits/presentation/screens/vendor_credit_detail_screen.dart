@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/vendor_credits/presentation/providers/vendor_credit_provider.dart';
 import 'package:mobile_books/features/vendor_credits/data/services/vendor_credit_service.dart';
@@ -12,6 +11,7 @@ import 'package:mobile_books/features/bills/presentation/providers/bill_provider
 import 'package:mobile_books/core/network/network_client.dart';
 import 'package:printing/printing.dart';
 import 'package:dio/dio.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class VendorCreditDetailScreen extends ConsumerStatefulWidget {
   final int vendorCreditId;
@@ -265,7 +265,7 @@ class _VendorCreditDetailScreenState extends ConsumerState<VendorCreditDetailScr
         title: const Text('Vendor Credit Details'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(AppIcons.picture_as_pdf_outlined),
             tooltip: 'Export PDF',
             onPressed: () async {
               setState(() => _actionLoading = true);
@@ -334,13 +334,13 @@ class _VendorCreditDetailScreenState extends ConsumerState<VendorCreditDetailScr
                           children: [
                             if (canModify) ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.edit),
+                                icon: const Icon(AppIcons.edit),
                                 label: const Text('Edit'),
                                 onPressed: () => context.push('/vendor-credits/${vc.id}/edit'),
                               ),
                               const SizedBox(width: AppSpacing.s),
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.delete),
+                                icon: const Icon(AppIcons.delete),
                                 label: const Text('Delete'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
                                 onPressed: _deleteVendorCredit,
@@ -349,7 +349,7 @@ class _VendorCreditDetailScreenState extends ConsumerState<VendorCreditDetailScr
                             ],
                             if (vc.remainingAmount > 0 && vc.status != 'Void') ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.compare_arrows),
+                                icon: const Icon(AppIcons.compare_arrows),
                                 label: const Text('Apply to Bill'),
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2F80ED)),
                                 onPressed: () => _showApplyCreditDialog(vc.vendorId!, vc.remainingAmount),
@@ -357,7 +357,7 @@ class _VendorCreditDetailScreenState extends ConsumerState<VendorCreditDetailScr
                               const SizedBox(width: AppSpacing.s),
                             ],
                             ElevatedButton.icon(
-                              icon: const Icon(Icons.email),
+                              icon: const Icon(AppIcons.email),
                               label: const Text('Email Details'),
                               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF475569)),
                               onPressed: () => _showEmailDialog(vendorEmail, vc.vendorCreditNumber),

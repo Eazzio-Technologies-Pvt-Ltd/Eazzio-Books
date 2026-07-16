@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -128,14 +127,14 @@ class AppRadius {
 class AppShadows {
   static List<BoxShadow> get card => [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.02),
+      color: AppColors.primary.withValues(alpha: 0.02),
       blurRadius: 16,
       offset: const Offset(0, 4),
     ),
   ];
   static List<BoxShadow> get button => [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.08),
+      color: AppColors.primary.withValues(alpha: 0.08),
       blurRadius: 12,
       offset: const Offset(0, 6),
     ),

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/recurring_expenses/data/models/recurring_expense.dart';
 import 'package:mobile_books/features/recurring_expenses/presentation/providers/recurring_expense_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class RecurringExpenseFormScreen extends ConsumerStatefulWidget {
   final int? expenseId;
@@ -276,7 +277,7 @@ class _RecurringExpenseFormScreenState extends ConsumerState<RecurringExpenseFor
                                 labelText: 'End Date',
                                 suffixIcon: _endDate != null
                                     ? IconButton(
-                                        icon: const Icon(Icons.clear),
+                                        icon: const Icon(AppIcons.clear),
                                         onPressed: () => setState(() => _endDate = null),
                                       )
                                     : null,

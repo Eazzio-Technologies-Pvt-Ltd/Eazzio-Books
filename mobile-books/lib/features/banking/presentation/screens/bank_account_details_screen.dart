@@ -10,6 +10,7 @@ import 'package:mobile_books/features/banking/data/models/bank_transaction.dart'
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BankAccountDetailsScreen extends ConsumerStatefulWidget {
   final int accountId;
@@ -48,7 +49,7 @@ class _BankAccountDetailsScreenState extends ConsumerState<BankAccountDetailsScr
         title: const Text('Account Details'),
         actions: [
           IconButton(
-            icon: Icon(privacyMode ? Icons.visibility_off : Icons.visibility),
+            icon: Icon(privacyMode ? AppIcons.visibility_off : AppIcons.visibility),
             onPressed: () => ref.read(privacyModeProvider.notifier).toggle(),
           ),
         ],
@@ -91,7 +92,7 @@ class _BankAccountDetailsScreenState extends ConsumerState<BankAccountDetailsScr
                             ),
                           ),
                           ElevatedButton.icon(
-                            icon: const Icon(Icons.compare_arrows),
+                            icon: const Icon(AppIcons.compare_arrows),
                             label: const Text('Reconcile'),
                             onPressed: () => context.push('/banking/${account.id}/reconcile'),
                           ),
@@ -145,7 +146,7 @@ class _BankAccountDetailsScreenState extends ConsumerState<BankAccountDetailsScr
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.add, size: 18),
+                      icon: const Icon(AppIcons.add, size: 18),
                       label: const Text('New Transaction'),
                       onPressed: () => _showAddTransactionDialog(context, account),
                     ),
@@ -190,7 +191,7 @@ class _BankAccountDetailsScreenState extends ConsumerState<BankAccountDetailsScr
                                 if (tx.isReconciled)
                                   const Row(
                                     children: [
-                                      Icon(Icons.check_circle, color: AppColors.success, size: 14),
+                                      Icon(AppIcons.check_circle, color: AppColors.success, size: 14),
                                       SizedBox(width: 2),
                                       Text('Reconciled', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
                                     ],
@@ -333,7 +334,7 @@ class _AddTransactionDialogState extends ConsumerState<AddTransactionDialog> {
                     ),
                   ),
                   TextButton.icon(
-                    icon: const Icon(Icons.calendar_today, size: 16),
+                    icon: const Icon(AppIcons.calendar_today, size: 16),
                     label: const Text('Change'),
                     onPressed: () => _selectDate(context),
                   ),

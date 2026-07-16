@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class InventoryMovementsScreen extends ConsumerWidget {
   const InventoryMovementsScreen({super.key});
@@ -20,7 +21,7 @@ class InventoryMovementsScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/inventory/stock'),
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -36,7 +37,7 @@ class InventoryMovementsScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.history_outlined,
+                        AppIcons.history_outlined,
                         size: 64,
                         color: Colors.grey.shade400,
                       ),

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/documents/presentation/providers/document_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class DocumentUploadScreen extends ConsumerStatefulWidget {
   const DocumentUploadScreen({super.key});
@@ -45,17 +46,17 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: const Icon(AppIcons.camera_alt),
               title: const Text('Camera'),
               onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: const Icon(AppIcons.photo_library),
               title: const Text('Gallery'),
               onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
             ListTile(
-              leading: const Icon(Icons.attach_file),
+              leading: const Icon(AppIcons.attach_file),
               title: const Text('Files / Documents'),
               onTap: () => Navigator.pop(ctx, 'file'),
             ),
@@ -208,7 +209,7 @@ class _DocumentUploadScreenState extends ConsumerState<DocumentUploadScreen> {
                     const SizedBox(height: AppSpacing.s),
                     ElevatedButton.icon(
                       onPressed: _saving ? null : _pickFile,
-                      icon: const Icon(Icons.attach_file),
+                      icon: const Icon(AppIcons.attach_file),
                       label: Text(
                         _selectedFileName == null
                             ? 'Choose File'

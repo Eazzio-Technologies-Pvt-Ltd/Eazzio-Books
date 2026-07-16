@@ -15,6 +15,7 @@ import 'package:mobile_books/features/quotes/data/models/salesperson.dart';
 import 'package:mobile_books/features/quotes/data/models/project.dart';
 import 'package:mobile_books/features/quotes/data/services/quote_service.dart';
 import 'package:mobile_books/features/quotes/presentation/providers/quote_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class _LineItem {
   int? itemId;
@@ -60,7 +61,8 @@ class SalesOrderFormScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SalesOrderFormScreen> createState() => _SalesOrderFormScreenState();
+  ConsumerState<SalesOrderFormScreen> createState() =>
+      _SalesOrderFormScreenState();
 }
 
 class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
@@ -110,8 +112,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
   Future<void> _loadSalesOrderData() async {
     setState(() => _isLoading = true);
     try {
-      final details =
-          await ref.read(salesOrderServiceProvider).getSalesOrderById(widget.salesOrderId!);
+      final details = await ref
+          .read(salesOrderServiceProvider)
+          .getSalesOrderById(widget.salesOrderId!);
       final order = details.salesOrder;
       _customerId = order.customerId;
       _salesOrderNumber = order.salesOrderNumber;
@@ -126,18 +129,20 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
-            .map((i) => _LineItem(
-                  itemId: i.itemId,
-                  itemName: i.itemName ?? '',
-                  description: i.description ?? '',
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discount: i.discount,
-                  discountType: i.discountType,
-                  hsnCode: i.hsnCode ?? '',
-                  unit: i.unit ?? '',
-                ))
+            .map(
+              (i) => _LineItem(
+                itemId: i.itemId,
+                itemName: i.itemName ?? '',
+                description: i.description ?? '',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                taxRate: i.taxRate,
+                discount: i.discount,
+                discountType: i.discountType,
+                hsnCode: i.hsnCode ?? '',
+                unit: i.unit ?? '',
+              ),
+            )
             .toList();
       }
       _isInit = true;
@@ -145,8 +150,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to load sales order: $e'),
-              backgroundColor: AppColors.danger),
+            content: Text('Failed to load sales order: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -157,8 +163,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
   Future<void> _loadQuoteForConversion() async {
     setState(() => _isLoading = true);
     try {
-      final details =
-          await ref.read(quoteServiceProvider).getQuoteById(widget.convertFromQuoteId!);
+      final details = await ref
+          .read(quoteServiceProvider)
+          .getQuoteById(widget.convertFromQuoteId!);
       final q = details.quote;
       _customerId = q.customerId;
       _salespersonId = q.salespersonId;
@@ -169,18 +176,20 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
 
       if (details.items.isNotEmpty) {
         _lineItems = details.items
-            .map((i) => _LineItem(
-                  itemId: i.itemId,
-                  itemName: i.itemName ?? '',
-                  description: i.description ?? '',
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discount: i.discount,
-                  discountType: i.discountType,
-                  hsnCode: i.hsnCode ?? '',
-                  unit: i.unit ?? '',
-                ))
+            .map(
+              (i) => _LineItem(
+                itemId: i.itemId,
+                itemName: i.itemName ?? '',
+                description: i.description ?? '',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                taxRate: i.taxRate,
+                discount: i.discount,
+                discountType: i.discountType,
+                hsnCode: i.hsnCode ?? '',
+                unit: i.unit ?? '',
+              ),
+            )
             .toList();
       }
       _isInit = true;
@@ -188,8 +197,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to load quote details: $e'),
-              backgroundColor: AppColors.danger),
+            content: Text('Failed to load quote details: $e'),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -213,8 +223,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
     if (_customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Please select a customer'),
-            backgroundColor: AppColors.warning),
+          content: Text('Please select a customer'),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
@@ -222,8 +233,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
         _lineItems.every((i) => i.itemName.isEmpty && i.itemId == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Add at least one line item'),
-            backgroundColor: AppColors.warning),
+          content: Text('Add at least one line item'),
+          backgroundColor: AppColors.warning,
+        ),
       );
       return;
     }
@@ -235,28 +247,36 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
         final updates = <String, dynamic>{
           'customer_id': _customerId,
           'sales_order_date': _salesOrderDate.toIso8601String().split('T')[0],
-          'expected_shipment_date': _expectedShipmentDate?.toIso8601String().split('T')[0],
+          'expected_shipment_date': _expectedShipmentDate
+              ?.toIso8601String()
+              .split('T')[0],
           'reference_number': _referenceNumberController.text.trim().isEmpty
               ? null
               : _referenceNumberController.text.trim(),
-          'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-          'terms': _termsController.text.trim().isEmpty ? null : _termsController.text.trim(),
+          'notes': _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          'terms': _termsController.text.trim().isEmpty
+              ? null
+              : _termsController.text.trim(),
           'salesperson_id': _salespersonId,
           'project_id': _projectId,
           'discount_type': _discountType,
           'items': _lineItems
-              .map((i) => {
-                    'item_id': i.itemId,
-                    'item_name': i.itemName.isEmpty ? null : i.itemName,
-                    'hsn_code': i.hsnCode.isEmpty ? null : i.hsnCode,
-                    'unit': i.unit.isEmpty ? null : i.unit,
-                    'description': i.description.isEmpty ? null : i.description,
-                    'quantity': i.quantity,
-                    'unit_price': i.unitPrice,
-                    'tax_rate': i.taxRate,
-                    'discount': i.discount,
-                    'discount_type': i.discountType,
-                  })
+              .map(
+                (i) => {
+                  'item_id': i.itemId,
+                  'item_name': i.itemName.isEmpty ? null : i.itemName,
+                  'hsn_code': i.hsnCode.isEmpty ? null : i.hsnCode,
+                  'unit': i.unit.isEmpty ? null : i.unit,
+                  'description': i.description.isEmpty ? null : i.description,
+                  'quantity': i.quantity,
+                  'unit_price': i.unitPrice,
+                  'tax_rate': i.taxRate,
+                  'discount': i.discount,
+                  'discount_type': i.discountType,
+                },
+              )
               .toList(),
         };
         await ref
@@ -293,21 +313,23 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
         );
 
         final itemsPayload = _lineItems
-            .map((i) => SalesOrderItem(
-                  id: 0,
-                  salesOrderId: 0,
-                  itemId: i.itemId,
-                  itemName: i.itemName.isEmpty ? null : i.itemName,
-                  hsnCode: i.hsnCode.isEmpty ? null : i.hsnCode,
-                  unit: i.unit.isEmpty ? null : i.unit,
-                  description: i.description.isEmpty ? null : i.description,
-                  quantity: i.quantity,
-                  unitPrice: i.unitPrice,
-                  taxRate: i.taxRate,
-                  discount: i.discount,
-                  discountType: i.discountType,
-                  total: i.lineTotal,
-                ))
+            .map(
+              (i) => SalesOrderItem(
+                id: 0,
+                salesOrderId: 0,
+                itemId: i.itemId,
+                itemName: i.itemName.isEmpty ? null : i.itemName,
+                hsnCode: i.hsnCode.isEmpty ? null : i.hsnCode,
+                unit: i.unit.isEmpty ? null : i.unit,
+                description: i.description.isEmpty ? null : i.description,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                taxRate: i.taxRate,
+                discount: i.discount,
+                discountType: i.discountType,
+                total: i.lineTotal,
+              ),
+            )
             .toList();
 
         final created = await ref
@@ -316,19 +338,30 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
 
         if (sendImmediately) {
           final customersState = ref.read(customersProvider);
-          final customer = customersState.value?.where((c) => c.id == _customerId).firstOrNull;
+          final customer = customersState.value
+              ?.where((c) => c.id == _customerId)
+              .firstOrNull;
           final toEmail = customer?.email ?? '';
           final emailPayload = {
             'to': toEmail.isEmpty ? 'customer@example.com' : toEmail,
             'subject': 'Sales Order ${created.salesOrderNumber}',
-            'body': 'Dear Customer,\n\nPlease find your Sales Order attached.\n\nSales Order Number: ${created.salesOrderNumber}\nTotal: ₹${created.total.toStringAsFixed(2)}\n\nThank you for your business.',
+            'body':
+                'Dear Customer,\n\nPlease find your Sales Order attached.\n\nSales Order Number: ${created.salesOrderNumber}\nTotal: ₹${created.total.toStringAsFixed(2)}\n\nThank you for your business.',
           };
-          await ref.read(salesOrdersProvider.notifier).sendEmail(created.id, emailPayload);
+          await ref
+              .read(salesOrdersProvider.notifier)
+              .sendEmail(created.id, emailPayload);
         }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(sendImmediately ? 'Sales order saved & sent successfully' : 'Sales order created successfully')),
+            SnackBar(
+              content: Text(
+                sendImmediately
+                    ? 'Sales order saved & sent successfully'
+                    : 'Sales order created successfully',
+              ),
+            ),
           );
           context.pop();
         }
@@ -337,8 +370,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: AppColors.danger),
+            content: Text(e.toString()),
+            backgroundColor: AppColors.danger,
+          ),
         );
       }
     } finally {
@@ -406,9 +440,15 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                   id: 0,
                   customerType: 'Business',
                   displayName: nameCtrl.text.trim(),
-                  companyName: companyCtrl.text.trim().isEmpty ? null : companyCtrl.text.trim(),
-                  email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                  phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
+                  companyName: companyCtrl.text.trim().isEmpty
+                      ? null
+                      : companyCtrl.text.trim(),
+                  email: emailCtrl.text.trim().isEmpty
+                      ? null
+                      : emailCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim().isEmpty
+                      ? null
+                      : phoneCtrl.text.trim(),
                   currency: 'INR',
                   openingBalance: 0.0,
                   enablePortal: false,
@@ -491,25 +531,35 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
               if (nameCtrl.text.trim().isEmpty) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
-                      content: Text('Name is required'),
-                      backgroundColor: AppColors.warning),
+                    content: Text('Name is required'),
+                    backgroundColor: AppColors.warning,
+                  ),
                 );
                 return;
               }
               try {
-                final sp = await ref.read(quoteServiceProvider).createSalesperson(
+                final sp = await ref
+                    .read(quoteServiceProvider)
+                    .createSalesperson(
                       nameCtrl.text.trim(),
-                      email: emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
-                      phone: phoneCtrl.text.trim().isEmpty ? null : phoneCtrl.text.trim(),
-                      employeeId: empIdCtrl.text.trim().isEmpty ? null : empIdCtrl.text.trim(),
+                      email: emailCtrl.text.trim().isEmpty
+                          ? null
+                          : emailCtrl.text.trim(),
+                      phone: phoneCtrl.text.trim().isEmpty
+                          ? null
+                          : phoneCtrl.text.trim(),
+                      employeeId: empIdCtrl.text.trim().isEmpty
+                          ? null
+                          : empIdCtrl.text.trim(),
                     );
                 if (ctx.mounted) Navigator.pop(ctx, sp);
               } catch (e) {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: AppColors.danger),
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.danger,
+                    ),
                   );
                 }
               }
@@ -561,13 +611,16 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
               if (nameCtrl.text.trim().isEmpty) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
-                      content: Text('Project name is required'),
-                      backgroundColor: AppColors.warning),
+                    content: Text('Project name is required'),
+                    backgroundColor: AppColors.warning,
+                  ),
                 );
                 return;
               }
               try {
-                final proj = await ref.read(quoteServiceProvider).createProject(
+                final proj = await ref
+                    .read(quoteServiceProvider)
+                    .createProject(
                       Project(
                         id: 0,
                         userId: 0,
@@ -577,7 +630,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                         billingType: 'Fixed Cost',
                         hourlyRate: 0,
                         status: 'Active',
-                        description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                        description: descCtrl.text.trim().isEmpty
+                            ? null
+                            : descCtrl.text.trim(),
                       ),
                     );
                 if (ctx.mounted) Navigator.pop(ctx, proj);
@@ -585,8 +640,9 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: AppColors.danger),
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.danger,
+                    ),
                   );
                 }
               }
@@ -639,20 +695,26 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
         actions: [
           if (!_isEditMode)
             TextButton.icon(
-              onPressed: _isLoading ? null : () => _saveForm(sendImmediately: true),
-              icon: const Icon(Icons.send_and_archive),
+              onPressed: _isLoading
+                  ? null
+                  : () => _saveForm(sendImmediately: true),
+              icon: const Icon(AppIcons.send_and_archive),
               label: const Text('Save & Send'),
             ),
           TextButton.icon(
-            onPressed: _isLoading ? null : () => _saveForm(sendImmediately: false),
+            onPressed: _isLoading
+                ? null
+                : () => _saveForm(sendImmediately: false),
             icon: _isLoading
                 ? const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.primaryBlue),
+                      strokeWidth: 2,
+                      color: AppColors.primaryBlue,
+                    ),
                   )
-                : const Icon(Icons.save),
+                : const Icon(AppIcons.save),
             label: Text(_isLoading ? 'Saving...' : 'Save'),
           ),
         ],
@@ -676,27 +738,34 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                             const Divider(),
                             const SizedBox(height: AppSpacing.s),
                             customersState.when(
-                              data: (customers) => _buildCustomerDropdown(customers),
+                              data: (customers) =>
+                                  _buildCustomerDropdown(customers),
                               loading: () => const LinearProgressIndicator(),
-                              error: (e, _) => Text('Error: $e',
-                                  style: const TextStyle(color: AppColors.danger)),
+                              error: (e, _) => Text(
+                                'Error: $e',
+                                style: const TextStyle(color: AppColors.danger),
+                              ),
                             ),
                             const SizedBox(height: AppSpacing.m),
                             _buildDateField(
                               label: 'Sales Order Date *',
                               value: _salesOrderDate,
-                              onPicked: (d) => setState(() => _salesOrderDate = d),
+                              onPicked: (d) =>
+                                  setState(() => _salesOrderDate = d),
                             ),
                             const SizedBox(height: AppSpacing.m),
                             _buildDateField(
                               label: 'Expected Shipment Date',
                               value: _expectedShipmentDate,
-                              onPicked: (d) => setState(() => _expectedShipmentDate = d),
+                              onPicked: (d) =>
+                                  setState(() => _expectedShipmentDate = d),
                             ),
                             const SizedBox(height: AppSpacing.m),
                             TextFormField(
                               controller: _referenceNumberController,
-                              decoration: const InputDecoration(labelText: 'Reference Number'),
+                              decoration: const InputDecoration(
+                                labelText: 'Reference Number',
+                              ),
                             ),
                           ],
                         ),
@@ -734,13 +803,21 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            OverflowBar(
+                              alignment: MainAxisAlignment.spaceBetween,
+                              overflowAlignment: OverflowBarAlignment.end,
+                              spacing: AppSpacing.s,
+                              overflowSpacing: AppSpacing.s,
                               children: [
-                                Text('Line Items', style: textTheme.titleMedium),
+                                Text(
+                                  'Line Items',
+                                  style: textTheme.titleMedium,
+                                ),
                                 TextButton.icon(
-                                  onPressed: () => setState(() => _lineItems.add(_LineItem())),
-                                  icon: const Icon(Icons.add, size: 18),
+                                  onPressed: () => setState(
+                                    () => _lineItems.add(_LineItem()),
+                                  ),
+                                  icon: const Icon(AppIcons.add, size: 18),
                                   label: const Text('Add Item'),
                                 ),
                               ],
@@ -770,35 +847,46 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                             Text('Summary', style: textTheme.titleMedium),
                             const Divider(),
                             const SizedBox(height: AppSpacing.s),
-                            _summaryRow('Subtotal', '₹${_subtotal.toStringAsFixed(2)}'),
+                            _summaryRow(
+                              'Subtotal',
+                              '₹${_subtotal.toStringAsFixed(2)}',
+                            ),
                             _summaryRow(
                               'Total Discount',
                               '- ₹${_totalDiscount.toStringAsFixed(2)}',
                               valueColor: AppColors.danger,
                             ),
-                             _summaryRow(
-                               'Total Tax',
-                               '+ ₹${_totalTax.toStringAsFixed(2)}',
-                               valueColor: AppColors.success,
-                             ),
-                             const SizedBox(height: AppSpacing.s),
-                             DropdownButtonFormField<String>(
-                               value: _discountType,
-                               decoration: const InputDecoration(labelText: 'Discount Type'),
-                               items: const [
-                                 DropdownMenuItem(value: 'percentage', child: Text('Percentage')),
-                                 DropdownMenuItem(value: 'flat', child: Text('Flat')),
-                               ],
-                               onChanged: (val) {
-                                 if (val != null) {
-                                   setState(() {
-                                     _discountType = val;
-                                   });
-                                 }
-                               },
-                             ),
-                             const SizedBox(height: AppSpacing.s),
-                             const Divider(),
+                            _summaryRow(
+                              'Total Tax',
+                              '+ ₹${_totalTax.toStringAsFixed(2)}',
+                              valueColor: AppColors.success,
+                            ),
+                            const SizedBox(height: AppSpacing.s),
+                            DropdownButtonFormField<String>(
+                              initialValue: _discountType,
+                              decoration: const InputDecoration(
+                                labelText: 'Discount Type',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'percentage',
+                                  child: Text('Percentage'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'flat',
+                                  child: Text('Flat'),
+                                ),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() {
+                                    _discountType = val;
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.s),
+                            const Divider(),
                             _summaryRow(
                               'Grand Total',
                               '₹${_grandTotal.toStringAsFixed(2)}',
@@ -847,17 +935,27 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryBlue,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.m,
+                          ),
                         ),
                         child: _isLoading
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : Text(
-                                _isEditMode ? 'Update Sales Order' : 'Create Sales Order',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                _isEditMode
+                                    ? 'Update Sales Order'
+                                    : 'Create Sales Order',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                       ),
                     ),
@@ -870,39 +968,56 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
   }
 
   Widget _buildCustomerDropdown(List<Customer> customers) {
-    return Row(
-      children: [
-        Expanded(
-          child: SearchableAutocompleteField<Customer>(
-            labelText: 'Customer *',
-            initialValue: customers.where((c) => c.id == _customerId).firstOrNull,
-            items: customers,
-            itemLabelBuilder: (c) {
-              final name = c.displayName ??
-                  [c.firstName, c.lastName]
-                      .where((s) => s != null && s.isNotEmpty)
-                      .join(' ');
-              return name.isNotEmpty ? name : (c.email ?? '');
-            },
-            searchMatcher: (c, query) {
-              final name = (c.displayName ?? '${c.firstName ?? ""} ${c.lastName ?? ""}').toLowerCase();
-              final email = (c.email ?? '').toLowerCase();
-              final q = query.toLowerCase();
-              return name.contains(q) || email.contains(q);
-            },
-            onChanged: (val) => setState(() => _customerId = val?.id),
-            validator: (val) => val == null ? 'Customer is required' : null,
-            onAddNew: _showAddCustomerDialog,
-            addNewLabel: 'Add New Customer',
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s),
-        IconButton(
-          onPressed: _showAddCustomerDialog,
-          icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
-          tooltip: 'Add Customer',
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchableAutocompleteField<Customer>(
+              labelText: 'Customer *',
+              initialValue: customers
+                  .where((c) => c.id == _customerId)
+                  .firstOrNull,
+              items: customers,
+              itemLabelBuilder: (c) {
+                final name =
+                    c.displayName ??
+                    [
+                      c.firstName,
+                      c.lastName,
+                    ].where((s) => s != null && s.isNotEmpty).join(' ');
+                return name.isNotEmpty ? name : (c.email ?? '');
+              },
+              searchMatcher: (c, query) {
+                final name =
+                    (c.displayName ??
+                            '${c.firstName ?? ""} ${c.lastName ?? ""}')
+                        .toLowerCase();
+                final email = (c.email ?? '').toLowerCase();
+                final q = query.toLowerCase();
+                return name.contains(q) || email.contains(q);
+              },
+              onChanged: (val) => setState(() => _customerId = val?.id),
+              validator: (val) => val == null ? 'Customer is required' : null,
+              onAddNew: _showAddCustomerDialog,
+              addNewLabel: 'Add New Customer',
+            ),
+            SizedBox(height: compact ? AppSpacing.s : 0),
+            Align(
+              alignment: compact ? Alignment.centerRight : Alignment.centerLeft,
+              child: IconButton(
+                onPressed: _showAddCustomerDialog,
+                icon: const Icon(
+                  AppIcons.person_add,
+                  color: AppColors.primaryBlue,
+                ),
+                tooltip: 'Add Customer',
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -923,7 +1038,7 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          suffixIcon: const Icon(Icons.calendar_today, size: 18),
+          suffixIcon: const Icon(AppIcons.calendar_today, size: 18),
         ),
         child: Text(displayText),
       ),
@@ -931,52 +1046,76 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
   }
 
   Widget _buildSalespersonDropdown(List<Salesperson> list) {
-    return Row(
-      children: [
-        Expanded(
-          child: SearchableAutocompleteField<Salesperson>(
-            labelText: 'Salesperson',
-            initialValue: list.where((sp) => sp.id == _salespersonId).firstOrNull,
-            items: list,
-            itemLabelBuilder: (sp) => sp.name,
-            searchMatcher: (sp, query) => sp.name.toLowerCase().contains(query.toLowerCase()),
-            onChanged: (val) => setState(() => _salespersonId = val?.id),
-            onAddNew: _showAddSalespersonDialog,
-            addNewLabel: 'Add New Salesperson',
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s),
-        IconButton(
-          onPressed: _showAddSalespersonDialog,
-          icon: const Icon(Icons.person_add_alt_1, color: AppColors.primaryBlue),
-          tooltip: 'Add Salesperson',
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchableAutocompleteField<Salesperson>(
+              labelText: 'Salesperson',
+              initialValue: list
+                  .where((sp) => sp.id == _salespersonId)
+                  .firstOrNull,
+              items: list,
+              itemLabelBuilder: (sp) => sp.name,
+              searchMatcher: (sp, query) =>
+                  sp.name.toLowerCase().contains(query.toLowerCase()),
+              onChanged: (val) => setState(() => _salespersonId = val?.id),
+              onAddNew: _showAddSalespersonDialog,
+              addNewLabel: 'Add New Salesperson',
+            ),
+            SizedBox(height: compact ? AppSpacing.s : 0),
+            Align(
+              alignment: compact ? Alignment.centerRight : Alignment.centerLeft,
+              child: IconButton(
+                onPressed: _showAddSalespersonDialog,
+                icon: const Icon(
+                  AppIcons.person_add_alt_1,
+                  color: AppColors.primaryBlue,
+                ),
+                tooltip: 'Add Salesperson',
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildProjectDropdown(List<Project> list) {
-    return Row(
-      children: [
-        Expanded(
-          child: SearchableAutocompleteField<Project>(
-            labelText: 'Project',
-            initialValue: list.where((p) => p.id == _projectId).firstOrNull,
-            items: list,
-            itemLabelBuilder: (p) => p.projectName,
-            searchMatcher: (p, query) => p.projectName.toLowerCase().contains(query.toLowerCase()),
-            onChanged: (val) => setState(() => _projectId = val?.id),
-            onAddNew: _showAddProjectDialog,
-            addNewLabel: 'Add New Project',
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s),
-        IconButton(
-          onPressed: _showAddProjectDialog,
-          icon: const Icon(Icons.create_new_folder, color: AppColors.primaryBlue),
-          tooltip: 'Add Project',
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchableAutocompleteField<Project>(
+              labelText: 'Project',
+              initialValue: list.where((p) => p.id == _projectId).firstOrNull,
+              items: list,
+              itemLabelBuilder: (p) => p.projectName,
+              searchMatcher: (p, query) =>
+                  p.projectName.toLowerCase().contains(query.toLowerCase()),
+              onChanged: (val) => setState(() => _projectId = val?.id),
+              onAddNew: _showAddProjectDialog,
+              addNewLabel: 'Add New Project',
+            ),
+            SizedBox(height: compact ? AppSpacing.s : 0),
+            Align(
+              alignment: compact ? Alignment.centerRight : Alignment.centerLeft,
+              child: IconButton(
+                onPressed: _showAddProjectDialog,
+                icon: const Icon(
+                  AppIcons.create_new_folder,
+                  color: AppColors.primaryBlue,
+                ),
+                tooltip: 'Add Project',
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -995,11 +1134,18 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
               children: [
                 Text(
                   'Item ${index + 1}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
                 if (_lineItems.length > 1)
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, color: AppColors.danger, size: 20),
+                    icon: const Icon(
+                      AppIcons.remove_circle_outline,
+                      color: AppColors.danger,
+                      size: 20,
+                    ),
                     onPressed: () => setState(() => _lineItems.removeAt(index)),
                     tooltip: 'Remove Item',
                   ),
@@ -1008,10 +1154,13 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
             const SizedBox(height: AppSpacing.s),
             SearchableAutocompleteField<Item>(
               labelText: 'Select from Catalog',
-              initialValue: catalogItems.where((c) => c.id == li.itemId).firstOrNull,
+              initialValue: catalogItems
+                  .where((c) => c.id == li.itemId)
+                  .firstOrNull,
               items: catalogItems,
               itemLabelBuilder: (item) => item.name,
-              searchMatcher: (item, query) => item.name.toLowerCase().contains(query.toLowerCase()),
+              searchMatcher: (item, query) =>
+                  item.name.toLowerCase().contains(query.toLowerCase()),
               onChanged: (val) {
                 if (val != null) {
                   _handleCatalogItemSelected(index, val);
@@ -1042,10 +1191,15 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: TextEditingController(text: li.quantity.toString()),
+                    controller: TextEditingController(
+                      text: li.quantity.toString(),
+                    ),
                     decoration: const InputDecoration(labelText: 'Quantity'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (val) => setState(() => li.quantity = double.tryParse(val) ?? 0),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) =>
+                        setState(() => li.quantity = double.tryParse(val) ?? 0),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
                         return 'Required';
@@ -1061,10 +1215,16 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                 const SizedBox(width: AppSpacing.s),
                 Expanded(
                   child: TextFormField(
-                    controller: TextEditingController(text: li.unitPrice.toString()),
+                    controller: TextEditingController(
+                      text: li.unitPrice.toString(),
+                    ),
                     decoration: const InputDecoration(labelText: 'Unit Price'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (val) => setState(() => li.unitPrice = double.tryParse(val) ?? 0),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) => setState(
+                      () => li.unitPrice = double.tryParse(val) ?? 0,
+                    ),
                   ),
                 ),
               ],
@@ -1074,10 +1234,15 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: TextEditingController(text: li.taxRate.toString()),
+                    controller: TextEditingController(
+                      text: li.taxRate.toString(),
+                    ),
                     decoration: const InputDecoration(labelText: 'Tax Rate %'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (val) => setState(() => li.taxRate = double.tryParse(val) ?? 0),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) =>
+                        setState(() => li.taxRate = double.tryParse(val) ?? 0),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s),
@@ -1091,31 +1256,88 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.s),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: TextEditingController(text: li.discount.toString()),
-                    decoration: const InputDecoration(labelText: 'Discount'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (val) => setState(() => li.discount = double.tryParse(val) ?? 0),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s),
-                Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: li.discountType,
-                    decoration: const InputDecoration(labelText: 'Type'),
-                    items: const [
-                      DropdownMenuItem(value: 'flat', child: Text('Flat (₹)')),
-                      DropdownMenuItem(value: 'percent', child: Text('Percent (%)')),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 430;
+                if (compact) {
+                  return Column(
+                    children: [
+                      TextFormField(
+                        controller: TextEditingController(
+                          text: li.discount.toString(),
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Discount',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (val) => setState(
+                          () => li.discount = double.tryParse(val) ?? 0,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s),
+                      DropdownButtonFormField<String>(
+                        initialValue: li.discountType,
+                        decoration: const InputDecoration(labelText: 'Type'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'flat',
+                            child: Text('Flat (₹)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'percent',
+                            child: Text('Percent (%)'),
+                          ),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => li.discountType = val ?? 'flat'),
+                      ),
                     ],
-                    onChanged: (val) => setState(() => li.discountType = val ?? 'flat'),
-                  ),
-                ),
-              ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: TextEditingController(
+                          text: li.discount.toString(),
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Discount',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (val) => setState(
+                          () => li.discount = double.tryParse(val) ?? 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s),
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: li.discountType,
+                        decoration: const InputDecoration(labelText: 'Type'),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'flat',
+                            child: Text('Flat (₹)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'percent',
+                            child: Text('Percent (%)'),
+                          ),
+                        ],
+                        onChanged: (val) =>
+                            setState(() => li.discountType = val ?? 'flat'),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: AppSpacing.m),
             Container(
@@ -1125,12 +1347,16 @@ class _SalesOrderFormScreenState extends ConsumerState<SalesOrderFormScreen> {
                 color: AppColors.primaryBlue.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                runSpacing: AppSpacing.xs,
                 children: [
                   const Text(
                     'Line Total',
-                    style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.textSecondaryLight),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondaryLight,
+                    ),
                   ),
                   Text(
                     '₹${li.lineTotal.toStringAsFixed(2)}',

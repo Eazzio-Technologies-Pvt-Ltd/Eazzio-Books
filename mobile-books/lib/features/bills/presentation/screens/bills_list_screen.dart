@@ -8,6 +8,7 @@ import 'package:mobile_books/features/bills/data/models/bill.dart';
 import 'package:mobile_books/features/bills/presentation/providers/bill_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BillsListScreen extends ConsumerStatefulWidget {
   const BillsListScreen({super.key});
@@ -148,7 +149,7 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/bills/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -166,10 +167,10 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
                     onChanged: (val) => ref.read(billSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search bills...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(billSearchQueryProvider.notifier).state = '';
@@ -181,7 +182,7 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     if (val == 'sort') {
                       _showSortBottomSheet(context);
@@ -192,7 +193,7 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
                       value: 'sort',
                       child: Row(
                         children: [
-                          Icon(Icons.sort, size: 18),
+                          Icon(AppIcons.sort, size: 18),
                           SizedBox(width: 8),
                           Text('Sort Bills'),
                         ],
@@ -218,7 +219,7 @@ class _BillsListScreenState extends ConsumerState<BillsListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.inventory_2_outlined, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No bills found.',
@@ -330,7 +331,7 @@ class _BillCard extends ConsumerWidget {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(

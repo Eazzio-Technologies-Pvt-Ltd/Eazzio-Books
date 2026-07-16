@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/timesheets/presentation/providers/timesheet_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class TimesheetsListScreen extends ConsumerStatefulWidget {
   const TimesheetsListScreen({super.key});
@@ -55,7 +56,7 @@ class _TimesheetsListScreenState extends ConsumerState<TimesheetsListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/timesheets/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -70,10 +71,10 @@ class _TimesheetsListScreenState extends ConsumerState<TimesheetsListScreen> {
               onChanged: (val) => ref.read(timesheetSearchQueryProvider.notifier).state = val,
               decoration: InputDecoration(
                 hintText: 'Search timesheets...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(AppIcons.clear),
                         onPressed: () {
                           searchController.clear();
                           ref.read(timesheetSearchQueryProvider.notifier).state = '';
@@ -98,7 +99,7 @@ class _TimesheetsListScreenState extends ConsumerState<TimesheetsListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.timer_outlined, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.timer_outlined, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No timesheets found.',

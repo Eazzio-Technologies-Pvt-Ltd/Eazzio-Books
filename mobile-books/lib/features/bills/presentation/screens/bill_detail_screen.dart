@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/bills/presentation/providers/bill_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BillDetailScreen extends ConsumerWidget {
   final int billId;
@@ -25,7 +26,7 @@ class BillDetailScreen extends ConsumerWidget {
             data: (details) => Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  icon: const Icon(AppIcons.picture_as_pdf_outlined),
                   tooltip: 'Export PDF',
                   onPressed: () {
                     final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
@@ -45,7 +46,7 @@ class BillDetailScreen extends ConsumerWidget {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.email_outlined),
+                  icon: const Icon(AppIcons.email_outlined),
                   tooltip: 'Email Statement',
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -60,7 +61,7 @@ class BillDetailScreen extends ConsumerWidget {
           ),
           detailState.when(
             data: (details) => IconButton(
-              icon: const Icon(Icons.edit),
+              icon: const Icon(AppIcons.edit),
               onPressed: () => context.push('/bills/$billId/edit'),
             ),
             loading: () => const SizedBox.shrink(),
@@ -68,7 +69,7 @@ class BillDetailScreen extends ConsumerWidget {
           ),
           detailState.when(
             data: (details) => IconButton(
-              icon: const Icon(Icons.delete, color: AppColors.danger),
+              icon: const Icon(AppIcons.delete, color: AppColors.danger),
               onPressed: () => _confirmDelete(context, ref, details.bill.billNumber),
             ),
             loading: () => const SizedBox.shrink(),
@@ -106,23 +107,46 @@ class BillDetailScreen extends ConsumerWidget {
               // Record Payment Banner
               if (bill.balanceDue > 0 && bill.status.toLowerCase() != 'void') ...[
                 Card(
-                  color: AppColors.success.withOpacity(0.08),
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: AppColors.success.withValues(alpha: 0.2), width: 1),
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.m),
+                    padding: const EdgeInsets.all(12),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Outstanding Balance', style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text('₹${bill.balanceDue.toStringAsFixed(2)} due', style: const TextStyle(color: AppColors.danger, fontSize: 13)),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Outstanding Balance',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimaryLight),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '₹${bill.balanceDue.toStringAsFixed(2)} due',
+                                style: const TextStyle(color: AppColors.danger, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                           onPressed: () => context.push('/bills/$billId/record-payment?balanceDue=${bill.balanceDue}'),
-                          child: const Text('Record Payment'),
+                          child: const Text(
+                            'Record Payment',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),

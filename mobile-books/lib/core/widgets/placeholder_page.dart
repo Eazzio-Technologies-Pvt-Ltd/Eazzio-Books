@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/core/theme/theme.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PlaceholderPage extends StatelessWidget {
   final String title;
@@ -34,7 +35,7 @@ class PlaceholderPage extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.construction_rounded,
+                  AppIcons.construction_rounded,
                   size: 64,
                   color: AppColors.primaryBlue,
                 ),
@@ -61,7 +62,7 @@ class PlaceholderPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(AppIcons.arrow_back),
                 label: const Text('Go Back'),
               ),
             ],

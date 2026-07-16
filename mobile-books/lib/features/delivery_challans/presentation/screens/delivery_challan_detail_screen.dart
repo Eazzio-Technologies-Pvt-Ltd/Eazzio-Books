@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/delivery_challans/presentation/providers/delivery_challan_provider.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class DeliveryChallanDetailScreen extends ConsumerStatefulWidget {
   final int challanId;
@@ -249,7 +250,7 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
         title: const Text('Delivery Challan Details'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(AppIcons.picture_as_pdf_outlined),
             tooltip: 'Export PDF',
             onPressed: () {
               final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
@@ -305,20 +306,20 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
                           children: [
                             if (canModify) ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.edit),
+                                icon: const Icon(AppIcons.edit),
                                 label: const Text('Edit'),
                                 onPressed: () => context.push('/delivery-challans/${dc.id}/edit'),
                               ),
                               const SizedBox(width: AppSpacing.s),
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.cancel),
+                                icon: const Icon(AppIcons.cancel),
                                 label: const Text('Cancel Challan'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.textSecondaryLight),
                                 onPressed: _cancelChallan,
                               ),
                               const SizedBox(width: AppSpacing.s),
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.delete),
+                                icon: const Icon(AppIcons.delete),
                                 label: const Text('Delete'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
                                 onPressed: _deleteChallan,
@@ -327,7 +328,7 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
                             ],
                             if (dc.status.toLowerCase() == 'draft') ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.mark_email_read_outlined),
+                                icon: const Icon(AppIcons.mark_email_read_outlined),
                                 label: const Text('Mark as Sent'),
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E)),
                                 onPressed: () async {
@@ -360,7 +361,7 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
                             ],
                             if (!dc.stockReduced && dc.status != 'Cancelled') ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.local_shipping),
+                                icon: const Icon(AppIcons.local_shipping),
                                 label: const Text('Mark Delivered'),
                                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
                                 onPressed: _markDelivered,
@@ -369,7 +370,7 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
                             ],
                             if (dc.status == 'Delivered') ...[
                               ElevatedButton.icon(
-                                icon: const Icon(Icons.receipt),
+                                icon: const Icon(AppIcons.receipt),
                                 label: const Text('Convert to Invoice'),
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2F80ED)),
                                 onPressed: _convertToInvoice,
@@ -377,7 +378,7 @@ class _DeliveryChallanDetailScreenState extends ConsumerState<DeliveryChallanDet
                               const SizedBox(width: AppSpacing.s),
                             ],
                             ElevatedButton.icon(
-                              icon: const Icon(Icons.email),
+                              icon: const Icon(AppIcons.email),
                               label: const Text('Email PDF'),
                               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF475569)),
                               onPressed: () => _showEmailDialog(customerEmail, dc.deliveryChallanNumber),

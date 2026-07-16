@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/projects/presentation/providers/project_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ProjectDetailScreen extends ConsumerWidget {
   final int projectId;
@@ -40,7 +41,7 @@ class ProjectDetailScreen extends ConsumerWidget {
         actions: [
           detailState.when(
             data: (project) => IconButton(
-              icon: const Icon(Icons.edit),
+              icon: const Icon(AppIcons.edit),
               onPressed: () => context.push('/projects/$projectId/edit'),
             ),
             loading: () => const SizedBox.shrink(),
@@ -48,7 +49,7 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
           detailState.when(
             data: (project) => IconButton(
-              icon: const Icon(Icons.delete, color: AppColors.danger),
+              icon: const Icon(AppIcons.delete, color: AppColors.danger),
               onPressed: () => _confirmDelete(context, ref, project.projectName),
             ),
             loading: () => const SizedBox.shrink(),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/app_theme.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _showSplash = true;
-  int _selectedRoleIndex = 0; // 0 for Field Staff, 1 for Manager
+
 
   late AnimationController _animController;
   late Animation<double> _logoScale;
@@ -189,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       hintText: 'you@example.com',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: Icon(AppIcons.email_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -217,10 +218,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       hintText: 'Enter your password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
+                      prefixIcon: const Icon(AppIcons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          _obscurePassword ? AppIcons.visibility_off_outlined : AppIcons.visibility_outlined,
                         ),
                         onPressed: () {
                           setState(() {

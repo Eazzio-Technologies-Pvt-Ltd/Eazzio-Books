@@ -6,6 +6,7 @@ import 'package:mobile_books/core/navigation/router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 
 import 'package:mobile_books/features/auth/data/models/user.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +28,7 @@ void main() async {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
-                    Icons.error_outline_rounded,
+                    AppIcons.error_outline_rounded,
                     color: Colors.redAccent,
                     size: 64,
                   ),
@@ -44,10 +45,7 @@ void main() async {
                   Text(
                     details.exception.toString(),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
                   ),
                 ],
               ),
@@ -63,9 +61,7 @@ void main() async {
   User.prefs = prefs;
   runApp(
     ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const EazzioBooks(),
     ),
   );
@@ -77,7 +73,6 @@ class EazzioBooks extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Eazzio Books',
@@ -85,7 +80,18 @@ class EazzioBooks extends ConsumerWidget {
       routerConfig: router,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
+      themeMode: ThemeMode.light,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final clampedScaler = mediaQuery.textScaler.clamp(
+          minScaleFactor: 0.95,
+          maxScaleFactor: 1.08,
+        );
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaler: clampedScaler),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

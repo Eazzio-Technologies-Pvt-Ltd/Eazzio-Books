@@ -11,6 +11,7 @@ import 'package:mobile_books/features/recurring_invoices/data/models/recurring_i
 import 'package:mobile_books/features/recurring_invoices/data/models/recurring_invoice_item.dart';
 import 'package:mobile_books/features/recurring_invoices/presentation/providers/recurring_invoice_provider.dart';
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class _LineItem {
   int? itemId;
@@ -182,7 +183,7 @@ class _RecurringInvoiceFormScreenState extends ConsumerState<RecurringInvoiceFor
         title: const Text('New Recurring Invoice'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             onPressed: _isLoading ? null : _submit,
           )
         ],
@@ -234,7 +235,7 @@ class _RecurringInvoiceFormScreenState extends ConsumerState<RecurringInvoiceFor
                         const SizedBox(width: AppSpacing.s),
                         IconButton(
                           onPressed: _showAddCustomerDialog,
-                          icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                          icon: const Icon(AppIcons.person_add, color: AppColors.primaryBlue),
                           tooltip: 'Add Customer',
                         ),
                       ],
@@ -279,7 +280,7 @@ class _RecurringInvoiceFormScreenState extends ConsumerState<RecurringInvoiceFor
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'Start Date *',
-                              suffixIcon: Icon(Icons.calendar_today),
+                              suffixIcon: Icon(AppIcons.calendar_today),
                             ),
                             child: Text(DateFormat('dd MMM yyyy').format(_startDate)),
                           ),
@@ -304,7 +305,7 @@ class _RecurringInvoiceFormScreenState extends ConsumerState<RecurringInvoiceFor
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'End Date (Optional)',
-                              suffixIcon: Icon(Icons.calendar_today),
+                              suffixIcon: Icon(AppIcons.calendar_today),
                             ),
                             child: Text(_endDate != null ? DateFormat('dd MMM yyyy').format(_endDate!) : 'Never ends'),
                           ),
@@ -328,7 +329,7 @@ class _RecurringInvoiceFormScreenState extends ConsumerState<RecurringInvoiceFor
                     children: [
                       const Text('Line Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       IconButton(
-                        icon: const Icon(Icons.add_circle, color: AppColors.primaryBlue),
+                        icon: const Icon(AppIcons.add_circle, color: AppColors.primaryBlue),
                         onPressed: () {
                           setState(() {
                             _lineItems.add(_LineItem());
@@ -426,7 +427,7 @@ class _RecurringInvoiceFormScreenState extends ConsumerState<RecurringInvoiceFor
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: AppColors.danger),
+                                  icon: const Icon(AppIcons.delete, color: AppColors.danger),
                                   onPressed: () {
                                     setState(() {
                                       _lineItems.removeAt(idx);

@@ -7,6 +7,7 @@ import '../../providers/customer_provider.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/loading_skeleton.dart';
 import '../../widgets/common/staggered_fade_in.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({super.key});
@@ -40,7 +41,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(AppIcons.refresh, color: Colors.white),
             onPressed: () => ref.read(customerProvider.notifier).fetchCustomers(),
           ),
         ],
@@ -60,7 +61,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.search, color: AppColors.textHint, size: 20),
+                  const Icon(AppIcons.search, color: AppColors.textHint, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -81,7 +82,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                   ),
                   if (_searchQuery.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Icons.clear, color: AppColors.textHint, size: 18),
+                      icon: const Icon(AppIcons.clear, color: AppColors.textHint, size: 18),
                       onPressed: () {
                         _searchController.clear();
                         setState(() {
@@ -108,7 +109,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         onPressed: () {
           context.push('/customers/new');
         },
-        child: const Icon(Icons.person_add, color: Colors.white),
+        child: const Icon(AppIcons.person_add, color: Colors.white),
       ),
     );
   }
@@ -132,7 +133,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+              const Icon(AppIcons.error_outline, color: AppColors.error, size: 48),
               const SizedBox(height: 16),
               Text(
                 'Error loading customers',
@@ -151,7 +152,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => ref.read(customerProvider.notifier).fetchCustomers(),
-                icon: const Icon(Icons.replay),
+                icon: const Icon(AppIcons.replay),
                 label: const Text('Try Again'),
               ),
             ],
@@ -170,7 +171,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     if (filteredCustomers.isEmpty) {
       return SingleChildScrollView(
         child: EmptyState(
-          icon: Icons.people_outline,
+          icon: AppIcons.people_outline,
           title: _searchQuery.isNotEmpty ? 'No matches found' : 'No customers yet',
           description: _searchQuery.isNotEmpty
               ? 'Try modifying your search query or clear the filter.'
@@ -249,7 +250,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                     ],
                     Row(
                       children: [
-                        const Icon(Icons.email_outlined, size: 14, color: AppColors.textHint),
+                        const Icon(AppIcons.email_outlined, size: 14, color: AppColors.textHint),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -266,7 +267,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                         // Phone
                         Row(
                           children: [
-                            const Icon(Icons.phone_outlined, size: 14, color: AppColors.textHint),
+                            const Icon(AppIcons.phone_outlined, size: 14, color: AppColors.textHint),
                             const SizedBox(width: 6),
                             Text(
                               customer.mobile != null && customer.mobile!.isNotEmpty

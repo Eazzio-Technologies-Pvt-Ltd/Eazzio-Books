@@ -5,6 +5,7 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/accounting/presentation/providers/accounting_provider.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ManualJournalDetailsScreen extends ConsumerWidget {
   final int journalId;
@@ -25,7 +26,7 @@ class ManualJournalDetailsScreen extends ConsumerWidget {
         title: const Text('Journal Details'),
         actions: [
           IconButton(
-            icon: Icon(privacyMode ? Icons.visibility_off : Icons.visibility),
+            icon: Icon(privacyMode ? AppIcons.visibility_off : AppIcons.visibility),
             onPressed: () => ref.read(privacyModeProvider.notifier).toggle(),
           ),
         ],

@@ -6,6 +6,7 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/bulk_updates/data/models/bulk_update_log.dart';
 import 'package:mobile_books/features/bulk_updates/data/services/bulk_update_service.dart';
 import 'package:mobile_books/features/bulk_updates/presentation/providers/bulk_update_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BulkUpdatesScreen extends ConsumerStatefulWidget {
   const BulkUpdatesScreen({super.key});
@@ -538,7 +539,7 @@ class _BulkUpdatesScreenState extends ConsumerState<BulkUpdatesScreen> with Sing
                 Center(
                   child: Column(
                     children: [
-                      Icon(Icons.history, size: 64, color: AppColors.textSecondaryLight),
+                      Icon(AppIcons.history, size: 64, color: AppColors.textSecondaryLight),
                       SizedBox(height: AppSpacing.m),
                       Text('No bulk updates performed yet.', style: TextStyle(fontSize: 16)),
                     ],

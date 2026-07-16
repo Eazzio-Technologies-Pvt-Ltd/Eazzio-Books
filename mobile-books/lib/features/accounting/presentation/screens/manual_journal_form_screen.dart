@@ -12,6 +12,7 @@ import 'package:mobile_books/features/accounting/presentation/providers/accounti
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
 import 'package:mobile_books/widgets/common/unsaved_changes_dialog.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class JournalLineInput {
   int? accountId;
@@ -31,16 +32,15 @@ class JournalLineInput {
 class ManualJournalFormScreen extends ConsumerStatefulWidget {
   final int? journalId; // null = create mode, otherwise edit mode
 
-  const ManualJournalFormScreen({
-    super.key,
-    this.journalId,
-  });
+  const ManualJournalFormScreen({super.key, this.journalId});
 
   @override
-  ConsumerState<ManualJournalFormScreen> createState() => _ManualJournalFormScreenState();
+  ConsumerState<ManualJournalFormScreen> createState() =>
+      _ManualJournalFormScreenState();
 }
 
-class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScreen> {
+class _ManualJournalFormScreenState
+    extends ConsumerState<ManualJournalFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _journalNumberController = TextEditingController();
   final _referenceNumberController = TextEditingController();
@@ -79,7 +79,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
   Future<void> _loadJournalDetails() async {
     setState(() => _isLoading = true);
     try {
-      final journal = await ref.read(journalDetailsProvider(widget.journalId!).future);
+      final journal = await ref.read(
+        journalDetailsProvider(widget.journalId!).future,
+      );
       setState(() {
         _journalNumberController.text = journal.journalNumber;
         _referenceNumberController.text = journal.referenceNumber ?? '';
@@ -92,15 +94,21 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
           for (final line in journal.lines!) {
             final input = JournalLineInput(accountId: line.accountId);
             input.descriptionController.text = line.description ?? '';
-            input.debitController.text = line.debit > 0 ? line.debit.toString() : '';
-            input.creditController.text = line.credit > 0 ? line.credit.toString() : '';
+            input.debitController.text = line.debit > 0
+                ? line.debit.toString()
+                : '';
+            input.creditController.text = line.credit > 0
+                ? line.credit.toString()
+                : '';
             _lineInputs.add(input);
           }
         }
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading journal: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading journal: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -130,7 +138,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
   void _removeLine(int index) {
     if (_lineInputs.length <= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A journal entry requires at least 2 lines.')),
+        const SnackBar(
+          content: Text('A journal entry requires at least 2 lines.'),
+        ),
       );
       return;
     }
@@ -146,7 +156,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
     final coaList = accountsState.value ?? [];
 
     // Enforce lock verification
-    final isLocked = ref.watch(transactionLockValidatorProvider).isLocked(
+    final isLocked = ref
+        .watch(transactionLockValidatorProvider)
+        .isLocked(
           module: TransactionLockModule.manualJournals,
           date: _journalDate,
         );
@@ -159,174 +171,219 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
       totalCredit += double.tryParse(input.creditController.text) ?? 0.0;
     }
     final isBalanced = (totalDebit - totalCredit).abs() < 0.015;
-    final hasUnsavedChanges = !_isSubmitted && (
-      _journalNumberController.text.isNotEmpty ||
-      _referenceNumberController.text.isNotEmpty ||
-      _notesController.text.isNotEmpty
-    );
+    final hasUnsavedChanges =
+        !_isSubmitted &&
+        (_journalNumberController.text.isNotEmpty ||
+            _referenceNumberController.text.isNotEmpty ||
+            _notesController.text.isNotEmpty);
 
     return UnsavedChangesWrapper(
       hasChanges: hasUnsavedChanges,
       child: ResponsiveScaffold(
         currentRoute: '/accounting/journals',
-      appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Journal Entry' : 'New Journal Entry'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    // Warning banner if date falls in a locked period
-                    LockWarningBanner(
-                      module: TransactionLockModule.manualJournals,
-                      date: _journalDate,
-                    ),
+        appBar: AppBar(
+          title: Text(_isEditMode ? 'Edit Journal Entry' : 'New Journal Entry'),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // Warning banner if date falls in a locked period
+                      LockWarningBanner(
+                        module: TransactionLockModule.manualJournals,
+                        date: _journalDate,
+                      ),
 
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          // Header Settings Card
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(AppSpacing.m),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _journalNumberController,
-                                          decoration: const InputDecoration(labelText: 'Journal Number *'),
-                                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            // Header Settings Card
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.m),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller:
+                                                _journalNumberController,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Journal Number *',
+                                            ),
+                                            validator: (v) =>
+                                                v == null || v.isEmpty
+                                                ? 'Required'
+                                                : null,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: AppSpacing.m),
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _referenceNumberController,
-                                          decoration: const InputDecoration(labelText: 'Reference Number'),
+                                        const SizedBox(width: AppSpacing.m),
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller:
+                                                _referenceNumberController,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Reference Number',
+                                            ),
+                                          ),
                                         ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: AppSpacing.s),
+                                    TextFormField(
+                                      controller: _notesController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Notes / Narration',
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: AppSpacing.s),
-                                  TextFormField(
-                                    controller: _notesController,
-                                    decoration: const InputDecoration(labelText: 'Notes / Narration'),
-                                    maxLines: 2,
-                                  ),
-                                  const SizedBox(height: AppSpacing.m),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
+                                      maxLines: 2,
+                                    ),
+                                    const SizedBox(height: AppSpacing.m),
+                                    OverflowBar(
+                                      alignment: MainAxisAlignment.spaceBetween,
+                                      overflowAlignment:
+                                          OverflowBarAlignment.end,
+                                      spacing: AppSpacing.s,
+                                      overflowSpacing: AppSpacing.xs,
+                                      children: [
+                                        Text(
                                           'Journal Date: ${DateFormat('yyyy-MM-dd').format(_journalDate)}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                      TextButton.icon(
-                                        icon: const Icon(Icons.calendar_today, size: 16),
-                                        label: const Text('Change Date'),
-                                        onPressed: () => _selectDate(context),
-                                      ),
-                                    ],
+                                        TextButton.icon(
+                                          icon: const Icon(
+                                            AppIcons.calendar_today,
+                                            size: 16,
+                                          ),
+                                          label: const Text('Change Date'),
+                                          onPressed: () => _selectDate(context),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.m),
+
+                            // Lines Label
+                            OverflowBar(
+                              alignment: MainAxisAlignment.spaceBetween,
+                              overflowAlignment: OverflowBarAlignment.end,
+                              spacing: AppSpacing.s,
+                              overflowSpacing: AppSpacing.s,
+                              children: [
+                                Text(
+                                  'Journal Lines',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                ElevatedButton.icon(
+                                  icon: const Icon(AppIcons.add, size: 16),
+                                  label: const Text('Add Line'),
+                                  onPressed: _addNewLine,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.s),
+
+                            // Dynamic Lines Builder
+                            ...List.generate(_lineInputs.length, (index) {
+                              final input = _lineInputs[index];
+                              return _buildLineItem(index, input, coaList);
+                            }),
+                          ],
+                        ),
+                      ),
+
+                      // Validation Summary Bottom Bar
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.m,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          border: Border(
+                            top: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Total Debit: ₹${totalDebit.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.success,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                ],
-                              ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    'Total Credit: ₹${totalCredit.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.danger,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.m),
-
-                          // Lines Label
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Journal Lines',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              ElevatedButton.icon(
-                                icon: const Icon(Icons.add, size: 16),
-                                label: const Text('Add Line'),
-                                onPressed: _addNewLine,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.s),
-
-                          // Dynamic Lines Builder
-                          ...List.generate(_lineInputs.length, (index) {
-                            final input = _lineInputs[index];
-                            return _buildLineItem(index, input, coaList);
-                          }),
-                        ],
-                      ),
-                    ),
-
-                    // Validation Summary Bottom Bar
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        border: Border(top: BorderSide(color: Colors.grey.shade300)),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Total Debit: ₹${totalDebit.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success),
-                                  textAlign: TextAlign.center,
+                            const SizedBox(height: AppSpacing.xs),
+                            if (!isBalanced)
+                              const Text(
+                                'Out of Balance! Debits must equal Credits.',
+                                style: TextStyle(
+                                  color: AppColors.danger,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
                                 ),
                               ),
-                              Expanded(
-                                child: Text(
-                                  'Total Credit: ₹${totalCredit.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.danger),
-                                  textAlign: TextAlign.center,
+                            const SizedBox(height: AppSpacing.s),
+                            OverflowBar(
+                              alignment: MainAxisAlignment.end,
+                              spacing: AppSpacing.m,
+                              overflowSpacing: AppSpacing.s,
+                              children: [
+                                TextButton(
+                                  onPressed: () => context.pop(),
+                                  child: const Text('Cancel'),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          if (!isBalanced)
-                            const Text(
-                              'Out of Balance! Debits must equal Credits.',
-                              style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold, fontSize: 13),
+                                ElevatedButton(
+                                  onPressed: isLocked || !isBalanced
+                                      ? null
+                                      : _handleSubmit,
+                                  child: const Text('Save Entry'),
+                                ),
+                              ],
                             ),
-                          const SizedBox(height: AppSpacing.s),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                onPressed: () => context.pop(),
-                                child: const Text('Cancel'),
-                              ),
-                              const SizedBox(width: AppSpacing.m),
-                              ElevatedButton(
-                                onPressed: isLocked || !isBalanced ? null : _handleSubmit,
-                                child: const Text('Save Entry'),
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-    ));
+      ),
+    );
   }
 
-  Widget _buildLineItem(int index, JournalLineInput input, List<ChartOfAccount> coaList) {
+  Widget _buildLineItem(
+    int index,
+    JournalLineInput input,
+    List<ChartOfAccount> coaList,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.s),
       child: Padding(
@@ -338,11 +395,21 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
                 CircleAvatar(
                   radius: 12,
                   backgroundColor: Colors.grey.shade300,
-                  child: Text('${index + 1}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: AppColors.danger, size: 18),
+                  icon: const Icon(
+                    AppIcons.delete,
+                    color: AppColors.danger,
+                    size: 18,
+                  ),
                   onPressed: () => _removeLine(index),
                 ),
               ],
@@ -353,7 +420,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
               items: coaList.map((ChartOfAccount a) {
                 return DropdownMenuItem<int?>(
                   value: a.id,
-                  child: Text('${a.accountName} (${a.accountCode ?? 'No Code'})'),
+                  child: Text(
+                    '${a.accountName} (${a.accountCode ?? 'No Code'})',
+                  ),
                 );
               }).toList(),
               validator: (v) => v == null ? 'Required' : null,
@@ -366,7 +435,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
             const SizedBox(height: AppSpacing.xs),
             TextFormField(
               controller: input.descriptionController,
-              decoration: const InputDecoration(labelText: 'Description (optional)'),
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+              ),
             ),
             const SizedBox(height: AppSpacing.xs),
             Row(
@@ -375,18 +446,26 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
                   child: TextFormField(
                     controller: input.debitController,
                     decoration: const InputDecoration(labelText: 'Debit (₹)'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))],
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}'),
+                      ),
+                    ],
                     onChanged: (v) {
                       if (v.isNotEmpty) {
-                        input.creditController.clear(); // A line cannot have both debit and credit
+                        input.creditController
+                            .clear(); // A line cannot have both debit and credit
                       }
                       setState(() {});
                     },
                     validator: (v) {
                       final hasDebit = v != null && v.isNotEmpty;
                       final hasCredit = input.creditController.text.isNotEmpty;
-                      if (!hasDebit && !hasCredit) return 'Enter Debit OR Credit';
+                      if (!hasDebit && !hasCredit)
+                        return 'Enter Debit OR Credit';
                       return null;
                     },
                   ),
@@ -396,18 +475,26 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
                   child: TextFormField(
                     controller: input.creditController,
                     decoration: const InputDecoration(labelText: 'Credit (₹)'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))],
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}'),
+                      ),
+                    ],
                     onChanged: (v) {
                       if (v.isNotEmpty) {
-                        input.debitController.clear(); // A line cannot have both debit and credit
+                        input.debitController
+                            .clear(); // A line cannot have both debit and credit
                       }
                       setState(() {});
                     },
                     validator: (v) {
                       final hasCredit = v != null && v.isNotEmpty;
                       final hasDebit = input.debitController.text.isNotEmpty;
-                      if (!hasDebit && !hasCredit) return 'Enter Debit OR Credit';
+                      if (!hasDebit && !hasCredit)
+                        return 'Enter Debit OR Credit';
                       return null;
                     },
                   ),
@@ -429,7 +516,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
           id: 0,
           journalEntryId: widget.journalId ?? 0,
           accountId: input.accountId!,
-          description: input.descriptionController.text.trim().isEmpty ? null : input.descriptionController.text.trim(),
+          description: input.descriptionController.text.trim().isEmpty
+              ? null
+              : input.descriptionController.text.trim(),
           debit: double.tryParse(input.debitController.text) ?? 0.0,
           credit: double.tryParse(input.creditController.text) ?? 0.0,
         );
@@ -447,8 +536,12 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
         userId: 0,
         journalNumber: _journalNumberController.text,
         journalDate: _journalDate,
-        referenceNumber: _referenceNumberController.text.trim().isEmpty ? null : _referenceNumberController.text.trim(),
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        referenceNumber: _referenceNumberController.text.trim().isEmpty
+            ? null
+            : _referenceNumberController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
         totalDebit: totalDebit,
         totalCredit: totalCredit,
         status: 'published',
@@ -458,7 +551,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
 
       try {
         if (_isEditMode) {
-          await ref.read(journalsProvider.notifier).updateJournal(widget.journalId!, journal);
+          await ref
+              .read(journalsProvider.notifier)
+              .updateJournal(widget.journalId!, journal);
         } else {
           await ref.read(journalsProvider.notifier).createJournal(journal);
         }
@@ -472,9 +567,9 @@ class _ManualJournalFormScreenState extends ConsumerState<ManualJournalFormScree
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error saving journal: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error saving journal: $e')));
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);

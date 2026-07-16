@@ -6,6 +6,7 @@ import 'package:mobile_books/features/invoices/presentation/providers/invoice_pr
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/invoices/data/models/payment.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PettyCashScreen extends ConsumerStatefulWidget {
   const PettyCashScreen({super.key});
@@ -84,10 +85,10 @@ class _PettyCashScreenState extends ConsumerState<PettyCashScreen> {
                     onChanged: (val) => setState(() => _searchQuery = val),
                     decoration: InputDecoration(
                       hintText: 'Search petty cash ledger...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
@@ -99,7 +100,7 @@ class _PettyCashScreenState extends ConsumerState<PettyCashScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.refresh, color: AppColors.primaryBlue),
                   onPressed: () {
                     ref.read(paymentsProvider.notifier).refresh();
                   },
@@ -154,7 +155,7 @@ class _PettyCashScreenState extends ConsumerState<PettyCashScreen> {
                                   child: ListTile(
                                     leading: const CircleAvatar(
                                       backgroundColor: Colors.greenAccent,
-                                      child: Icon(Icons.arrow_downward, color: Colors.black),
+                                      child: Icon(AppIcons.arrow_downward, color: Colors.black),
                                     ),
                                     title: Text(
                                       p.customerName ?? 'Source Unknown',

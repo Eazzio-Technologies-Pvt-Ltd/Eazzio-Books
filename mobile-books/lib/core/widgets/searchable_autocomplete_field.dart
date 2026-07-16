@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_books/core/theme/theme.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 /// A reusable autocomplete field that shows a filterable dropdown list.
 /// Supports optional "Add New" entry at the bottom of the list.
@@ -158,7 +159,7 @@ class _SearchableAutocompleteFieldState<T extends Object>
             labelText: widget.labelText,
             suffixIcon: textEditingController.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
+                    icon: const Icon(AppIcons.clear, size: 18),
                     onPressed: () {
                       textEditingController.clear();
                       setState(() {
@@ -168,7 +169,7 @@ class _SearchableAutocompleteFieldState<T extends Object>
                     },
                   )
                 : IconButton(
-                    icon: const Icon(Icons.arrow_drop_down, size: 24),
+                    icon: const Icon(AppIcons.arrow_drop_down, size: 24),
                     onPressed: () {
                       if (focusNode.hasFocus) {
                         // Already open — close
@@ -208,7 +209,7 @@ class _SearchableAutocompleteFieldState<T extends Object>
                       // "Add New" entry
                       return ListTile(
                         leading:
-                            const Icon(Icons.add, color: AppColors.primaryBlue),
+                            const Icon(AppIcons.add, color: AppColors.primaryBlue),
                         title: Text(
                           widget.addNewLabel ?? 'Add New',
                           style: const TextStyle(
@@ -240,7 +241,7 @@ class _SearchableAutocompleteFieldState<T extends Object>
                         ),
                       ),
                       trailing: isSelected
-                          ? const Icon(Icons.check,
+                          ? const Icon(AppIcons.check,
                               size: 16, color: AppColors.primaryBlue)
                           : null,
                       onTap: () {

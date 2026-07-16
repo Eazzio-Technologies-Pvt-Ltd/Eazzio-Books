@@ -7,6 +7,7 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 
 import 'package:mobile_books/core/network/network_client.dart';
 import 'package:mobile_books/features/reports/presentation/widgets/report_nav_bar.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class CustomerAgingScreen extends ConsumerStatefulWidget {
   const CustomerAgingScreen({super.key});
@@ -79,12 +80,12 @@ class _CustomerAgingScreenState extends ConsumerState<CustomerAgingScreen> {
         title: const Text('Customer Aging Summary'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.table_chart),
+            icon: const Icon(AppIcons.table_chart),
             tooltip: "Export CSV",
             onPressed: () => _showExportDialog(context, ref, 'CSV', asOfDate),
           ),
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(AppIcons.picture_as_pdf_outlined),
             tooltip: "Export PDF",
             onPressed: () => _showExportDialog(context, ref, 'PDF', asOfDate),
           ),
@@ -124,7 +125,7 @@ class _CustomerAgingScreenState extends ConsumerState<CustomerAgingScreen> {
                         children: [
                           if (asOfDate != null)
                             IconButton(
-                              icon: const Icon(Icons.clear, size: 20),
+                              icon: const Icon(AppIcons.clear, size: 20),
                               onPressed: () {
                                 ref.read(customerAgingAsOfDateProvider.notifier).state = null;
                               },
@@ -146,7 +147,7 @@ class _CustomerAgingScreenState extends ConsumerState<CustomerAgingScreen> {
                     },
                     decoration: const InputDecoration(
                       hintText: 'Search customer by name...',
-                      prefixIcon: Icon(Icons.search),
+                      prefixIcon: Icon(AppIcons.search),
                     ),
                   ),
                 ],

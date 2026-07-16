@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/vendors/data/models/vendor.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class VendorFormScreen extends ConsumerStatefulWidget {
   final int? vendorId;
@@ -142,7 +143,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen> {
         title: Text(_isEdit ? 'Edit Vendor' : 'New Vendor'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             onPressed: _isLoading ? null : _save,
           ),
         ],
@@ -208,7 +209,7 @@ class _VendorFormScreenState extends ConsumerState<VendorFormScreen> {
                 ),
                 const SizedBox(height: AppSpacing.m),
                 DropdownButtonFormField<String>(
-                  value: _status,
+                  initialValue: _status,
                   decoration: const InputDecoration(labelText: 'Status'),
                   items: const [
                     DropdownMenuItem(value: 'active', child: Text('Active')),

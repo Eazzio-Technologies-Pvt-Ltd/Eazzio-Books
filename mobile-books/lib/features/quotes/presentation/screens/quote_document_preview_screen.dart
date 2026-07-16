@@ -14,6 +14,7 @@ import 'package:dio/dio.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:mobile_books/core/utils/pdf_helper.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class QuoteDocumentPreviewScreen extends ConsumerStatefulWidget {
   final int quoteId;
@@ -229,17 +230,17 @@ class _QuoteDocumentPreviewScreenState extends ConsumerState<QuoteDocumentPrevie
         actions: [
           if (quoteDetails != null) ...[
             IconButton(
-              icon: const Icon(Icons.share_outlined),
+              icon: const Icon(AppIcons.share_outlined),
               tooltip: 'Share PDF',
               onPressed: _isLoading ? null : () => _sharePdf(quoteDetails),
             ),
             IconButton(
-              icon: const Icon(Icons.print_outlined),
+              icon: const Icon(AppIcons.print_outlined),
               tooltip: 'Print',
               onPressed: _isLoading ? null : () => _printDocument(quoteDetails),
             ),
             IconButton(
-              icon: const Icon(Icons.info_outline),
+              icon: const Icon(AppIcons.info_outline),
               tooltip: 'Share Details',
               onPressed: _isLoading ? null : () => _shareWebLink(quoteDetails),
             ),
@@ -269,7 +270,7 @@ class _QuoteDocumentPreviewScreenState extends ConsumerState<QuoteDocumentPrevie
                       borderRadius: BorderRadius.circular(4),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

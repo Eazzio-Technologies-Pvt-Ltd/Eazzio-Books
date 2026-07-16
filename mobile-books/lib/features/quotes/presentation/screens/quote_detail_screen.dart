@@ -10,15 +10,16 @@ import 'package:mobile_books/features/customers/presentation/providers/customer_
 import 'package:mobile_books/features/settings/data/services/settings_service.dart';
 import 'package:mobile_books/core/utils/sharing_helper.dart';
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 /// Status badge color configuration (duplicated from QuotesScreen for standalone use)
 const Map<String, _StatusStyle> _statusStyles = {
-  'draft':    _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',    Icons.edit_note),
-  'sent':     _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',     Icons.send),
-  'accepted': _StatusStyle(Color(0xFFECFDF5), Color(0xFF047857), 'ACCEPTED', Icons.check_circle_outline),
-  'declined': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'DECLINED', Icons.cancel_outlined),
-  'expired':  _StatusStyle(Color(0xFFFFF1F2), Color(0xFFBE123C), 'EXPIRED',  Icons.timer_off),
-  'invoiced': _StatusStyle(Color(0xFFF0FDFA), Color(0xFF0F766E), 'INVOICED', Icons.receipt_long),
+  'draft':    _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',    AppIcons.edit_note),
+  'sent':     _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',     AppIcons.send),
+  'accepted': _StatusStyle(Color(0xFFECFDF5), Color(0xFF047857), 'ACCEPTED', AppIcons.check_circle_outline),
+  'declined': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'DECLINED', AppIcons.cancel_outlined),
+  'expired':  _StatusStyle(Color(0xFFFFF1F2), Color(0xFFBE123C), 'EXPIRED',  AppIcons.timer_off),
+  'invoiced': _StatusStyle(Color(0xFFF0FDFA), Color(0xFF0F766E), 'INVOICED', AppIcons.receipt_long),
 };
 
 class _StatusStyle {
@@ -31,7 +32,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class QuoteDetailScreen extends ConsumerWidget {
@@ -215,7 +216,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(AppIcons.close),
                         onPressed: isSending ? null : () => Navigator.pop(sheetContext),
                       ),
                     ],
@@ -226,7 +227,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                     decoration: const InputDecoration(
                       labelText: 'To *',
                       hintText: 'recipient@example.com',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: Icon(AppIcons.email_outlined),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     enabled: !isSending,
@@ -236,7 +237,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                     controller: subjectController,
                     decoration: const InputDecoration(
                       labelText: 'Subject *',
-                      prefixIcon: Icon(Icons.subject),
+                      prefixIcon: Icon(AppIcons.subject),
                     ),
                     enabled: !isSending,
                   ),
@@ -260,7 +261,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.attach_file_rounded, color: AppColors.primaryBlue),
+                        const Icon(AppIcons.attach_file_rounded, color: AppColors.primaryBlue),
                         const SizedBox(width: AppSpacing.s),
                         Expanded(
                           child: Text(
@@ -270,7 +271,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                                 ),
                           ),
                         ),
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        const Icon(AppIcons.check_circle, color: Colors.green, size: 20),
                       ],
                     ),
                   ),
@@ -293,7 +294,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.send),
+                          : const Icon(AppIcons.send),
                       label: isSending ? const Text('Sending...') : const Text('✉️ Send Email'),
                       onPressed: isSending
                           ? null
@@ -373,7 +374,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                 // Mark as Sent action
                 if (quote.status.toLowerCase() == 'draft')
                   IconButton(
-                    icon: const Icon(Icons.mark_email_read_outlined),
+                    icon: const Icon(AppIcons.mark_email_read_outlined),
                     tooltip: 'Mark as Sent',
                     onPressed: () async {
                       try {
@@ -394,13 +395,13 @@ class QuoteDetailScreen extends ConsumerWidget {
                   ),
                 // Send email action
                 IconButton(
-                  icon: const Icon(Icons.email_outlined),
+                  icon: const Icon(AppIcons.email_outlined),
                   tooltip: 'Send Quote via Email',
                   onPressed: () =>
                       _showSendEmailSheet(context, ref, quote),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chat_outlined),
+                  icon: const Icon(AppIcons.chat_outlined),
                   tooltip: 'WhatsApp Reminder',
                   onPressed: () async {
                     final customers = ref.read(customersProvider).value ?? [];
@@ -420,7 +421,7 @@ class QuoteDetailScreen extends ConsumerWidget {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.sms_outlined),
+                  icon: const Icon(AppIcons.sms_outlined),
                   tooltip: 'SMS Reminder',
                   onPressed: () async {
                     final customers = ref.read(customersProvider).value ?? [];
@@ -441,28 +442,28 @@ class QuoteDetailScreen extends ConsumerWidget {
                 ),
                 // PDF view document preview action
                 IconButton(
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  icon: const Icon(AppIcons.picture_as_pdf_outlined),
                   tooltip: 'Preview Document',
                   onPressed: () => context.push('/quotes/$quoteId/document'),
                 ),
                 // Convert to invoice action
                 if (canConvert)
                   IconButton(
-                    icon: const Icon(Icons.receipt_long_outlined),
+                    icon: const Icon(AppIcons.receipt_long_outlined),
                     tooltip: 'Convert to Invoice',
                     onPressed: () =>
                         _confirmConvertToInvoice(context, ref, quote),
                   ),
                 // Edit action
                 IconButton(
-                  icon: const Icon(Icons.edit),
+                  icon: const Icon(AppIcons.edit),
                   onPressed: () =>
                       context.push('/quotes/$quoteId/edit'),
                 ),
                 // Delete action
                 IconButton(
                   icon:
-                      const Icon(Icons.delete, color: AppColors.danger),
+                      const Icon(AppIcons.delete, color: AppColors.danger),
                   onPressed: () => _confirmDelete(context, ref),
                 ),
               ],

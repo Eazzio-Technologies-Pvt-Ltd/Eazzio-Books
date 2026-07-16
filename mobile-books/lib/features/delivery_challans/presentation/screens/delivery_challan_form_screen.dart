@@ -14,6 +14,7 @@ import 'package:mobile_books/features/delivery_challans/presentation/providers/d
 import 'package:mobile_books/features/delivery_challans/data/services/delivery_challan_service.dart';
 import 'package:mobile_books/features/sales_orders/presentation/providers/sales_order_provider.dart';
 import 'package:mobile_books/features/sales_orders/data/models/sales_order.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class _LineItem {
   int? itemId;
@@ -221,7 +222,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
           if (!_isEditMode)
             TextButton.icon(
               onPressed: _isLoading ? null : () => _saveChallan(sendImmediately: true),
-              icon: const Icon(Icons.send_and_archive),
+              icon: const Icon(AppIcons.send_and_archive),
               label: const Text('Save & Send'),
             ),
           TextButton.icon(
@@ -233,7 +234,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: AppColors.primaryBlue),
                   )
-                : const Icon(Icons.save),
+                : const Icon(AppIcons.save),
             label: Text(_isLoading ? 'Saving...' : 'Save'),
           ),
         ],
@@ -282,7 +283,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                         const SizedBox(width: AppSpacing.s),
                         IconButton(
                           onPressed: _showAddCustomerDialog,
-                          icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                          icon: const Icon(AppIcons.person_add, color: AppColors.primaryBlue),
                           tooltip: 'Add Customer',
                         ),
                       ],
@@ -333,7 +334,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'Challan Date *',
-                              suffixIcon: Icon(Icons.calendar_today),
+                              suffixIcon: Icon(AppIcons.calendar_today),
                             ),
                             child: Text(DateFormat('dd MMM yyyy').format(_challanDate)),
                           ),
@@ -358,7 +359,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'Expected Delivery Date',
-                              suffixIcon: Icon(Icons.calendar_today),
+                              suffixIcon: Icon(AppIcons.calendar_today),
                             ),
                             child: Text(_deliveryDate != null ? DateFormat('dd MMM yyyy').format(_deliveryDate!) : 'Select Date'),
                           ),
@@ -383,7 +384,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                     children: [
                       const Text('Items To Ship', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       IconButton(
-                        icon: const Icon(Icons.add_circle, color: AppColors.primaryBlue),
+                        icon: const Icon(AppIcons.add_circle, color: AppColors.primaryBlue),
                         onPressed: () {
                           setState(() {
                             _lineItems.add(_LineItem());
@@ -457,7 +458,7 @@ class _DeliveryChallanFormScreenState extends ConsumerState<DeliveryChallanFormS
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: AppColors.danger),
+                                  icon: const Icon(AppIcons.delete, color: AppColors.danger),
                                   onPressed: () {
                                     setState(() {
                                       _lineItems.removeAt(idx);

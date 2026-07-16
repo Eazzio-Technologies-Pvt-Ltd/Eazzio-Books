@@ -298,7 +298,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                       style: AppTextStyles.caption,
                     ),
                     value: _isInventoryTracked,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     contentPadding: EdgeInsets.zero,
                     onChanged: (value) {
                       setState(() => _isInventoryTracked = value);

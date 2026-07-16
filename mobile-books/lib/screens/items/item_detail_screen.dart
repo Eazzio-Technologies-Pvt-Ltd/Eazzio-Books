@@ -6,6 +6,7 @@ import '../../core/utils/formatters.dart';
 import '../../data/models/item_model.dart';
 import '../../providers/item_provider.dart';
 import '../../widgets/common/app_button.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ItemDetailScreen extends ConsumerStatefulWidget {
   final int itemId;
@@ -99,13 +100,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
+            icon: const Icon(AppIcons.edit, color: Colors.white),
             onPressed: () {
               context.push('/items/${item.id}/edit');
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.white),
+            icon: const Icon(AppIcons.delete, color: Colors.white),
             onPressed: _isDeleting ? null : _handleDelete,
           ),
         ],

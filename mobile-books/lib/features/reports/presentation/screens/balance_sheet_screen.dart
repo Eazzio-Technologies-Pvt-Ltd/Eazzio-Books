@@ -12,6 +12,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BalanceSheetScreen extends ConsumerWidget {
   const BalanceSheetScreen({super.key});
@@ -221,7 +222,7 @@ class BalanceSheetScreen extends ConsumerWidget {
         title: const Text('Balance Sheet'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.table_chart),
+            icon: const Icon(AppIcons.table_chart),
             tooltip: "Export CSV",
             onPressed: () {
               reportState.whenData((report) {
@@ -230,7 +231,7 @@ class BalanceSheetScreen extends ConsumerWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(AppIcons.picture_as_pdf_outlined),
             tooltip: "Export PDF",
             onPressed: () {
               reportState.whenData((report) {
@@ -272,7 +273,7 @@ class BalanceSheetScreen extends ConsumerWidget {
                     children: [
                       if (endDate != null)
                         IconButton(
-                          icon: const Icon(Icons.clear, size: 20),
+                          icon: const Icon(AppIcons.clear, size: 20),
                           onPressed: () {
                             ref.read(balanceSheetEndDateProvider.notifier).state = null;
                           },

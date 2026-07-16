@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_books/features/recurring_invoices/data/models/recurring_invoice.dart';
-import 'package:mobile_books/features/recurring_invoices/data/models/recurring_invoice_item.dart';
 
 void main() {
   test('RecurringInvoice serialization', () {

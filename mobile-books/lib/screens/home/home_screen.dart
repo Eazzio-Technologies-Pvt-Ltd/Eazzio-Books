@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/common/app_button.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -36,13 +37,13 @@ class HomeScreen extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(AppIcons.refresh, color: Colors.white),
             onPressed: () {
               ref.read(dashboardProvider.notifier).fetchDashboardData();
             },
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(AppIcons.logout, color: Colors.white),
             onPressed: () {
               ref.read(authProvider.notifier).logout();
             },
@@ -116,7 +117,7 @@ class HomeScreen extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(AppRadius.sm),
                                 ),
                               ),
-                              icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                              icon: const Icon(AppIcons.inventory_2_outlined, size: 18),
                               label: const Text('Items / Stock'),
                               onPressed: () => context.push('/items'),
                             ),
@@ -132,7 +133,7 @@ class HomeScreen extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(AppRadius.sm),
                                 ),
                               ),
-                              icon: const Icon(Icons.people_alt_outlined, size: 18),
+                              icon: const Icon(AppIcons.people_alt_outlined, size: 18),
                               label: const Text('Customers'),
                               onPressed: () => context.push('/customers'),
                             ),
@@ -185,7 +186,7 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         color: const Color(0xFFD97706),
                         bgColor: const Color(0xFFFEF3C7),
-                        icon: Icons.arrow_downward,
+                        icon: AppIcons.arrow_downward,
                       ),
                       _buildStatCard(
                         title: 'PAYABLES',
@@ -194,7 +195,7 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         color: const Color(0xFFDC2626),
                         bgColor: const Color(0xFFFEE2E2),
-                        icon: Icons.arrow_upward,
+                        icon: AppIcons.arrow_upward,
                       ),
                       _buildStatCard(
                         title: 'NET PROFIT',
@@ -203,7 +204,7 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         color: const Color(0xFF16A34A),
                         bgColor: const Color(0xFFDCFCE7),
-                        icon: Icons.trending_up,
+                        icon: AppIcons.trending_up,
                       ),
                       _buildStatCard(
                         title: 'EXPENSES',
@@ -212,7 +213,7 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         color: const Color(0xFF7E22CE),
                         bgColor: const Color(0xFFF3E8FF),
-                        icon: Icons.account_balance_wallet_outlined,
+                        icon: AppIcons.account_balance_wallet_outlined,
                       ),
                     ],
                   ),

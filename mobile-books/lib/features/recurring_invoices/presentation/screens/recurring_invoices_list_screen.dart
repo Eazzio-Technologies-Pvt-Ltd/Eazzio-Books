@@ -7,11 +7,12 @@ import 'package:mobile_books/features/recurring_invoices/data/models/recurring_i
 import 'package:mobile_books/features/recurring_invoices/presentation/providers/recurring_invoice_provider.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
-  'active':  _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'ACTIVE', Icons.play_circle_fill),
-  'paused':  _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'PAUSED', Icons.pause_circle_filled),
-  'stopped': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'STOPPED', Icons.stop_circle_rounded),
+  'active':  _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'ACTIVE', AppIcons.play_circle_fill),
+  'paused':  _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'PAUSED', AppIcons.pause_circle_filled),
+  'stopped': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'STOPPED', AppIcons.stop_circle_rounded),
 };
 
 class _StatusStyle {
@@ -24,7 +25,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class RecurringInvoicesListScreen extends ConsumerStatefulWidget {
@@ -195,7 +196,7 @@ class _RecurringInvoicesListScreenState extends ConsumerState<RecurringInvoicesL
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/recurring-invoices/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -213,10 +214,10 @@ class _RecurringInvoicesListScreenState extends ConsumerState<RecurringInvoicesL
                     onChanged: (val) => setState(() => _searchQuery = val),
                     decoration: InputDecoration(
                       hintText: 'Search recurring profiles...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
@@ -228,7 +229,7 @@ class _RecurringInvoicesListScreenState extends ConsumerState<RecurringInvoicesL
                 ),
                 const SizedBox(width: AppSpacing.s),
                 IconButton(
-                  icon: const Icon(Icons.sort),
+                  icon: const Icon(AppIcons.sort),
                   onPressed: () => _showSortBottomSheet(context),
                 ),
               ],
@@ -278,7 +279,7 @@ class _RecurringInvoicesListScreenState extends ConsumerState<RecurringInvoicesL
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.autorenew, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.autorenew, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No Recurring Profiles found',
@@ -420,26 +421,26 @@ class _RecurringInvoiceCard extends ConsumerWidget {
               children: [
                 if (ri.status == 'Active') ...[
                   TextButton.icon(
-                    icon: const Icon(Icons.pause, size: 16),
+                    icon: const Icon(AppIcons.pause, size: 16),
                     label: const Text('Pause'),
                     onPressed: () => ref.read(recurringInvoicesProvider.notifier).pauseRecurringInvoice(ri.id),
                   ),
                 ] else if (ri.status == 'Paused') ...[
                   TextButton.icon(
-                    icon: const Icon(Icons.play_arrow, size: 16),
+                    icon: const Icon(AppIcons.play_arrow, size: 16),
                     label: const Text('Resume'),
                     onPressed: () => ref.read(recurringInvoicesProvider.notifier).resumeRecurringInvoice(ri.id),
                   ),
                 ],
                 if (ri.status != 'Stopped') ...[
                   TextButton.icon(
-                    icon: const Icon(Icons.stop, size: 16),
+                    icon: const Icon(AppIcons.stop, size: 16),
                     label: const Text('Stop'),
                     style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                     onPressed: () => ref.read(recurringInvoicesProvider.notifier).stopRecurringInvoice(ri.id),
                   ),
                   TextButton.icon(
-                    icon: const Icon(Icons.flash_on, size: 16),
+                    icon: const Icon(AppIcons.flash_on, size: 16),
                     label: const Text('Gen Now'),
                     style: TextButton.styleFrom(foregroundColor: Colors.orange),
                     onPressed: () async {

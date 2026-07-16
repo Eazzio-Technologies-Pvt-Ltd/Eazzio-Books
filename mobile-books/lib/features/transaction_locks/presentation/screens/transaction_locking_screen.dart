@@ -5,6 +5,7 @@ import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/transaction_locks/providers/transaction_lock_provider.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class TransactionLockingScreen extends ConsumerStatefulWidget {
   const TransactionLockingScreen({super.key});
@@ -175,7 +176,7 @@ class _TransactionLockingScreenState extends ConsumerState<TransactionLockingScr
                         children: [
                           const Padding(
                             padding: EdgeInsets.only(top: 2.0),
-                            child: Icon(Icons.lock, color: AppColors.primaryBlue, size: 20),
+                            child: Icon(AppIcons.lock, color: AppColors.primaryBlue, size: 20),
                           ),
                           const SizedBox(width: AppSpacing.s),
                           Expanded(
@@ -246,7 +247,7 @@ class _TransactionLockingScreenState extends ConsumerState<TransactionLockingScr
                             ),
                           ),
                           TextButton.icon(
-                            icon: const Icon(Icons.calendar_today, size: 16),
+                            icon: const Icon(AppIcons.calendar_today, size: 16),
                             label: const Text('Select Date'),
                             onPressed: () => _selectDate(context),
                           ),

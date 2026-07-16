@@ -5,6 +5,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/tasks/data/models/task.dart';
 import 'package:mobile_books/features/tasks/presentation/providers/task_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class TasksScreen extends ConsumerWidget {
   const TasksScreen({super.key});
@@ -71,7 +72,7 @@ class TasksScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.primaryBlueDark : AppColors.primaryBlue,
         onPressed: () => _showTaskDialog(context, ref),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(tasksProvider.notifier).refresh(),
@@ -87,7 +88,7 @@ class TasksScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.assignment_turned_in, size: 64, color: AppColors.textSecondaryLight),
+                          Icon(AppIcons.assignment_turned_in, size: 64, color: AppColors.textSecondaryLight),
                           SizedBox(height: AppSpacing.m),
                           Text(
                             'All caught up!',
@@ -121,7 +122,7 @@ class TasksScreen extends ConsumerWidget {
                     color: AppColors.danger,
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: AppSpacing.m),
-                    child: const Icon(Icons.delete, color: Colors.white),
+                    child: const Icon(AppIcons.delete, color: Colors.white),
                   ),
                   onDismissed: (direction) async {
                     try {
@@ -150,11 +151,11 @@ class TasksScreen extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.edit, size: 20, color: AppColors.textSecondaryLight),
+                            icon: const Icon(AppIcons.edit, size: 20, color: AppColors.textSecondaryLight),
                             onPressed: () => _showTaskDialog(context, ref, task: task),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete, size: 20, color: AppColors.danger),
+                            icon: const Icon(AppIcons.delete, size: 20, color: AppColors.danger),
                             onPressed: () async {
                               final confirm = await showDialog<bool>(
                                 context: context,

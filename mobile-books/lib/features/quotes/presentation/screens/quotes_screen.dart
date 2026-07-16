@@ -11,15 +11,16 @@ import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
 import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
 import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 /// Status badge color configuration matching the web frontend QuoteDetail.js
 const Map<String, _StatusStyle> _statusStyles = {
-  'draft':    _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',    Icons.edit_note),
-  'sent':     _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',     Icons.send),
-  'accepted': _StatusStyle(Color(0xFFECFDF5), Color(0xFF047857), 'ACCEPTED', Icons.check_circle_outline),
-  'declined': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'DECLINED', Icons.cancel_outlined),
-  'expired':  _StatusStyle(Color(0xFFFFF1F2), Color(0xFFBE123C), 'EXPIRED',  Icons.timer_off),
-  'invoiced': _StatusStyle(Color(0xFFF0FDFA), Color(0xFF0F766E), 'INVOICED', Icons.receipt_long),
+  'draft':    _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',    AppIcons.edit_note),
+  'sent':     _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',     AppIcons.send),
+  'accepted': _StatusStyle(Color(0xFFECFDF5), Color(0xFF047857), 'ACCEPTED', AppIcons.check_circle_outline),
+  'declined': _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'DECLINED', AppIcons.cancel_outlined),
+  'expired':  _StatusStyle(Color(0xFFFFF1F2), Color(0xFFBE123C), 'EXPIRED',  AppIcons.timer_off),
+  'invoiced': _StatusStyle(Color(0xFFF0FDFA), Color(0xFF0F766E), 'INVOICED', AppIcons.receipt_long),
 };
 
 class _StatusStyle {
@@ -32,7 +33,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class QuotesScreen extends ConsumerStatefulWidget {
@@ -189,7 +190,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           }
         },
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: Column(
         children: [
@@ -212,10 +213,10 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                         ref.read(quoteSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search by quote number, notes...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(quoteSearchQueryProvider.notifier).state = '';
@@ -227,7 +228,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     switch (val) {
                       case 'sort':
@@ -292,7 +293,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'sort',
                       child: Row(
                         children: [
-                          Icon(Icons.sort, size: 18),
+                          Icon(AppIcons.sort, size: 18),
                           SizedBox(width: 8),
                           Text('Sort by'),
                         ],
@@ -302,7 +303,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'filter',
                       child: Row(
                         children: [
-                          Icon(Icons.filter_list, size: 18),
+                          Icon(AppIcons.filter_list, size: 18),
                           SizedBox(width: 8),
                           Text('Filter by status'),
                         ],
@@ -312,7 +313,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'import',
                       child: Row(
                         children: [
-                          Icon(Icons.file_download_outlined, size: 18),
+                          Icon(AppIcons.file_download_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Import Quotes'),
                         ],
@@ -322,7 +323,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'export',
                       child: Row(
                         children: [
-                          Icon(Icons.file_upload_outlined, size: 18),
+                          Icon(AppIcons.file_upload_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Export Quotes'),
                         ],
@@ -332,7 +333,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'preferences',
                       child: Row(
                         children: [
-                          Icon(Icons.settings, size: 18),
+                          Icon(AppIcons.settings, size: 18),
                           SizedBox(width: 8),
                           Text('Preferences'),
                         ],
@@ -342,7 +343,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'custom_fields',
                       child: Row(
                         children: [
-                          Icon(Icons.dashboard_customize_outlined, size: 18),
+                          Icon(AppIcons.dashboard_customize_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Manage Custom Fields'),
                         ],
@@ -352,7 +353,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'refresh',
                       child: Row(
                         children: [
-                          Icon(Icons.refresh, size: 18),
+                          Icon(AppIcons.refresh, size: 18),
                           SizedBox(width: 8),
                           Text('Refresh List'),
                         ],
@@ -362,7 +363,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                       value: 'reset_width',
                       child: Row(
                         children: [
-                          Icon(Icons.view_column_outlined, size: 18),
+                          Icon(AppIcons.view_column_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Reset Column Width'),
                         ],

@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/purchase_orders/presentation/providers/purchase_order_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/core/network/network_client.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PurchaseOrderDetailScreen extends ConsumerWidget {
   final int purchaseOrderId;
@@ -25,7 +26,7 @@ class PurchaseOrderDetailScreen extends ConsumerWidget {
             data: (details) => Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  icon: const Icon(AppIcons.picture_as_pdf_outlined),
                   tooltip: 'Export PDF',
                   onPressed: () {
                     final baseUrl = ref.read(networkClientProvider).dio.options.baseUrl;
@@ -45,12 +46,12 @@ class PurchaseOrderDetailScreen extends ConsumerWidget {
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.email_outlined),
+                  icon: const Icon(AppIcons.email_outlined),
                   tooltip: 'Email Statement',
                   onPressed: () => _showSendEmailSheet(context, ref, details.purchaseOrder),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.edit),
+                  icon: const Icon(AppIcons.edit),
                   onPressed: () => context.push('/purchase-orders/$purchaseOrderId/edit'),
                 ),
               ],
@@ -60,7 +61,7 @@ class PurchaseOrderDetailScreen extends ConsumerWidget {
           ),
           detailState.when(
             data: (details) => IconButton(
-              icon: const Icon(Icons.delete, color: AppColors.danger),
+              icon: const Icon(AppIcons.delete, color: AppColors.danger),
               onPressed: () => _confirmDelete(context, ref, details.purchaseOrder.purchaseOrderNumber),
             ),
             loading: () => const SizedBox.shrink(),
@@ -98,7 +99,7 @@ class PurchaseOrderDetailScreen extends ConsumerWidget {
               // Conversion banner for convert to bill
               if (po.status.toLowerCase() != 'closed' && po.status.toLowerCase() != 'cancelled') ...[
                 Card(
-                  color: AppColors.primaryBlue.withOpacity(0.08),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.08),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.m),
                     child: Row(

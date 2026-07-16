@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/customers/data/models/customer.dart';
 import 'package:mobile_books/features/customers/data/models/customer_address.dart';
 import 'package:mobile_books/features/customers/presentation/providers/customer_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class CustomerDetailScreen extends ConsumerWidget {
   final int customerId;
@@ -67,11 +68,11 @@ class CustomerDetailScreen extends ConsumerWidget {
             title: Text(customer.formattedName),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit),
+                icon: const Icon(AppIcons.edit),
                 onPressed: () => context.push('/customers/$customerId/edit'),
               ),
               IconButton(
-                icon: const Icon(Icons.delete, color: AppColors.danger),
+                icon: const Icon(AppIcons.delete, color: AppColors.danger),
                 onPressed: () => _confirmDelete(context, ref),
               ),
             ],
@@ -364,7 +365,7 @@ class _StatementTab extends ConsumerWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               ElevatedButton.icon(
-                icon: const Icon(Icons.date_range, size: 18),
+                icon: const Icon(AppIcons.date_range, size: 18),
                 label: const Text('Filter'),
                 onPressed: () async {
                   final range = await showDateRangePicker(
@@ -469,8 +470,8 @@ class _StatementTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: color.withValues(alpha: 0.05),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Column(

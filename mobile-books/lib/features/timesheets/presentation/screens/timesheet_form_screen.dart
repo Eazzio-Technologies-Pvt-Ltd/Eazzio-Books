@@ -8,6 +8,7 @@ import 'package:mobile_books/features/projects/data/services/project_service.dar
 import 'package:mobile_books/features/timesheets/data/models/timesheet.dart';
 import 'package:mobile_books/features/timesheets/presentation/providers/timesheet_provider.dart';
 import 'package:mobile_books/features/timesheets/data/services/timesheet_service.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class TimesheetFormScreen extends ConsumerStatefulWidget {
   final int? timesheetId;
@@ -299,7 +300,7 @@ class _TimesheetFormScreenState extends ConsumerState<TimesheetFormScreen> {
         actions: [
           if (isDraft)
             IconButton(
-              icon: const Icon(Icons.check),
+              icon: const Icon(AppIcons.check),
               onPressed: _isLoading ? null : _save,
             ),
         ],
@@ -325,10 +326,10 @@ class _TimesheetFormScreenState extends ConsumerState<TimesheetFormScreen> {
                         children: [
                           Icon(
                             _status == 'Cancelled'
-                                ? Icons.cancel
+                                ? AppIcons.cancel
                                 : _status == 'Approved'
-                                    ? Icons.check_circle
-                                    : Icons.description,
+                                    ? AppIcons.check_circle
+                                    : AppIcons.description,
                             color: _status == 'Cancelled'
                                 ? AppColors.textSecondaryLight
                                 : _status == 'Approved'
@@ -397,7 +398,7 @@ class _TimesheetFormScreenState extends ConsumerState<TimesheetFormScreen> {
                             const SizedBox(width: AppSpacing.s),
                             IconButton(
                               onPressed: _showAddProjectDialog,
-                              icon: const Icon(Icons.add_task, color: AppColors.primaryBlue),
+                              icon: const Icon(AppIcons.add_task, color: AppColors.primaryBlue),
                               tooltip: 'Add Project',
                             ),
                           ],
@@ -411,7 +412,7 @@ class _TimesheetFormScreenState extends ConsumerState<TimesheetFormScreen> {
                   title: Text(
                     'Work Date: ${_workDate != null ? DateFormat('dd MMM yyyy').format(_workDate!) : 'Not Set'}',
                   ),
-                  trailing: const Icon(Icons.calendar_today),
+                  trailing: const Icon(AppIcons.calendar_today),
                   onTap: _pickDate,
                 ),
                 const SizedBox(height: AppSpacing.s),
@@ -422,7 +423,7 @@ class _TimesheetFormScreenState extends ConsumerState<TimesheetFormScreen> {
                   title: Text(
                     'Start Time: ${_startTime != null ? _formatTimeOfDay(_startTime)! : 'Not Set'}',
                   ),
-                  trailing: const Icon(Icons.access_time),
+                  trailing: const Icon(AppIcons.access_time),
                   onTap: () => _pickTime(isStart: true),
                 ),
                 const SizedBox(height: AppSpacing.s),
@@ -433,7 +434,7 @@ class _TimesheetFormScreenState extends ConsumerState<TimesheetFormScreen> {
                   title: Text(
                     'End Time: ${_endTime != null ? _formatTimeOfDay(_endTime)! : 'Not Set'}',
                   ),
-                  trailing: const Icon(Icons.access_time),
+                  trailing: const Icon(AppIcons.access_time),
                   onTap: () => _pickTime(isStart: false),
                 ),
                 const SizedBox(height: AppSpacing.m),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ReconciliationSelectorScreen extends ConsumerWidget {
   const ReconciliationSelectorScreen({super.key});
@@ -43,7 +44,7 @@ class ReconciliationSelectorScreen extends ConsumerWidget {
                     contentPadding: const EdgeInsets.all(AppSpacing.m),
                     leading: const CircleAvatar(
                       backgroundColor: Colors.blueAccent,
-                      child: Icon(Icons.account_balance, color: Colors.white),
+                      child: Icon(AppIcons.account_balance, color: Colors.white),
                     ),
                     title: Text(
                       account.accountName,
@@ -57,7 +58,7 @@ class ReconciliationSelectorScreen extends ConsumerWidget {
                         Text('A/C: ${account.accountNumber}', style: const TextStyle(fontSize: 12)),
                       ],
                     ),
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: const Icon(AppIcons.chevron_right),
                     onTap: () {
                       context.push('/banking/${account.id}/reconcile');
                     },

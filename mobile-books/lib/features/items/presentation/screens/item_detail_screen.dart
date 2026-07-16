@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/items/data/models/item.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ItemDetailScreen extends ConsumerWidget {
   final int itemId;
@@ -66,11 +67,11 @@ class ItemDetailScreen extends ConsumerWidget {
             title: Text(item.name),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit),
+                icon: const Icon(AppIcons.edit),
                 onPressed: () => context.push('/items/$itemId/edit'),
               ),
               IconButton(
-                icon: const Icon(Icons.delete, color: AppColors.danger),
+                icon: const Icon(AppIcons.delete, color: AppColors.danger),
                 onPressed: () => _confirmDelete(context, ref),
               ),
             ],
@@ -281,7 +282,7 @@ class _HistoryTab extends ConsumerWidget {
                       ? AppColors.success.withValues(alpha: 0.1)
                       : AppColors.primaryBlue.withValues(alpha: 0.1),
                   child: Icon(
-                    log.action.toUpperCase() == 'CREATED' ? Icons.add : Icons.edit,
+                    log.action.toUpperCase() == 'CREATED' ? AppIcons.add : AppIcons.edit,
                     color: log.action.toUpperCase() == 'CREATED'
                         ? AppColors.success
                         : AppColors.primaryBlue,
@@ -507,7 +508,7 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
                   backgroundColor: AppColors.primaryBlue,
                   foregroundColor: Colors.white,
                 ),
-                icon: const Icon(Icons.tune),
+                icon: const Icon(AppIcons.tune),
                 label: const Text('Adjust Stock'),
               ),
             ],
@@ -543,7 +544,7 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
                           ? AppColors.success.withValues(alpha: 0.1)
                           : AppColors.danger.withValues(alpha: 0.1),
                       child: Icon(
-                        isAdd ? Icons.arrow_upward : Icons.arrow_downward,
+                        isAdd ? AppIcons.arrow_upward : AppIcons.arrow_downward,
                         color: isAdd ? AppColors.success : AppColors.danger,
                       ),
                     ),

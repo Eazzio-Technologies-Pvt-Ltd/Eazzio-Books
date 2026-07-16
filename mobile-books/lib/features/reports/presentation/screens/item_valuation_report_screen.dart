@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ItemValuationReportScreen extends ConsumerStatefulWidget {
   const ItemValuationReportScreen({super.key});
@@ -40,7 +41,7 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
         title: const Text('Item Valuation Report'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(AppIcons.refresh),
             onPressed: () => ref.read(itemsProvider.notifier).refresh(),
           ),
         ],
@@ -53,10 +54,10 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search items...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(AppIcons.clear),
                         onPressed: () {
                           setState(() {
                             _searchController.clear();
@@ -111,7 +112,7 @@ class _ItemValuationReportScreenState extends ConsumerState<ItemValuationReportS
                         children: [
                           Expanded(
                             child: Card(
-                              color: AppColors.primaryBlue.withOpacity(0.05),
+                              color: AppColors.primaryBlue.withValues(alpha: 0.05),
                               child: Padding(
                                 padding: const EdgeInsets.all(AppSpacing.m),
                                 child: Column(

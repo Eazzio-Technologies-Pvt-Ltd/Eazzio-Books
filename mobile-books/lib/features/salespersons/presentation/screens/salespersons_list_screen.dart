@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/salespersons/presentation/providers/salesperson_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class SalespersonsListScreen extends ConsumerStatefulWidget {
   const SalespersonsListScreen({super.key});
@@ -35,7 +36,7 @@ class _SalespersonsListScreenState extends ConsumerState<SalespersonsListScreen>
         onPressed: () => context.push('/salespersons/new'),
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -51,10 +52,10 @@ class _SalespersonsListScreenState extends ConsumerState<SalespersonsListScreen>
               },
               decoration: InputDecoration(
                 hintText: 'Search by name or email...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(AppIcons.clear),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {
@@ -86,7 +87,7 @@ class _SalespersonsListScreenState extends ConsumerState<SalespersonsListScreen>
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.people_outline, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.people_outline, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No salespersons found.',
@@ -129,7 +130,7 @@ class _SalespersonsListScreenState extends ConsumerState<SalespersonsListScreen>
                               if (sp.email != null && sp.email!.isNotEmpty)
                                 Row(
                                   children: [
-                                    const Icon(Icons.email_outlined, size: 14, color: AppColors.textSecondaryLight),
+                                    const Icon(AppIcons.email_outlined, size: 14, color: AppColors.textSecondaryLight),
                                     const SizedBox(width: 4),
                                     Text(sp.email!),
                                   ],
@@ -138,7 +139,7 @@ class _SalespersonsListScreenState extends ConsumerState<SalespersonsListScreen>
                                 const SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    const Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondaryLight),
+                                    const Icon(AppIcons.phone_outlined, size: 14, color: AppColors.textSecondaryLight),
                                     const SizedBox(width: 4),
                                     Text(sp.phone!),
                                   ],

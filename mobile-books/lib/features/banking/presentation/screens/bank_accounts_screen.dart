@@ -8,6 +8,7 @@ import 'package:mobile_books/features/banking/data/models/bank_account.dart';
 import 'package:mobile_books/features/banking/data/services/banking_service.dart';
 import 'package:mobile_books/features/banking/presentation/providers/banking_provider.dart';
 import 'package:mobile_books/widgets/common/loading_skeleton.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BankAccountsScreen extends ConsumerWidget {
   const BankAccountsScreen({super.key});
@@ -259,7 +260,7 @@ class BankAccountsScreen extends ConsumerWidget {
         title: const Text('Bank Accounts'),
         actions: [
           IconButton(
-            icon: Icon(privacyMode ? Icons.visibility_off : Icons.visibility),
+            icon: Icon(privacyMode ? AppIcons.visibility_off : AppIcons.visibility),
             tooltip: privacyMode ? 'Show balances' : 'Hide balances',
             onPressed: () => ref.read(privacyModeProvider.notifier).toggle(),
           ),
@@ -267,7 +268,7 @@ class BankAccountsScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddAccountDialog(context, ref),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(bankAccountsProvider.notifier).refresh(),

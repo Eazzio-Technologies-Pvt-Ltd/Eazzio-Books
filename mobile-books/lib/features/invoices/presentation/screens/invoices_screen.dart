@@ -11,15 +11,16 @@ import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
 import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
 import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
-  'draft':          _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',          Icons.edit_note),
-  'sent':           _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',           Icons.send),
-  'unpaid':         _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'UNPAID',         Icons.money_off),
-  'partially_paid': _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'PARTIALLY PAID', Icons.hourglass_bottom),
-  'paid':           _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'PAID',           Icons.check_circle_outline),
-  'overdue':        _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'OVERDUE',        Icons.warning_amber),
-  'cancelled':      _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'CANCELLED',      Icons.cancel_outlined),
+  'draft':          _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT',          AppIcons.edit_note),
+  'sent':           _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'SENT',           AppIcons.send),
+  'unpaid':         _StatusStyle(Color(0xFFFFFBEB), Color(0xFFB45309), 'UNPAID',         AppIcons.money_off),
+  'partially_paid': _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'PARTIALLY PAID', AppIcons.hourglass_bottom),
+  'paid':           _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'PAID',           AppIcons.check_circle_outline),
+  'overdue':        _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'OVERDUE',        AppIcons.warning_amber),
+  'cancelled':      _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'CANCELLED',      AppIcons.cancel_outlined),
 };
 
 class _StatusStyle {
@@ -32,7 +33,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class InvoicesScreen extends ConsumerStatefulWidget {
@@ -191,7 +192,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
             context.push('/invoices/new');
           }
         },
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -214,10 +215,10 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                         ref.read(invoiceSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search by invoice number, notes...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(invoiceSearchQueryProvider.notifier).state = '';
@@ -229,7 +230,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.primaryBlue),
+                  icon: const Icon(AppIcons.more_vert, color: AppColors.primaryBlue),
                   onSelected: (val) {
                     switch (val) {
                       case 'sort':
@@ -294,7 +295,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'sort',
                       child: Row(
                         children: [
-                          Icon(Icons.sort, size: 18),
+                          Icon(AppIcons.sort, size: 18),
                           SizedBox(width: 8),
                           Text('Sort by'),
                         ],
@@ -304,7 +305,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'filter',
                       child: Row(
                         children: [
-                          Icon(Icons.filter_list, size: 18),
+                          Icon(AppIcons.filter_list, size: 18),
                           SizedBox(width: 8),
                           Text('Filter by status'),
                         ],
@@ -314,7 +315,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'import',
                       child: Row(
                         children: [
-                          Icon(Icons.file_download_outlined, size: 18),
+                          Icon(AppIcons.file_download_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Import Invoices'),
                         ],
@@ -324,7 +325,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'export',
                       child: Row(
                         children: [
-                          Icon(Icons.file_upload_outlined, size: 18),
+                          Icon(AppIcons.file_upload_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Export Invoices'),
                         ],
@@ -334,7 +335,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'preferences',
                       child: Row(
                         children: [
-                          Icon(Icons.settings, size: 18),
+                          Icon(AppIcons.settings, size: 18),
                           SizedBox(width: 8),
                           Text('Preferences'),
                         ],
@@ -344,7 +345,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'custom_fields',
                       child: Row(
                         children: [
-                          Icon(Icons.dashboard_customize_outlined, size: 18),
+                          Icon(AppIcons.dashboard_customize_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Manage Custom Fields'),
                         ],
@@ -354,7 +355,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'refresh',
                       child: Row(
                         children: [
-                          Icon(Icons.refresh, size: 18),
+                          Icon(AppIcons.refresh, size: 18),
                           SizedBox(width: 8),
                           Text('Refresh List'),
                         ],
@@ -364,7 +365,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       value: 'reset_width',
                       child: Row(
                         children: [
-                          Icon(Icons.view_column_outlined, size: 18),
+                          Icon(AppIcons.view_column_outlined, size: 18),
                           SizedBox(width: 8),
                           Text('Reset Column Width'),
                         ],
@@ -403,7 +404,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.receipt_long,
+                              Icon(AppIcons.receipt_long,
                                   size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(

@@ -12,7 +12,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:mobile_books/core/utils/pdf_helper.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class InvoiceDocumentPreviewScreen extends ConsumerStatefulWidget {
   final int invoiceId;
@@ -202,17 +202,17 @@ class _InvoiceDocumentPreviewScreenState extends ConsumerState<InvoiceDocumentPr
         actions: [
           if (invoiceDetails != null) ...[
             IconButton(
-              icon: const Icon(Icons.share_outlined),
+              icon: const Icon(AppIcons.share_outlined),
               tooltip: 'Share PDF',
               onPressed: _isLoading ? null : () => _sharePdf(invoiceDetails),
             ),
             IconButton(
-              icon: const Icon(Icons.print_outlined),
+              icon: const Icon(AppIcons.print_outlined),
               tooltip: 'Print',
               onPressed: _isLoading ? null : () => _printDocument(invoiceDetails),
             ),
             IconButton(
-              icon: const Icon(Icons.info_outline),
+              icon: const Icon(AppIcons.info_outline),
               tooltip: 'Share Details',
               onPressed: _isLoading ? null : () => _shareWebLink(invoiceDetails),
             ),
@@ -244,7 +244,7 @@ class _InvoiceDocumentPreviewScreenState extends ConsumerState<InvoiceDocumentPr
                       borderRadius: BorderRadius.circular(4),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

@@ -7,6 +7,7 @@ import '../../providers/item_provider.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/loading_skeleton.dart';
 import '../../widgets/common/staggered_fade_in.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ItemsScreen extends ConsumerStatefulWidget {
   const ItemsScreen({super.key});
@@ -40,7 +41,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(AppIcons.refresh, color: Colors.white),
             onPressed: () => ref.read(itemProvider.notifier).fetchItems(),
           ),
         ],
@@ -60,7 +61,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.search, color: AppColors.textHint, size: 20),
+                  const Icon(AppIcons.search, color: AppColors.textHint, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
@@ -81,7 +82,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                   ),
                   if (_searchQuery.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Icons.clear, color: AppColors.textHint, size: 18),
+                      icon: const Icon(AppIcons.clear, color: AppColors.textHint, size: 18),
                       onPressed: () {
                         _searchController.clear();
                         setState(() {
@@ -108,7 +109,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         onPressed: () {
           context.push('/items/new');
         },
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
     );
   }
@@ -134,7 +135,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+              const Icon(AppIcons.error_outline, color: AppColors.error, size: 48),
               const SizedBox(height: 16),
               Text(
                 'Error loading items',
@@ -153,7 +154,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => ref.read(itemProvider.notifier).fetchItems(),
-                icon: const Icon(Icons.replay),
+                icon: const Icon(AppIcons.replay),
                 label: const Text('Try Again'),
               ),
             ],
@@ -173,7 +174,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       // 3. Empty State: Ilustrations + CTA
       return SingleChildScrollView(
         child: EmptyState(
-          icon: Icons.inventory_2_outlined,
+          icon: AppIcons.inventory_2_outlined,
           title: _searchQuery.isNotEmpty ? 'No matches found' : 'No items added yet',
           description: _searchQuery.isNotEmpty
               ? 'Try modifying your search keywords or clear the filter.'

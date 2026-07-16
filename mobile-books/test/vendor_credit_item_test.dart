@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile_books/features/vendor_credits/data/models/vendor_credit.dart';
 import 'package:mobile_books/features/vendor_credits/data/models/vendor_credit_item.dart';
 
 void main() {

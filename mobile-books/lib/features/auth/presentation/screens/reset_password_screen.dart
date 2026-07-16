@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_books/core/theme/app_theme.dart';
 import 'package:mobile_books/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   final String token;
@@ -105,7 +106,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         ],
                       ),
                       child: const Icon(
-                        Icons.vpn_key_rounded,
+                        AppIcons.vpn_key_rounded,
                         color: Colors.white,
                         size: 36,
                       ),
@@ -132,10 +133,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: 'New Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
+                      prefixIcon: const Icon(AppIcons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscurePassword ? AppIcons.visibility_outlined : AppIcons.visibility_off_outlined,
                         ),
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                       ),
@@ -160,10 +161,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
                       labelText: 'Confirm Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
+                      prefixIcon: const Icon(AppIcons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscureConfirmPassword ? AppIcons.visibility_outlined : AppIcons.visibility_off_outlined,
                         ),
                         onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                       ),

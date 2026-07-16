@@ -14,6 +14,7 @@ import 'package:mobile_books/features/vendors/data/models/vendor.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/features/items/presentation/providers/item_provider.dart';
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class PurchaseOrderFormScreen extends ConsumerStatefulWidget {
   final int? purchaseOrderId;
@@ -394,7 +395,7 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
         title: Text(_isEdit ? 'Edit Purchase Order' : 'New Purchase Order'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             onPressed: _isLoading ? null : _save,
           ),
         ],
@@ -439,7 +440,7 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                       const SizedBox(width: AppSpacing.s),
                       IconButton(
                         onPressed: _showAddVendorDialog,
-                        icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                        icon: const Icon(AppIcons.person_add, color: AppColors.primaryBlue),
                         tooltip: 'Add Vendor',
                       ),
                     ],
@@ -526,7 +527,7 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                   children: [
                     const Text('Line Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     IconButton(
-                      icon: const Icon(Icons.add_circle, color: AppColors.primaryBlue),
+                      icon: const Icon(AppIcons.add_circle, color: AppColors.primaryBlue),
                       onPressed: () {
                         setState(() {
                           _lineItems.add(_LineItem());
@@ -680,7 +681,7 @@ class _PurchaseOrderFormScreenState extends ConsumerState<PurchaseOrderFormScree
                             alignment: Alignment.centerRight,
                             child: IconButton(
                               icon:
-                                  const Icon(Icons.delete, color: AppColors.danger),
+                                  const Icon(AppIcons.delete, color: AppColors.danger),
                               onPressed: () {
                                 setState(() {
                                   final removed = _lineItems.removeAt(idx);

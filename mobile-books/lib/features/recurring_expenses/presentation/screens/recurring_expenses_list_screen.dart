@@ -6,6 +6,7 @@ import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/recurring_expenses/data/models/recurring_expense.dart';
 import 'package:mobile_books/features/recurring_expenses/presentation/providers/recurring_expense_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class RecurringExpensesListScreen extends ConsumerStatefulWidget {
   const RecurringExpensesListScreen({super.key});
@@ -43,7 +44,7 @@ class _RecurringExpensesListScreenState extends ConsumerState<RecurringExpensesL
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/recurring-expenses/new'),
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(AppIcons.add, color: Colors.white),
       ),
       body: Column(
         children: [
@@ -58,10 +59,10 @@ class _RecurringExpensesListScreenState extends ConsumerState<RecurringExpensesL
               onChanged: (val) => ref.read(recurringExpenseSearchQueryProvider.notifier).state = val,
               decoration: InputDecoration(
                 hintText: 'Search recurring expenses...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(AppIcons.clear),
                         onPressed: () {
                           searchController.clear();
                           ref.read(recurringExpenseSearchQueryProvider.notifier).state = '';
@@ -116,7 +117,7 @@ class _RecurringExpensesListScreenState extends ConsumerState<RecurringExpensesL
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.autorenew, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.autorenew, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No recurring expenses found.',
@@ -332,7 +333,7 @@ class _RecurringExpenseCard extends ConsumerWidget {
                       const PopupMenuItem(value: 'stop', child: Text('Stop')),
                     const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
                   ],
-                  child: const Icon(Icons.more_vert),
+                  child: const Icon(AppIcons.more_vert),
                 ),
               ],
             ),

@@ -7,12 +7,13 @@ import 'package:mobile_books/features/vendor_credits/data/models/vendor_credit.d
 import 'package:mobile_books/features/vendor_credits/presentation/providers/vendor_credit_provider.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 const Map<String, _StatusStyle> _statusStyles = {
-  'draft':     _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT', Icons.edit_note),
-  'open':      _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'OPEN', Icons.lock_open),
-  'closed':    _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'CLOSED', Icons.check_circle_outline),
-  'void':      _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'VOID', Icons.cancel_outlined),
+  'draft':     _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'DRAFT', AppIcons.edit_note),
+  'open':      _StatusStyle(Color(0xFFEFF6FF), Color(0xFF1D4ED8), 'OPEN', AppIcons.lock_open),
+  'closed':    _StatusStyle(Color(0xFFF0FDF4), Color(0xFF15803D), 'CLOSED', AppIcons.check_circle_outline),
+  'void':      _StatusStyle(Color(0xFFFEF2F2), Color(0xFFB91C1C), 'VOID', AppIcons.cancel_outlined),
 };
 
 class _StatusStyle {
@@ -25,7 +26,7 @@ class _StatusStyle {
 
 _StatusStyle _getStatusStyle(String status) {
   return _statusStyles[status.toLowerCase()] ??
-      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', Icons.help_outline);
+      const _StatusStyle(Color(0xFFF1F5F9), Color(0xFF475569), 'UNKNOWN', AppIcons.help_outline);
 }
 
 class VendorCreditsListScreen extends ConsumerStatefulWidget {
@@ -62,7 +63,7 @@ class _VendorCreditsListScreenState extends ConsumerState<VendorCreditsListScree
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/vendor-credits/new'),
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -77,10 +78,10 @@ class _VendorCreditsListScreenState extends ConsumerState<VendorCreditsListScree
               onChanged: (val) => ref.read(vendorCreditSearchQueryProvider.notifier).state = val,
               decoration: InputDecoration(
                 hintText: 'Search vendor credits...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(AppIcons.search),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(AppIcons.clear),
                         onPressed: () {
                           searchController.clear();
                           ref.read(vendorCreditSearchQueryProvider.notifier).state = '';
@@ -106,7 +107,7 @@ class _VendorCreditsListScreenState extends ConsumerState<VendorCreditsListScree
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.assignment_return, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.assignment_return, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No Vendor Credits found',

@@ -6,7 +6,6 @@ import 'package:mobile_books/features/auth/data/services/auth_service.dart';
 import 'package:mobile_books/features/settings/data/services/users_service.dart';
 import 'package:mobile_books/core/navigation/router.dart';
 import 'package:mobile_books/core/network/api_client.dart';
-import 'package:flutter/widgets.dart';
 
 sealed class AuthState {
   const AuthState();
@@ -61,7 +60,7 @@ class AuthNotifier extends Notifier<AuthState> {
     
     bool hasToken = true;
     try {
-      final token = await storage.read(key: 'auth_token');
+      final token = await storage.read(key: 'session_cookie');
       if (_isDisposed) return;
       hasToken = token != null && token.isNotEmpty;
     } catch (_) {
@@ -102,7 +101,7 @@ class AuthNotifier extends Notifier<AuthState> {
       if (_isDisposed) return;
       bool stillHasToken = true;
       try {
-        final currentToken = await storage.read(key: 'auth_token');
+        final currentToken = await storage.read(key: 'session_cookie');
         if (_isDisposed) return;
         stillHasToken = currentToken != null && currentToken.isNotEmpty;
       } catch (_) {}

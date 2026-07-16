@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'app_button.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class UnsavedChangesDialog extends StatelessWidget {
   const UnsavedChangesDialog({super.key});
@@ -23,7 +24,7 @@ class UnsavedChangesDialog extends StatelessWidget {
       title: Row(
         children: [
           const Icon(
-            Icons.warning_amber_rounded,
+            AppIcons.warning_amber_rounded,
             color: AppColors.warning,
             size: 28,
           ),

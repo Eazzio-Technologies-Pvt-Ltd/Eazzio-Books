@@ -8,6 +8,7 @@ import 'package:mobile_books/features/vendors/data/models/vendor.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
 import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
 import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class VendorsListScreen extends ConsumerStatefulWidget {
   const VendorsListScreen({super.key});
@@ -179,7 +180,7 @@ class _VendorsListScreenState extends ConsumerState<VendorsListScreen> {
             context.push('/vendors/new');
           }
         },
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -201,10 +202,10 @@ class _VendorsListScreenState extends ConsumerState<VendorsListScreen> {
                     onChanged: (val) => ref.read(vendorSearchQueryProvider.notifier).state = val,
                     decoration: InputDecoration(
                       hintText: 'Search vendors...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(AppIcons.clear),
                               onPressed: () {
                                 searchController.clear();
                                 ref.read(vendorSearchQueryProvider.notifier).state = '';
@@ -216,7 +217,7 @@ class _VendorsListScreenState extends ConsumerState<VendorsListScreen> {
                 ),
                 const SizedBox(width: AppSpacing.s),
                 IconButton(
-                  icon: const Icon(Icons.sort),
+                  icon: const Icon(AppIcons.sort),
                   onPressed: () => _showSortBottomSheet(context),
                 ),
               ],
@@ -256,7 +257,7 @@ class _VendorsListScreenState extends ConsumerState<VendorsListScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.people_outline, size: 64, color: AppColors.textSecondaryLight),
+                              Icon(AppIcons.people_outline, size: 64, color: AppColors.textSecondaryLight),
                               SizedBox(height: AppSpacing.m),
                               Text(
                                 'No vendors found.',
@@ -299,8 +300,8 @@ class _VendorsListScreenState extends ConsumerState<VendorsListScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: vendor.status == 'active'
-                                ? AppColors.success.withOpacity(0.1)
-                                : AppColors.textSecondaryLight.withOpacity(0.1),
+                                ? AppColors.success.withValues(alpha: 0.1)
+                                : AppColors.textSecondaryLight.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4.0),
                           ),
                           child: Text(

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile_books/core/theme/theme.dart';
 import 'package:mobile_books/core/navigation/responsive_scaffold.dart';
 import 'package:mobile_books/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ProjectedExpensesScreen extends ConsumerWidget {
   const ProjectedExpensesScreen({super.key});
@@ -74,7 +75,7 @@ class ProjectedExpensesScreen extends ConsumerWidget {
       currentRoute: '/projected-expenses',
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(AppIcons.arrow_back),
           onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
         title: const Text('Projected Expense'),
@@ -85,7 +86,7 @@ class ProjectedExpensesScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+              Icon(AppIcons.error_outline, size: 48, color: Colors.red[300]),
               const SizedBox(height: AppSpacing.s),
               Text('Failed to load projected expenses', style: TextStyle(color: Colors.red[300])),
               const SizedBox(height: AppSpacing.s),
@@ -186,7 +187,7 @@ class ProjectedExpensesScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.calendar_month, size: 20, color: isDark ? Colors.white70 : AppColors.primaryBlue),
+          Icon(AppIcons.calendar_month, size: 20, color: isDark ? Colors.white70 : AppColors.primaryBlue),
           const SizedBox(width: AppSpacing.s),
           Text('Period:', style: TextStyle(
             fontWeight: FontWeight.w600,
@@ -273,7 +274,7 @@ class ProjectedExpensesScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.schedule, size: 40, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+          Icon(AppIcons.schedule, size: 40, color: isDark ? Colors.grey[600] : Colors.grey[400]),
           const SizedBox(height: AppSpacing.m),
           Text('No projected expenses found.', style: TextStyle(
             fontSize: 14,

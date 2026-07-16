@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class AppTextField extends StatefulWidget {
   final String label;
@@ -97,7 +98,7 @@ class _AppTextFieldState extends State<AppTextField> {
                       boxShadow: _isFocused && _errorText == null
                           ? [
                               BoxShadow(
-                                color: AppColors.primary.withOpacity(0.08),
+                                color: AppColors.primary.withValues(alpha: 0.08),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               )
@@ -145,7 +146,7 @@ class _AppTextFieldState extends State<AppTextField> {
                         if (widget.isPassword) ...[
                           IconButton(
                             icon: Icon(
-                              _obscureText ? Icons.visibility : Icons.visibility_off,
+                              _obscureText ? AppIcons.visibility : AppIcons.visibility_off,
                               color: AppColors.textHint,
                               size: 20,
                             ),
@@ -161,7 +162,7 @@ class _AppTextFieldState extends State<AppTextField> {
                         ] else if (widget.controller != null && widget.controller!.text.isNotEmpty) ...[
                           IconButton(
                             icon: const Icon(
-                              Icons.clear,
+                              AppIcons.clear,
                               color: AppColors.textHint,
                               size: 20,
                             ),

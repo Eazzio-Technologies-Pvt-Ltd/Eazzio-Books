@@ -11,6 +11,7 @@ import 'package:mobile_books/widgets/common/loading_skeleton.dart';
 import 'package:mobile_books/core/permissions/plan_gate_service.dart';
 import 'package:mobile_books/widgets/common/upgrade_continue_sheet.dart';
 import 'package:mobile_books/widgets/common/plan_limit_banner.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ManualJournalsScreen extends ConsumerWidget {
   const ManualJournalsScreen({super.key});
@@ -65,7 +66,7 @@ class ManualJournalsScreen extends ConsumerWidget {
         title: const Text('Manual Journals'),
         actions: [
           IconButton(
-            icon: Icon(privacyMode ? Icons.visibility_off : Icons.visibility),
+            icon: Icon(privacyMode ? AppIcons.visibility_off : AppIcons.visibility),
             onPressed: () => ref.read(privacyModeProvider.notifier).toggle(),
           ),
         ],
@@ -85,7 +86,7 @@ class ManualJournalsScreen extends ConsumerWidget {
             context.push('/accounting/journals/new');
           }
         },
-        child: const Icon(Icons.add),
+        child: const Icon(AppIcons.add),
       ),
       body: Column(
         children: [
@@ -164,11 +165,11 @@ class ManualJournalsScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: AppSpacing.s),
                       IconButton(
-                        icon: const Icon(Icons.edit, size: 18),
+                        icon: const Icon(AppIcons.edit, size: 18),
                         onPressed: () => context.push('/accounting/journals/${journal.id}/edit'),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete, size: 18, color: AppColors.danger),
+                        icon: const Icon(AppIcons.delete, size: 18, color: AppColors.danger),
                         onPressed: () => _handleDeleteJournal(context, ref, journal),
                       ),
                     ],

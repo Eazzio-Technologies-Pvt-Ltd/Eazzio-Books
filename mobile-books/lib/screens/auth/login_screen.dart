@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/utils/validators.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -295,12 +296,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               disabledBackgroundColor:
-                                  _tealGreen.withOpacity(0.6),
-                              shadowColor: _tealGreen.withOpacity(0.3),
+                                  _tealGreen.withValues(alpha: 0.6),
+                              shadowColor: _tealGreen.withValues(alpha: 0.3),
                             ).copyWith(
                               overlayColor: WidgetStateProperty.resolveWith(
                                 (states) => states.contains(WidgetState.pressed)
-                                    ? _tealGreenDark.withOpacity(0.2)
+                                    ? _tealGreenDark.withValues(alpha: 0.2)
                                     : null,
                               ),
                             ),
@@ -446,8 +447,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         suffixIcon: IconButton(
           icon: Icon(
             _obscurePassword
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
+                ? AppIcons.visibility_outlined
+                : AppIcons.visibility_off_outlined,
             color: const Color(0xFFA0AEC0),
             size: 20,
           ),

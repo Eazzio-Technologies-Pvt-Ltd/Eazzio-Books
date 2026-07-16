@@ -16,6 +16,7 @@ import 'package:mobile_books/features/items/presentation/providers/item_provider
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class BillFormScreen extends ConsumerStatefulWidget {
   final int? billId;
@@ -391,7 +392,7 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
         title: Text(_isEdit ? 'Edit Bill' : 'New Bill'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             onPressed: (_isLoading || isLocked) ? null : _save,
           ),
         ],
@@ -442,7 +443,7 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                       const SizedBox(width: AppSpacing.s),
                       IconButton(
                         onPressed: _showAddVendorDialog,
-                        icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                        icon: const Icon(AppIcons.person_add, color: AppColors.primaryBlue),
                         tooltip: 'Add Vendor',
                       ),
                     ],
@@ -540,7 +541,7 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                   children: [
                     const Text('Line Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     IconButton(
-                      icon: const Icon(Icons.add_circle, color: AppColors.primaryBlue),
+                      icon: const Icon(AppIcons.add_circle, color: AppColors.primaryBlue),
                       onPressed: () {
                         setState(() {
                           _lineItems.add(_LineItem());
@@ -678,7 +679,7 @@ class _BillFormScreenState extends ConsumerState<BillFormScreen> {
                             alignment: Alignment.centerRight,
                             child: IconButton(
                               icon:
-                                  const Icon(Icons.delete, color: AppColors.danger),
+                                  const Icon(AppIcons.delete, color: AppColors.danger),
                               onPressed: () {
                                 setState(() {
                                   final removed = _lineItems.removeAt(idx);

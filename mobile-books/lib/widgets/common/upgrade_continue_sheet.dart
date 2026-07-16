@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_books/core/theme/theme.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class UpgradeContinueSheet extends StatelessWidget {
   final String title;
@@ -52,7 +53,7 @@ class UpgradeContinueSheet extends StatelessWidget {
               ),
             ),
             const Icon(
-              Icons.lock_outline_rounded,
+              AppIcons.lock_outline_rounded,
               size: 48,
               color: AppColors.primaryBlue,
             ),

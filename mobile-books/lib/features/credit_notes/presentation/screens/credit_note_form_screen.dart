@@ -18,6 +18,7 @@ import 'package:mobile_books/features/invoices/presentation/providers/invoice_pr
 import 'package:mobile_books/features/settings/presentation/providers/settings_providers.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class _LineItem {
   int? itemId;
@@ -270,12 +271,12 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
           if (!_isEditMode)
             TextButton.icon(
               onPressed: (_isLoading || isLocked) ? null : () => _saveCreditNote(sendImmediately: true),
-              icon: const Icon(Icons.send_and_archive),
+              icon: const Icon(AppIcons.send_and_archive),
               label: const Text('Save & Send'),
             ),
           TextButton.icon(
             onPressed: (_isLoading || isLocked) ? null : () => _saveCreditNote(sendImmediately: false),
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             label: Text(_isEditMode ? 'Save' : 'Save as Draft'),
           ),
         ],
@@ -329,7 +330,7 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                         const SizedBox(width: AppSpacing.s),
                         IconButton(
                           onPressed: _showAddCustomerDialog,
-                          icon: const Icon(Icons.person_add, color: AppColors.primaryBlue),
+                          icon: const Icon(AppIcons.person_add, color: AppColors.primaryBlue),
                           tooltip: 'Add Customer',
                         ),
                       ],
@@ -378,7 +379,7 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                     child: InputDecorator(
                       decoration: const InputDecoration(
                         labelText: 'Credit Note Date *',
-                        suffixIcon: Icon(Icons.calendar_today),
+                        suffixIcon: Icon(AppIcons.calendar_today),
                       ),
                       child: Text(DateFormat('dd MMM yyyy').format(_creditNoteDate)),
                     ),
@@ -399,7 +400,7 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                     children: [
                       const Text('Line Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       IconButton(
-                        icon: const Icon(Icons.add_circle, color: AppColors.primaryBlue),
+                        icon: const Icon(AppIcons.add_circle, color: AppColors.primaryBlue),
                         onPressed: () {
                           setState(() {
                             _lineItems.add(_LineItem());
@@ -516,7 +517,7 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: AppColors.danger),
+                                  icon: const Icon(AppIcons.delete, color: AppColors.danger),
                                   onPressed: () {
                                     setState(() {
                                       _lineItems.removeAt(idx);
@@ -590,7 +591,7 @@ class _CreditNoteFormScreenState extends ConsumerState<CreditNoteFormScreen> {
                         backgroundColor: AppColors.primaryBlue,
                         foregroundColor: Colors.white,
                       ),
-                      icon: const Icon(Icons.send_and_archive),
+                      icon: const Icon(AppIcons.send_and_archive),
                       label: const Text('Save & Send'),
                     ),
                     const SizedBox(height: AppSpacing.s),

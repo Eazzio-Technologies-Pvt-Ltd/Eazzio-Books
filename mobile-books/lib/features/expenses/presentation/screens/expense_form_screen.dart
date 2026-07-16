@@ -12,6 +12,7 @@ import 'package:mobile_books/features/vendors/data/models/vendor.dart';
 import 'package:mobile_books/features/vendors/presentation/providers/vendor_provider.dart';
 import 'package:mobile_books/features/transaction_locks/presentation/widgets/lock_warning_banner.dart';
 import 'package:mobile_books/features/transaction_locks/utils/transaction_lock_validator.dart';
+import 'package:mobile_books/core/theme/app_icons.dart';
 
 class ExpenseFormScreen extends ConsumerStatefulWidget {
   final int? expenseId;
@@ -102,17 +103,17 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: const Icon(AppIcons.camera_alt),
               title: const Text('Take Photo (Camera)'),
               onTap: () => Navigator.pop(context, 'camera'),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: const Icon(AppIcons.photo_library),
               title: const Text('Choose from Gallery'),
               onTap: () => Navigator.pop(context, 'gallery'),
             ),
             ListTile(
-              leading: const Icon(Icons.insert_drive_file),
+              leading: const Icon(AppIcons.insert_drive_file),
               title: const Text('Choose PDF / Document'),
               onTap: () => Navigator.pop(context, 'file'),
             ),
@@ -279,7 +280,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
         title: Text(_isEdit ? 'Edit Expense' : 'Record Expense'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(AppIcons.check),
             onPressed: (_isLoading || isLocked) ? null : _save,
           ),
         ],
@@ -299,42 +300,54 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                 vendorsState.when(
                   loading: () => const LinearProgressIndicator(),
                   error: (e, s) => Text('Error loading vendors: $e'),
-                  data: (vendors) => Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<int?>(
-                          initialValue: _vendorId,
-                          decoration: const InputDecoration(
-                            labelText: 'Vendor',
-                          ),
-                          isExpanded: true,
-                          items: [
-                            const DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text('No Vendor'),
+                  data: (vendors) => LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 420;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          DropdownButtonFormField<int?>(
+                            initialValue: _vendorId,
+                            decoration: const InputDecoration(
+                              labelText: 'Vendor',
                             ),
-                            ...vendors.map(
-                              (v) => DropdownMenuItem<int?>(
-                                value: v.id,
-                                child: Text(v.displayName),
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('No Vendor'),
                               ),
+                              ...vendors.map(
+                                (v) => DropdownMenuItem<int?>(
+                                  value: v.id,
+                                  child: Text(
+                                    v.displayName,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              setState(() => _vendorId = val);
+                            },
+                          ),
+                          SizedBox(height: compact ? AppSpacing.s : 0),
+                          Align(
+                            alignment: compact
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: IconButton(
+                              onPressed: _showAddVendorDialog,
+                              icon: const Icon(
+                                AppIcons.person_add,
+                                color: AppColors.primaryBlue,
+                              ),
+                              tooltip: 'Add Vendor',
                             ),
-                          ],
-                          onChanged: (val) {
-                            setState(() => _vendorId = val);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.s),
-                      IconButton(
-                        onPressed: _showAddVendorDialog,
-                        icon: const Icon(
-                          Icons.person_add,
-                          color: AppColors.primaryBlue,
-                        ),
-                        tooltip: 'Add Vendor',
-                      ),
-                    ],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: AppSpacing.m),
@@ -345,8 +358,12 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Expense Category *',
                   ),
+                  isExpanded: true,
                   items: _categories.map((c) {
-                    return DropdownMenuItem<String>(value: c, child: Text(c));
+                    return DropdownMenuItem<String>(
+                      value: c,
+                      child: Text(c, overflow: TextOverflow.ellipsis),
+                    );
                   }).toList(),
                   onChanged: (val) {
                     if (val != null) {
@@ -423,25 +440,35 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                 const SizedBox(height: AppSpacing.m),
 
                 // Receipt Upload Row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _attachmentUrlController,
-                        decoration: const InputDecoration(
-                          labelText: 'Receipt Attachment URL',
-                          hintText: 'Upload or input document url',
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 460;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: _attachmentUrlController,
+                          decoration: const InputDecoration(
+                            labelText: 'Receipt Attachment URL',
+                            hintText: 'Upload or input document url',
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                    ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _pickAndUploadReceipt,
-                      icon: const Icon(Icons.upload_file),
-                      label: const Text('Upload Receipt'),
-                    ),
-                  ],
+                        SizedBox(height: compact ? AppSpacing.s : 0),
+                        Align(
+                          alignment: compact
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading
+                                ? null
+                                : _pickAndUploadReceipt,
+                            icon: const Icon(AppIcons.upload_file),
+                            label: const Text('Upload Receipt'),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: AppSpacing.m),
 
