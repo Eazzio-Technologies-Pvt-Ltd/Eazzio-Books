@@ -7,7 +7,7 @@ plugins {
 
 android {
 //    layout.buildDirectory.set(file("../../build/app"))
-    namespace = "com.eazzio.mobile_books"
+    namespace = "com.eazzio.books"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.eazzio.mobile_books"
+        applicationId = "com.eazzio.books"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

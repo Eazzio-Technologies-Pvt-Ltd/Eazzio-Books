@@ -1,0 +1,257 @@
+{
+  "total_issues": 28,
+  "findings": [
+    {
+      "package": "_fe_analyzer_shared",
+      "current_version": "99.0.0",
+      "latest_version": "105.0.0",
+      "resolvable_version": "99.0.0",
+      "severity": "HIGH",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 105.0.0"
+    },
+    {
+      "package": "analyzer",
+      "current_version": "12.1.0",
+      "latest_version": "14.1.0",
+      "resolvable_version": "12.1.0",
+      "severity": "HIGH",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 14.1.0"
+    },
+    {
+      "package": "cross_file",
+      "current_version": "0.3.5+2",
+      "latest_version": "0.3.5+4",
+      "resolvable_version": "0.3.5+4",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 0.3.5+4"
+    },
+    {
+      "package": "dio",
+      "current_version": "5.9.2",
+      "latest_version": "5.10.0",
+      "resolvable_version": "5.10.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 5.10.0"
+    },
+    {
+      "package": "dio_web_adapter",
+      "current_version": "2.1.2",
+      "latest_version": "2.2.0",
+      "resolvable_version": "2.2.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 2.2.0"
+    },
+    {
+      "package": "equatable",
+      "current_version": "2.0.8",
+      "latest_version": "2.1.0",
+      "resolvable_version": "2.1.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 2.1.0"
+    },
+    {
+      "package": "flutter_secure_storage_darwin",
+      "current_version": "0.3.2",
+      "latest_version": "0.4.0",
+      "resolvable_version": "0.3.2",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 0.4.0"
+    },
+    {
+      "package": "google_fonts",
+      "current_version": "8.1.0",
+      "latest_version": "8.2.0",
+      "resolvable_version": "8.2.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 8.2.0"
+    },
+    {
+      "package": "hooks",
+      "current_version": "2.0.2",
+      "latest_version": "2.1.0",
+      "resolvable_version": "2.0.2",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 2.1.0"
+    },
+    {
+      "package": "image",
+      "current_version": "4.8.0",
+      "latest_version": "4.9.1",
+      "resolvable_version": "4.9.1",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 4.9.1"
+    },
+    {
+      "package": "image_picker",
+      "current_version": "1.2.2",
+      "latest_version": "1.2.3",
+      "resolvable_version": "1.2.3",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 1.2.3"
+    },
+    {
+      "package": "intl",
+      "current_version": "0.20.2",
+      "latest_version": "0.20.3",
+      "resolvable_version": "0.20.3",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 0.20.3"
+    },
+    {
+      "package": "matcher",
+      "current_version": "0.12.19",
+      "latest_version": "0.12.20",
+      "resolvable_version": "0.12.19",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 0.12.20"
+    },
+    {
+      "package": "meta",
+      "current_version": "1.18.0",
+      "latest_version": "1.19.0",
+      "resolvable_version": "1.18.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 1.19.0"
+    },
+    {
+      "package": "package_config",
+      "current_version": "2.2.0",
+      "latest_version": "3.0.0",
+      "resolvable_version": "2.2.0",
+      "severity": "HIGH",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 3.0.0"
+    },
+    {
+      "package": "path_provider_linux",
+      "current_version": "2.2.1",
+      "latest_version": "2.2.2",
+      "resolvable_version": "2.2.2",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 2.2.2"
+    },
+    {
+      "package": "pdf",
+      "current_version": "3.12.0",
+      "latest_version": "3.13.0",
+      "resolvable_version": "3.13.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 3.13.0"
+    },
+    {
+      "package": "printing",
+      "current_version": "5.14.3",
+      "latest_version": "5.15.0",
+      "resolvable_version": "5.15.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 5.15.0"
+    },
+    {
+      "package": "qr",
+      "current_version": "3.0.2",
+      "latest_version": "4.0.0",
+      "resolvable_version": "3.0.2",
+      "severity": "HIGH",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 4.0.0"
+    },
+    {
+      "package": "record_use",
+      "current_version": "0.6.0",
+      "latest_version": "1.0.0",
+      "resolvable_version": "0.6.0",
+      "severity": "HIGH",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 1.0.0"
+    },
+    {
+      "package": "share_plus",
+      "current_version": "13.1.0",
+      "latest_version": "13.2.1",
+      "resolvable_version": "13.2.1",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 13.2.1"
+    },
+    {
+      "package": "shared_preferences_android",
+      "current_version": "2.4.26",
+      "latest_version": "2.4.27",
+      "resolvable_version": "2.4.27",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 2.4.27"
+    },
+    {
+      "package": "test",
+      "current_version": "1.31.0",
+      "latest_version": "1.31.2",
+      "resolvable_version": "1.31.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 1.31.2"
+    },
+    {
+      "package": "test_api",
+      "current_version": "0.7.11",
+      "latest_version": "0.7.13",
+      "resolvable_version": "0.7.11",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 0.7.13"
+    },
+    {
+      "package": "test_core",
+      "current_version": "0.6.17",
+      "latest_version": "0.6.19",
+      "resolvable_version": "0.6.17",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 0.6.19"
+    },
+    {
+      "package": "uuid",
+      "current_version": "4.5.3",
+      "latest_version": "4.6.0",
+      "resolvable_version": "4.6.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 4.6.0"
+    },
+    {
+      "package": "vector_math",
+      "current_version": "2.2.0",
+      "latest_version": "2.4.0",
+      "resolvable_version": "2.2.0",
+      "severity": "MEDIUM",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 2.4.0"
+    },
+    {
+      "package": "xml",
+      "current_version": "6.6.1",
+      "latest_version": "7.0.1",
+      "resolvable_version": "7.0.1",
+      "severity": "HIGH",
+      "issue": "Package is outdated",
+      "recommendation": "Update to version 7.0.1"
+    }
+  ]
+}
